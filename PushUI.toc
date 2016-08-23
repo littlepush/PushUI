@@ -1,0 +1,29 @@
+## Interface: 70000
+## Title: PushUI
+## Auth: littlepush
+## Version: 1.0
+## OptionalDeps: Skada, Grid
+
+kernel\boot.lua
+kernel\api.lua
+kernel\preference.lua
+kernel\frames.lua
+kernel\config.lua
+
+frames\actionbarframe.lua
+frames\leftbottomframe.lua
+frames\rightbottomframe.lua
+
+components\actionbars.lua
+components\chatframe.lua
+components\skada.lua
+components\minimap.lua
+components\objectivetracker.lua
+components\grid.lua
+components\tooltip.lua
+components\buffs.lua
+components\unitframe.lua
+components\targetframe.lua
+components\targettargetframe.lua
+components\focusframe.lua
+components\petframe.lua
