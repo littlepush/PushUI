@@ -102,3 +102,11 @@ end
 -- Create the main frame and hide
 local PushUIMainFrame = CreateFrame("Frame", "PushUIMainFrame", UIParent)
 PushUIMainFrame:Hide()
+PushUIMainFrame.OnBoot = function()
+    SELECTED_CHAT_FRAME:AddMessage("PushUI Version 1.0.alpha")
+    SELECTED_CHAT_FRAME:AddMessage("Visit the project on Github https://github.com/littlepush/PushUI")
+    SELECTED_CHAT_FRAME:AddMessage("Connect the author on Twitter: @littlepush")
+    SELECTED_CHAT_FRAME:AddMessage("You are welcomed to join our guild: [TW][Lambda]!")
+end
+PushUIAPI.RegisterEvent("PLAYER_ENTERING_WORLD", PushUIMainFrame, PushUIMainFrame.OnBoot)
+
