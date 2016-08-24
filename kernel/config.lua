@@ -196,3 +196,81 @@ PushUIConfig.RightBottomFrame.switchers = {
     },
     groupright = false
 }
+
+-- UnitFrame Hook
+PushUIConfig.UnitFrameHook = {}
+PushUIConfig.UnitFrameHook.enable = true
+PushUIConfig.UnitFrameHook.anchorTarget = UIParent
+PushUIConfig.UnitFrameHook.anchorPoint = "CENTER"
+PushUIConfig.UnitFrameHook.HookBar = {
+    position = {
+        x = -223.57, y = -72
+    },
+    size = {
+        w = 200, h = 40
+    }
+}
+PushUIConfig.UnitFrameHook.Name = {
+    display = true,
+    size = 14,
+    color = function(value, min, max, class)
+        return {1, 1, 1, 1}
+    end,
+    outline = "OUTLINE",   -- "OUTLINE"
+    align = "RIGHT",
+    fontName = "Fonts\\FRIZQT__.TTF",
+    anchorPoint = "TOPRIGHT",   -- anchor to HookBar's TOPLEFT
+    position = { x = -PushUISize.padding, y = -PushUISize.padding * 2 }
+}
+PushUIConfig.UnitFrameHook.LifeBar = {
+    display = true,
+    orientation = "HORIZONTAL",
+    position = {
+        x = 0, y = -35
+    },
+    size = {
+        w = 200, h = 5
+    },
+    anchorPoint = "TOPLEFT",   -- anchor to HookBar's TOPLEFT
+    fillColor = { PushUIColor.lifeColorDynamic },   -- To use default statusbar's api, must set this line
+    background = function(frame)
+        PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
+    end
+}
+PushUIConfig.UnitFrameHook.Percentage = {
+    display = true,
+    size = 24,
+    color = function(value, max, min, class)
+        return PushUIColor.lifeColorDynamic(value, max, min)
+    end,
+    outline = "OUTLINE",
+    fontName = "Fonts\\FRIZQT__.TTF",
+    --fontName = "MSBT Transformers",
+    align = "LEFT",
+    anchorPoint = "TOPLEFT",   -- anchor to HookBar's TOPLEFT
+    position = { x = 0, y = -8 }
+}
+PushUIConfig.UnitFrameHook.HealthValue = {
+    display = true,
+    size = 14,
+    color = function(value, max, min, class)
+        return {1, 1, 1, 1}
+    end,
+    outline = "",   -- "OUTLINE"
+    align = "RIGHT",
+    fontName = "Fonts\\FRIZQT__.TTF",
+    anchorPoint = "TOPRIGHT",   -- anchor to HookBar's TOPLEFT
+    position = { x = -PushUISize.padding, y = -(PushUISize.padding * 3 + 14) }
+}
+PushUIConfig.UnitFrameHook.Auras = {
+    display = true
+    -- pending...
+}
+PushUIConfig.UnitFrameHook.PowerBar = {
+    display = true
+    -- pending...
+}
+PushUIConfig.UnitFrameHook.ResourceBar = {
+    display = true
+    -- pending...
+}

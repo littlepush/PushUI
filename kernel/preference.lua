@@ -264,13 +264,19 @@ end
 -- Font
 PushUIStyle.SetFontSize = function(text, size)
     local _text = text
-    local _p, _s, _f = _text:GetFont()
+    local _p, _s = _text:GetFont()
+    if _p == nil then
+        _p = "Fonts\\FRIZQT__.TTF"
+    end
     _s = size
-    _text:SetFont(_p, _s, _f)
+    _text:SetFont(_p, _s)
 end
 PushUIStyle.SetFontOutline = function(text, outline)
     outline = outline or "OUTLINE"
     local _p, _s, _f = text:GetFont()
+    if _p == nil then
+        _p = "Fonts\\FRIZQT__.TTF"
+    end
     _f = outline
     text:SetFont(_p, _s, _f)
 end

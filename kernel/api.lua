@@ -297,3 +297,49 @@ end
 PushUIAPI.WatchedFactionInfo.Value = function()
     return PushUIAPI.WatchedFactionInfo.value
 end
+
+-- Unit Info
+PushUIAPI.UnitPlayer = {}
+
+PushUIAPI.UnitPlayer._onHealthChanged = function(event, uid)
+    if uid ~= "player" then return end
+    PushUIAPI._UnitFireEvent("PushUI_UnitPlayer_Event_ValueChanged")
+end
+
+PushUIAPI._UnitEventList["PushUI_UnitPlayer_Event_ValueChanged"] = {
+    {
+        sysevent = "UNIT_HEALTH",
+        target = PushUIAPI.UnitPlayer,
+        callback = PushUIAPI.UnitPlayer._onHealthChanged
+    }
+}
+PushUIAPI.UnitPlayer.CanDisplay = function()
+    return true
+end
+PushUIAPI.UnitPlayer.RegisterForDisplayStatus = function(obj, func)
+    -- Nothing
+end
+PushUIAPI.UnitPlayer.UnRegisterForDisplayStatus = function(obj)
+    -- Nothing
+end
+
+PushUIAPI.UnitPlayer.RegisterForValueChanged = function(obj, func)
+    local _e = "PushUI_UnitPlayer_Event_ValueChanged"
+    PushUIAPI._UnitRegisterEvent(_e, obj, func)
+end
+PushUIAPI.UnitPlayer.UnRegisterForValueChanged = function(obj)
+    local _e = "PushUI_UnitPlayer_Event_ValueChanged"
+    PushUIAPI._UnitUnRegisterEvent(_e, obj)
+end
+
+PushUIAPI.UnitPlayer.MaxValue = function()
+    return UnitHealthMax("player")
+end
+
+PushUIAPI.UnitPlayer.MinValue = function()
+    return 0
+end
+
+PushUIAPI.UnitPlayer.Value = function()
+    return UnitHealth("player")
+end

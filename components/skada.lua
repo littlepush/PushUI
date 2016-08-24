@@ -2,6 +2,8 @@ local
     PushUISize, PushUIColor, 
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
+    
+if not IsAddOnLoaded("Skada") then return end
 
 local PushUIFrameSkadaHook = PushUIFrames.Frame.Create("PushUIFrameSkadaHook", PushUIConfig.SkadaFrameHook)
 PushUIFrameSkadaHook.HookParent = PushUIConfig.SkadaFrameHook.parent.HookFrame
@@ -101,8 +103,6 @@ PushUIFrameSkadaHook.Init = function(...)
         PushUIFrameSkadaHook.Toggle(false)
     end
 end
-
-if not IsAddOnLoaded("Skada") then return end
 
 PushUIAPI.RegisterEvent(
     "PLAYER_ENTERING_WORLD", 
