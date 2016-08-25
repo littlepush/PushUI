@@ -213,12 +213,12 @@ PushUIConfig.UnitFrameHook.HookBar = {
 PushUIConfig.UnitFrameHook.Name = {
     display = true,
     size = 14,
-    color = function(value, min, max, class)
+    color = function(value, max, min, class)
         return {1, 1, 1, 1}
     end,
     outline = "OUTLINE",   -- "OUTLINE"
     align = "RIGHT",
-    fontName = "Fonts\\FRIZQT__.TTF",
+    fontName = "Fonts\\ARIALN.TTF",
     anchorPoint = "TOPRIGHT",   -- anchor to HookBar's TOPLEFT
     position = { x = -PushUISize.padding, y = -PushUISize.padding * 2 }
 }
@@ -239,16 +239,16 @@ PushUIConfig.UnitFrameHook.LifeBar = {
 }
 PushUIConfig.UnitFrameHook.Percentage = {
     display = true,
-    size = 24,
+    size = 30,
     color = function(value, max, min, class)
         return PushUIColor.lifeColorDynamic(value, max, min)
     end,
     outline = "OUTLINE",
-    fontName = "Fonts\\FRIZQT__.TTF",
+    fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
     --fontName = "MSBT Transformers",
     align = "LEFT",
     anchorPoint = "TOPLEFT",   -- anchor to HookBar's TOPLEFT
-    position = { x = 0, y = -8 }
+    position = { x = 0, y = -2 }
 }
 PushUIConfig.UnitFrameHook.HealthValue = {
     display = true,
@@ -258,7 +258,7 @@ PushUIConfig.UnitFrameHook.HealthValue = {
     end,
     outline = "",   -- "OUTLINE"
     align = "RIGHT",
-    fontName = "Fonts\\FRIZQT__.TTF",
+    fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
     anchorPoint = "TOPRIGHT",   -- anchor to HookBar's TOPLEFT
     position = { x = -PushUISize.padding, y = -(PushUISize.padding * 3 + 14) }
 }

@@ -343,3 +343,162 @@ end
 PushUIAPI.UnitPlayer.Value = function()
     return UnitHealth("player")
 end
+
+-- Player Buff
+PushUIAPI.PlayerBuff = {}
+PushUIAPI.PlayerBuff._buffs = {}
+PushUIAPI.PlayerBuff._gain = function()
+    -- Clear old buff
+    local _bc = #PushUIAPI.PlayerBuff._buffs
+    for i = 1, _bc do PushUIAPI.PlayerBuff._buffs[i] = nil end
+    -- 1 name, 2 rank, 3 icon, 4 count, 5 debuffType, 6 duration, 
+    -- 7 expirationTime, 8 unitCaster, 9 isStealable, 
+    -- 10 shouldConsolidate, 11 spellId
+    local i = 1
+    repeat 
+        local _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11 = UnitBuff("player", i)
+        if not _1 then break end
+        PushUIAPI.PlayerBuff._buffs[i] = {
+            name = _1,
+            rank = _2,
+            icon = _3,
+            count = _4,
+            debuffType = _5,
+            duration = _6,
+            expirationTime = _7,
+            unitCaster = _8,
+            isStealable = _9,
+            shouldConsolidate = _10,
+            spellId = _11
+        }
+        i = i + 1
+    until true
+end
+PushUIAPI.PlayerBuff._onAuraChanged = function(event, uid)
+    if uid ~= "player" then return end
+    PushUIAPI.PlayerBuff._gain()
+    PushUIAPI._UnitFireEvent("PushUI_PlayerBuff_Event_ValueChanged")
+end
+
+PushUIAPI._UnitEventList["PushUI_PlayerBuff_Event_ValueChanged"] = {
+    {
+        sysevent = "UNIT_AURA",
+        target = PushUIAPI.PlayerBuff,
+        callback = PushUIAPI.PlayerBuff._onAuraChanged
+    }
+}
+PushUIAPI.PlayerBuff.CanDisplay = function()
+    PushUIAPI.PlayerBuff._gain()
+    return #PushUIAPI.PlayerBuff._buffs > 0
+end
+PushUIAPI.PlayerBuff.RegisterForDisplayStatus = function(obj, func)
+    -- Nothing
+end
+PushUIAPI.PlayerBuff.UnRegisterForDisplayStatus = function(obj)
+    -- Nothing
+end
+
+PushUIAPI.PlayerBuff.RegisterForValueChanged = function(obj, func)
+    local _e = "PushUI_PlayerBuff_Event_ValueChanged"
+    PushUIAPI._UnitRegisterEvent(_e, obj, func)
+end
+PushUIAPI.PlayerBuff.UnRegisterForValueChanged = function(obj)
+    local _e = "PushUI_PlayerBuff_Event_ValueChanged"
+    PushUIAPI._UnitUnRegisterEvent(_e, obj)
+end
+
+PushUIAPI.PlayerBuff.MaxValue = function()
+    return #PushUIAPI.PlayerBuff._buffs
+end
+
+PushUIAPI.PlayerBuff.Count = function()
+    return #PushUIAPI.PlayerBuff._buffs
+end
+
+PushUIAPI.PlayerBuff.MinValue = function()
+    return 0
+end
+
+PushUIAPI.PlayerBuff.Value = function(index)
+    return PushUIAPI.PlayerBuff._buffs[index]
+end
+
+-- Player Debuff
+PushUIAPI.PlayerDebuff = {}
+PushUIAPI.PlayerDebuff._debuffs = {}
+PushUIAPI.PlayerDebuff._gain = function()
+    -- Clear old buff
+    local _bc = #PushUIAPI.PlayerDebuff._debuffs
+    for i = 1, _bc do PushUIAPI.PlayerDebuff._debuffs[i] = nil end
+    -- 1 name, 2 rank, 3 icon, 4 count, 5 debuffType, 6 duration, 
+    -- 7 expirationTime, 8 unitCaster, 9 isStealable, 
+    -- 10 shouldConsolidate, 11 spellId
+    local i = 1
+    repeat 
+        local _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11 = UnitDebuff("player", i)
+        if not _1 then break end
+        PushUIAPI.PlayerDebuff._debuffs[i] = {
+            name = _1,
+            rank = _2,
+            icon = _3,
+            count = _4,
+            debuffType = _5,
+            duration = _6,
+            expirationTime = _7,
+            unitCaster = _8,
+            isStealable = _9,
+            shouldConsolidate = _10,
+            spellId = _11
+        }
+        i = i + 1
+    until true
+end
+PushUIAPI.PlayerDebuff._onAuraChanged = function(event, uid)
+    if uid ~= "player" then return end
+    PushUIAPI.PlayerDebuff._gain()
+    PushUIAPI._UnitFireEvent("PushUI_PlayerDebuff_Event_ValueChanged")
+end
+
+PushUIAPI._UnitEventList["PushUI_PlayerDebuff_Event_ValueChanged"] = {
+    {
+        sysevent = "UNIT_AURA",
+        target = PushUIAPI.PlayerDebuff,
+        callback = PushUIAPI.PlayerDebuff._onAuraChanged
+    }
+}
+PushUIAPI.PlayerDebuff.CanDisplay = function()
+    PushUIAPI.PlayerDebuff._gain()
+    return #PushUIAPI.PlayerDebuff._buffs > 0
+end
+PushUIAPI.PlayerDebuff.RegisterForDisplayStatus = function(obj, func)
+    -- Nothing
+end
+PushUIAPI.PlayerDebuff.UnRegisterForDisplayStatus = function(obj)
+    -- Nothing
+end
+
+PushUIAPI.PlayerDebuff.RegisterForValueChanged = function(obj, func)
+    local _e = "PushUI_PlayerDebuff_Event_ValueChanged"
+    PushUIAPI._UnitRegisterEvent(_e, obj, func)
+end
+PushUIAPI.PlayerDebuff.UnRegisterForValueChanged = function(obj)
+    local _e = "PushUI_PlayerDebuff_Event_ValueChanged"
+    PushUIAPI._UnitUnRegisterEvent(_e, obj)
+end
+
+PushUIAPI.PlayerDebuff.MaxValue = function()
+    return #PushUIAPI.PlayerDebuff._debuffs
+end
+
+PushUIAPI.PlayerDebuff.Count = function()
+    return #PushUIAPI.PlayerDebuff._debuffs
+end
+
+PushUIAPI.PlayerDebuff.MinValue = function()
+    return 0
+end
+
+PushUIAPI.PlayerDebuff.Value = function(index)
+    return PushUIAPI.PlayerDebuff._debuffs[index]
+end
+

@@ -107,6 +107,20 @@ PushUIFrameActionBarLayout.DefaultButtonPlace = function(btn, row, col)
         )
 end
 
+PushUIFrameActionBarLayout.ReSizeVehicleButton = function()
+    local _barWidth = PushUIFrameActionBarFrame:GetWidth()
+    -- PushUISize.actionButtonPadding
+    -- PushUIConfig.ActionBarGridScale
+    -- PushUISize.Resolution.scale
+    local _padding = (
+        PushUISize.actionButtonPadding * 
+        PushUIConfig.ActionBarGridScale * 
+        PushUISize.Resolution.scale)
+    local _btnW = ((_barWidth - _padding) / (NUM_PET_ACTION_SLOTS + 2)) - _padding
+
+        
+end
+
 PushUIFrameActionBarLayout.ReSizePetButtons = function()
     local _barWidth = PushUIFrameActionBarFrame:GetWidth()
     -- PushUISize.actionButtonPadding
