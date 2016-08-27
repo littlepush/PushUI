@@ -50,7 +50,7 @@ PushUIFrames.Button.Create = function(name, parent, config)
     _b:SetScript("OnClick", function(self, ...)
         local _p = self:GetParent()
         if _p.OnButtonClick then
-            self:GetParent().OnButtonClick(self)
+            _p.OnButtonClick(self, ...)
         end
     end)
 

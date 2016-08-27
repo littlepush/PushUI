@@ -372,7 +372,7 @@ PushUIAPI.PlayerBuff._gain = function()
             spellId = _11
         }
         i = i + 1
-    until true
+    until false
 end
 PushUIAPI.PlayerBuff._onAuraChanged = function(event, uid)
     if uid ~= "player" then return end
@@ -451,7 +451,10 @@ PushUIAPI.PlayerDebuff._gain = function()
             spellId = _11
         }
         i = i + 1
-    until true
+        if _7 then
+            print("exp time: ".._7..", now time: "..GetTime())
+        end
+    until false
 end
 PushUIAPI.PlayerDebuff._onAuraChanged = function(event, uid)
     if uid ~= "player" then return end
@@ -468,7 +471,7 @@ PushUIAPI._UnitEventList["PushUI_PlayerDebuff_Event_ValueChanged"] = {
 }
 PushUIAPI.PlayerDebuff.CanDisplay = function()
     PushUIAPI.PlayerDebuff._gain()
-    return #PushUIAPI.PlayerDebuff._buffs > 0
+    return #PushUIAPI.PlayerDebuff._debuffs > 0
 end
 PushUIAPI.PlayerDebuff.RegisterForDisplayStatus = function(obj, func)
     -- Nothing

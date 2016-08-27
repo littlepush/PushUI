@@ -263,8 +263,21 @@ PushUIConfig.UnitFrameHook.HealthValue = {
     position = { x = -PushUISize.padding, y = -(PushUISize.padding * 3 + 14) }
 }
 PushUIConfig.UnitFrameHook.Auras = {
-    display = true
-    -- pending...
+    display = true,
+    displayBuffFirst = true,
+    width = 200,
+    buff = {
+        available = true,
+        size = { w = 30, h = 30 },
+        displayPlayerOnly = false
+    }, 
+    debuff = {
+        available = true,
+        size = { w = 34, h = 34 },
+        displayPlayerOnly = false
+    },
+    anchorPoint = "BOTTOMLEFT",   -- anchor to HookBar's TOPLEFT
+    position = { x = 0, y = -10 }
 }
 PushUIConfig.UnitFrameHook.PowerBar = {
     display = true
