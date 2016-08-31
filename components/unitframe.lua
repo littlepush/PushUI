@@ -48,6 +48,7 @@ PushUIFrameUnitFrameHook.InitHookBar = function()
 end
 
 -- Name of the player
+PushUIFrameUnitFrameHook.ForceUpdateName = nil
 PushUIFrameUnitFrameHook.InitName = function()
     if PushUIConfig.UnitFrameHook.Name and PushUIConfig.UnitFrameHook.Name.display then
         local _c = PushUIConfig.UnitFrameHook.Name
@@ -63,7 +64,7 @@ PushUIFrameUnitFrameHook.InitName = function()
         _fs:SetFont(_fn, _fsize, _foutline)
 
         -- align
-        local _align = _c.aling or "CENTER"
+        local _align = _c.align or "CENTER"
         _fs:SetJustifyH(_align)
 
         _fs:SetText(UnitName("player"))
@@ -89,9 +90,11 @@ PushUIFrameUnitFrameHook.InitName = function()
 
         -- Init Color
         _fs.OnValueChange()
+        PushUIFrameUnitFrameHook.ForceUpdateName = _fs.OnValueChange
     end
 end
 
+PushUIFrameUnitFrameHook.ForceUpdateLifeBar = nil
 PushUIFrameUnitFrameHook.InitLifeBar = function()
     if PushUIConfig.UnitFrameHook.LifeBar and PushUIConfig.UnitFrameHook.LifeBar.display then
         local _c = PushUIConfig.UnitFrameHook.LifeBar
@@ -114,9 +117,13 @@ PushUIFrameUnitFrameHook.InitLifeBar = function()
         _lb:SetWidth(_size.w)
         _lb:SetHeight(_size.h)
         _lb:SetPoint(_a, PushUIFrameUnitFrameHook.HookBar, "TOPLEFT", _pos.x, _pos.y)
+        PushUIFrameUnitFrameHook.ForceUpdateLifeBar = function()
+            PushUIFrameUnitFrameHook.LifeBarFrame.OnDisplayStatusChanged(PushUIAPI.UnitPlayer, true)
+        end
     end
 end
 
+PushUIFrameUnitFrameHook.ForceUpdatePercentage = nil
 PushUIFrameUnitFrameHook.InitPercentage = function()
     if PushUIConfig.UnitFrameHook.Percentage and PushUIConfig.UnitFrameHook.Percentage.display then
         local _c = PushUIConfig.UnitFrameHook.Percentage
@@ -176,9 +183,11 @@ PushUIFrameUnitFrameHook.InitPercentage = function()
 
         -- Init the value
         _fs.OnValueChange()
+        PushUIFrameUnitFrameHook.ForceUpdatePercentage = _fs.OnValueChange
     end
 end
 
+PushUIFrameUnitFrameHook.ForceUpdateHealthValue = nil
 PushUIFrameUnitFrameHook.InitHealthValue = function()
     if PushUIConfig.UnitFrameHook.HealthValue and PushUIConfig.UnitFrameHook.HealthValue.display then
         local _c = PushUIConfig.UnitFrameHook.HealthValue
@@ -223,26 +232,25 @@ PushUIFrameUnitFrameHook.InitHealthValue = function()
 
         -- Init Color
         _fs.OnValueChange()
+        PushUIFrameUnitFrameHook.ForceUpdateHealthValue = _fs.OnValueChange
     end
 end
 
--- PushUIConfig.UnitFrameHook.Auras = {
---     display = true
-    -- displayBuffFirst = true,
-    -- buff = {
-    --     available = true,
-    --     size = { w = 20, h = 20 },
-    --     displayPlayerOnly = false
-    -- }, 
-    -- debuff = {
-    --     available = true,
-    --     size = { w = 24, h = 24 },
-    --     displayPlayerOnly = false
-    -- }
--- }
-
 PushUIFrameUnitFrameHook._buffButtons = {}
 PushUIFrameUnitFrameHook._debuffButtons = {}
+
+PushUIFrameUnitFrameHook._auraOnUpdate = function(self, elapsed)
+    if self:IsShown() == false then return end
+    local _aura = self.AurasInfo
+    local _pb = self.pb
+    if _aura.expirationTime ~= 0 then
+        _pb:SetMinMaxValues(0, _aura.expirationTime - _aura.startTime)
+        _pb:SetValue(_aura.expirationTime - GetTime())
+    else
+        _pb:SetMinMaxValues(0, 1)
+        _pb:SetValue(1)
+    end
+end
 
 PushUIFrameUnitFrameHook.InitAuras = function()
     if PushUIConfig.UnitFrameHook.Auras and PushUIConfig.UnitFrameHook.Auras.display then
@@ -294,6 +302,21 @@ PushUIFrameUnitFrameHook.InitAuras = function()
                     _btn.fs = _countfs
                     -- _btn:SetNormalFontObject(_countfs)
                     PushUIConfig.skinType(_btn)
+
+                    _btn.pb = PushUIFrames.ProgressBar.Create(namePrefix..i.."ProgressBar", _btn, nil, "HORIZONTAL")
+                    _btn.pb:SetHeight(_btnh * 0.2 - 2)
+                    _btn.pb:SetWidth(_btnw)
+                    _btn.pb:SetPoint("TOPLEFT", _btn, "BOTTOMLEFT", 0, 0)
+                    _btn.pb:SetMinMaxValues(0, 1)
+                    _btn.pb:SetValue(1)
+                    if isBuff then
+                        _btn.pb:SetStatusBarColor(unpack(PushUIColor.green))
+                    else
+                        _btn.pb:SetStatusBarColor(unpack(PushUIColor.red))
+                    end
+                    PushUIStyle.BackgroundFormatForProgressBar(_btn.pb)
+
+                    _btn:SetScript("OnUpdate", PushUIFrameUnitFrameHook._auraOnUpdate)
                 end
                 local _aura = apiObject.Value(i)
                 _btn.AurasInfo = _aura
@@ -372,7 +395,7 @@ PushUIFrameUnitFrameHook.InitAuras = function()
                     local _nw = _n:GetWidth()
                     -- Next line
                     if _nw + _linewidth > _afw then
-                        _ypos = _ypos + _lineheight + 2
+                        _ypos = _ypos + _lineheight * 1.25
                         _linewidth = 0
                     end
                     _n:SetPoint("TOPLEFT", _af, "TOPLEFT", _linewidth, -_ypos)
@@ -440,13 +463,26 @@ PushUIFrameUnitFrameHook.InitAuras = function()
     end
 end
 
+PushUIFrameUnitFrameHook.InitHookBar()
+PushUIFrameUnitFrameHook.InitName()
+PushUIFrameUnitFrameHook.InitLifeBar()
+PushUIFrameUnitFrameHook.InitPercentage()
+PushUIFrameUnitFrameHook.InitHealthValue()
+PushUIFrameUnitFrameHook.InitAuras()
+
 PushUIFrameUnitFrameHook.Init = function()
-    PushUIFrameUnitFrameHook.InitHookBar()
-    PushUIFrameUnitFrameHook.InitName()
-    PushUIFrameUnitFrameHook.InitLifeBar()
-    PushUIFrameUnitFrameHook.InitPercentage()
-    PushUIFrameUnitFrameHook.InitHealthValue()
-    PushUIFrameUnitFrameHook.InitAuras()
+    if PushUIFrameUnitFrameHook.ForceUpdateHealthValue then
+        PushUIFrameUnitFrameHook.ForceUpdateHealthValue()
+    end
+    if PushUIFrameUnitFrameHook.ForceUpdateName then
+        PushUIFrameUnitFrameHook.ForceUpdateName()
+    end
+    if PushUIFrameUnitFrameHook.ForceUpdateLifeBar then
+        PushUIFrameUnitFrameHook.ForceUpdateLifeBar()
+    end
+    if PushUIFrameUnitFrameHook.ForceUpdatePercentage then
+        PushUIFrameUnitFrameHook.ForceUpdatePercentage()
+    end
 end
 
 PushUIAPI.RegisterEvent("PLAYER_ENTERING_WORLD", PushUIFrameUnitFrameHook, PushUIFrameUnitFrameHook.Init)

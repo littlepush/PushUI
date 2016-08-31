@@ -128,8 +128,6 @@ PushUIFrameActionBarFrame.ReSize = function()
     PushUIConfig.ActionBarGridPlacedCood = placed_actions
     PushUIConfig.ActionBarGridValidate = true
 
-    print("Outline width/height: ".._maxWidth.."/".._maxHeight)
-
     f:SetWidth(_maxWidth * PushUISize.Resolution.scale * PushUIConfig.ActionBarGridScale)
     f:SetHeight(_maxHeight * PushUISize.Resolution.scale * PushUIConfig.ActionBarGridScale)
     f:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, PushUISize.screenBottomPadding)

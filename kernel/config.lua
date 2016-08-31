@@ -183,14 +183,16 @@ PushUIConfig.RightBottomFrame.switchers = {
     right = {
         {
             mode = PushUIFrames.ProgressBar,
-            -- skin = dynamic
+            skin = PushUIStyle.BackgroundFormatForProgressBar,
             targets = {
-                PushUIAPI.UnitTarget
+                PushUIAPI.Artifact
             },
             alwaysDisplay = false,
             action = nil,
             fillColor = {
-                PushUIColor.lifeColorDynamic
+                function(...)
+                    return {unpack(PushUIColor.orange), 1}
+                end
             }
         }
     },
@@ -273,7 +275,7 @@ PushUIConfig.UnitFrameHook.Auras = {
     }, 
     debuff = {
         available = true,
-        size = { w = 34, h = 34 },
+        size = { w = 30, h = 30 },
         displayPlayerOnly = false
     },
     anchorPoint = "BOTTOMLEFT",   -- anchor to HookBar's TOPLEFT
@@ -287,3 +289,95 @@ PushUIConfig.UnitFrameHook.ResourceBar = {
     display = true
     -- pending...
 }
+
+-- TargetFrame Hook
+PushUIConfig.TargetFrameHook = {}
+PushUIConfig.TargetFrameHook.enable = true
+PushUIConfig.TargetFrameHook.anchorTarget = UIParent
+PushUIConfig.TargetFrameHook.anchorPoint = "CENTER"
+PushUIConfig.TargetFrameHook.HookBar = {
+    position = {
+        x = 223.57, y = -72
+    },
+    size = {
+        w = 200, h = 40
+    }
+}
+PushUIConfig.TargetFrameHook.Name = {
+    display = true,
+    size = 14,
+    color = function(value, max, min, class)
+        return {1, 1, 1, 1}
+    end,
+    outline = "OUTLINE",   -- "OUTLINE"
+    align = "LEFT",
+    fontName = "Fonts\\ARIALN.TTF",
+    anchorPoint = "TOPLEFT",   -- anchor to HookBar's TOPLEFT
+    position = { x = PushUISize.padding, y = -PushUISize.padding * 2 }
+}
+PushUIConfig.TargetFrameHook.LifeBar = {
+    display = true,
+    orientation = "HORIZONTAL",
+    position = {
+        x = 0, y = -35
+    },
+    size = {
+        w = 200, h = 5
+    },
+    anchorPoint = "TOPRIGHT",   -- anchor to HookBar's TOPLEFT
+    fillColor = { PushUIColor.lifeColorDynamic },   -- To use default statusbar's api, must set this line
+    background = function(frame)
+        PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
+    end
+}
+PushUIConfig.TargetFrameHook.Percentage = {
+    display = true,
+    size = 30,
+    color = function(value, max, min, class)
+        return PushUIColor.lifeColorDynamic(value, max, min)
+    end,
+    outline = "OUTLINE",
+    fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+    --fontName = "MSBT Transformers",
+    align = "RIGHT",
+    anchorPoint = "TOPRIGHT",   -- anchor to HookBar's TOPLEFT
+    position = { x = 0, y = -2 }
+}
+PushUIConfig.TargetFrameHook.HealthValue = {
+    display = true,
+    size = 14,
+    color = function(value, max, min, class)
+        return {1, 1, 1, 1}
+    end,
+    outline = "",   -- "OUTLINE"
+    align = "LEFT",
+    fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+    anchorPoint = "TOPLEFT",   -- anchor to HookBar's TOPLEFT
+    position = { x = PushUISize.padding, y = -(PushUISize.padding * 3 + 14) }
+}
+PushUIConfig.TargetFrameHook.Auras = {
+    display = true,
+    displayBuffFirst = true,
+    width = 200,
+    buff = {
+        available = true,
+        size = { w = 30, h = 30 },
+        displayPlayerOnly = true
+    }, 
+    debuff = {
+        available = true,
+        size = { w = 30, h = 30 },
+        displayPlayerOnly = true
+    },
+    anchorPoint = "BOTTOMRIGHT",   -- anchor to HookBar's TOPLEFT
+    position = { x = 0, y = -10 }
+}
+PushUIConfig.TargetFrameHook.PowerBar = {
+    display = true
+    -- pending...
+}
+PushUIConfig.TargetFrameHook.ResourceBar = {
+    display = true
+    -- pending...
+}
+

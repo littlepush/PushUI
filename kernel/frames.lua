@@ -167,7 +167,9 @@ PushUIFrames.ProgressBar.Create = function(name, parent, config, orientation)
 
                     t.RegisterForDisplayStatus(_pb, function(status)
                         _pb.OnDisplayStatusChanged(t, status)
-                        _pb:GetParent().ReSize()
+                        if _pb:GetParent().Resize then
+                            _pb:GetParent().ReSize()
+                        end
                     end)
 
                     if _pb.Config.displayed and _initidx == 0 then

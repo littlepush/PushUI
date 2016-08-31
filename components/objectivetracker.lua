@@ -212,25 +212,25 @@ PushUIFrameObjectiveTrackerHook.Init = function(...)
             icon:SetDrawLayer("BACKGROUND", 1)
             icon:ClearAllPoints()
             icon:SetPoint("RIGHT", 35, 2)
-            bar.newIconBg = F.ReskinIcon(icon)
+            --bar.newIconBg = F.ReskinIcon(icon)
 
             bar.BarFrame:Hide()
 
-            bar:SetStatusBarTexture(C.media.backdrop)
+            --bar:SetStatusBarTexture(C.media.backdrop)
 
             label:ClearAllPoints()
             label:SetPoint("CENTER")
             PushUIFrameObjectiveTrackerHook.SetContentText(label)
 
-            local bg = F.CreateBDFrame(bar)
-            bg:SetPoint("TOPLEFT", -1, 1)
-            bg:SetPoint("BOTTOMRIGHT", 0, -2)
+            --local bg = F.CreateBDFrame(bar)
+            --bg:SetPoint("TOPLEFT", -1, 1)
+            --bg:SetPoint("BOTTOMRIGHT", 0, -2)
 
             progressBar.styled = true
         end
 
-        bar.IconBG:Hide()
-        bar.newIconBg:SetShown(icon:IsShown())
+        --bar.IconBG:Hide()
+        --bar.newIconBg:SetShown(icon:IsShown())
     end)
 
     -- ScenarioStageBlock:SetHeight(0)

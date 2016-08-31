@@ -36,6 +36,9 @@ PushUIFrameActionBarLayout.HideEverything = function()
     MainMenuExpBar:SetScript("OnShow", MainMenuExpBar.Hide)
     MainMenuExpBar:Hide()
 
+    ArtifactWatchBar:SetScript("OnShow", ArtifactWatchBar.Hide)
+    ArtifactWatchBar:Hide()
+
     -- OverrideActionBar
     local textureList = {
         "_BG","EndCapL","EndCapR",
