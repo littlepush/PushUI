@@ -229,7 +229,7 @@ PushUIAPI.Artifact.CanDisplay = function()
 end
 PushUIAPI.Artifact.RegisterForDisplayStatus = function(obj, func)
     local _e = "PushUI_Artifact_Event_AllChange"
-    PushUIAPI._UnitRegisterEvent(_e, obj)
+    PushUIAPI._UnitRegisterEvent(_e, obj, func)
 end
 PushUIAPI.Artifact.UnRegisterForDisplayStatus = function(obj)
     local _e = "PushUI_Artifact_Event_AllChange"
@@ -237,7 +237,7 @@ PushUIAPI.Artifact.UnRegisterForDisplayStatus = function(obj)
 end
 PushUIAPI.Artifact.RegisterForValueChanged = function(obj, func)
     local _e = "PushUI_Artifact_Event_AllChange"
-    PushUIAPI._UnitRegisterEvent(_e, obj)
+    PushUIAPI._UnitRegisterEvent(_e, obj, func)
 end
 PushUIAPI.Artifact.UnRegisterForValueChanged = function(obj)
     local _e = "PushUI_Artifact_Event_AllChange"
