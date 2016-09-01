@@ -81,15 +81,20 @@ end
 OTH._formatBlock = function(block)
     local _quest = block.quest
     local _finishCount = 0
-    for i = 1, _quest.numObjectives do
-        local _, _, finished = GetQuestLogLeaderBoard(i, _quest.questLogIndex);
-        if finished then
-            _finishCount = _finishCount + 1
+    if _quest.numObjectives > 0 then
+        for i = 1, _quest.numObjectives do
+            local _, _, finished = GetQuestLogLeaderBoard(i, _quest.questLogIndex);
+            if finished then
+                _finishCount = _finishCount + 1
+            end
         end
+        block.text:SetText(_quest.title.."  (".._finishCount.."/".._quest.numObjectives..")")
+    else
+        block.text:SetText(_quest.title)
     end
-    block.text:SetText(_quest.title.."  (".._finishCount.."/".._quest.numObjectives..")")
-
-    if _quest.isOnMap then
+    if _quest.isComplete then
+        block.text:SetTextColor(unpack(PushUIColor.green))
+    elseif _quest.isOnMap then
         block.text:SetTextColor(unpack(PushUIColor.orange))
     else
         block.text:SetTextColor(unpack(PushUIColor.white))
