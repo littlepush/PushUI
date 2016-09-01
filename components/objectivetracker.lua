@@ -7,7 +7,9 @@ local PushUIFramesObjectiveTrackerHook = {}
 local OTH = PushUIFramesObjectiveTrackerHook
 OTH.name = "PushUIFramesObjectiveTrackerHook"
 local _quests = {}
-OTH._quests = _quests
+local _bonus = {}
+OTH.quests = _quests
+OTH.bonus = _bonus
 
 OTH._gainQuest = function()
     local _oqc = #_quests
@@ -95,7 +97,10 @@ OTH._formatBlock = function(block)
 end
 
 OTH._blocks = {}
-OTH._showQuest = function()
+OTH._showQuest = function(event, ...)
+    if event then
+        print("ShowQuest: "..event)
+    end
     local _qc = #_quests
     local _bc = #OTH._blocks
 
@@ -122,6 +127,7 @@ OTH._showQuest = function()
         end
     end
 end
+OTH._bonusBlock = nil
 
 -- Hide objective tracker
 ObjectiveTrackerFrame:SetScript("OnShow", ObjectiveTrackerFrame.Hide)
@@ -138,7 +144,7 @@ PushUIAPI.RegisterEvent("QUEST_LOG_UPDATE", OTH, OTH._onUpdate)
 PushUIAPI.RegisterEvent("QUEST_WATCH_LIST_CHANGED", OTH, OTH._onUpdate)
 PushUIAPI.RegisterEvent("QUEST_ACCEPTED", OTH, OTH._onUpdate)
 PushUIAPI.RegisterEvent("QUEST_AUTOCOMPLETE", OTH, OTH._onUpdate)
-PushUIAPI.RegisterEvent("QUEST_POI_UPDATE", OTH, OTH._onUpdate)
-PushUIAPI.RegisterEvent("QUEST_TURNED_IN", OTH, OTH._onUpdate)
+--PushUIAPI.RegisterEvent("QUEST_POI_UPDATE", OTH, OTH._onUpdate)
+--PushUIAPI.RegisterEvent("QUEST_TURNED_IN", OTH, OTH._onUpdate)
 PushUIAPI.RegisterEvent("ZONE_CHANGED_NEW_AREA", OTH, OTH._onUpdate)
-PushUIAPI.RegisterEvent("ZONE_CHANGED", OTH, OTH._onUpdate)
+--PushUIAPI.RegisterEvent("ZONE_CHANGED", OTH, OTH._onUpdate)
