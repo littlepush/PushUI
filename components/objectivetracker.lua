@@ -3,6 +3,9 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
+if PushUIConfig.ObjectiveTrackerFrameHook.enable == false then
+    return
+end
 local PushUIFrameObjectiveTrackerHook = PushUIFrames.Frame.Create("PushUIFrameObjectiveTrackerHook", PushUIConfig.ObjectiveTrackerFrameHook)
 PushUIFrameObjectiveTrackerHook.HookParent = PushUIConfig.ObjectiveTrackerFrameHook.parent.HookFrame
 

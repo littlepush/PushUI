@@ -6,8 +6,12 @@
 
 kernel\boot.lua
 kernel\api.lua
+kernel\api.target.lua
+kernel\api.player.lua
+kernel\api.auras.lua
 kernel\preference.lua
 kernel\frames.lua
+kernel\unitframe.lua
 kernel\config.lua
 
 frames\actionbarframe.lua
@@ -21,8 +25,7 @@ components\minimap.lua
 components\objectivetracker.lua
 components\grid.lua
 components\tooltip.lua
-components\buffs.lua
-components\unitframe.lua
+components\playerframe.lua
 components\targetframe.lua
 components\targettargetframe.lua
 components\focusframe.lua

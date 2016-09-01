@@ -54,8 +54,8 @@ PushUIConfig.ChatFrameHook.displayOnLoad = true
 
 -- Skada Frame
 PushUIConfig.SkadaFrameHook = {}
-PushUIConfig.SkadaFrameHook.parent = PushUIConfig.LeftBottomFrame
-PushUIConfig.SkadaFrameHook.displayOnLoad = false
+PushUIConfig.SkadaFrameHook.parent = PushUIConfig.RightBottomFrame
+PushUIConfig.SkadaFrameHook.displayOnLoad = true
 PushUIConfig.SkadaFrameHook.barCount = 8
 
 -- Minimap
@@ -67,6 +67,7 @@ PushUIConfig.MinimapFrameHook.allowZoom = true
 
 -- Objective Tracker
 PushUIConfig.ObjectiveTrackerFrameHook = {}
+PushUIConfig.ObjectiveTrackerFrameHook.enable = false
 PushUIConfig.ObjectiveTrackerFrameHook.parent = PushUIConfig.RightBottomFrame
 PushUIConfig.ObjectiveTrackerFrameHook.align = "left"
 PushUIConfig.ObjectiveTrackerFrameHook.wheelStep = 15
@@ -121,18 +122,6 @@ PushUIConfig.LeftBottomFrame.switchers = {
             selected = true,
             alwaysAction = true,-- true: selected = not selected, false: only active when selected == false
             binding = "ALT-V",
-        },
-        {
-            mode = PushUIFrames.Button,
-            skin = PushUIStyle.BackgroundFormatFillRedBlackBorder,
-            targets = {
-                PushUIConfig.SkadaFrameHook
-            },
-            alwaysDisplay = true,
-            action = "Toggle",
-            seelcted = false,
-            alwaysAction = true,
-            binding = "ALT-V"
         }
     },
     groupright = true
@@ -157,25 +146,13 @@ PushUIConfig.RightBottomFrame.switchers = {
             mode = PushUIFrames.Button,
             skin = PushUIStyle.BackgroundFormatFillOrangeBlackBorder,
             targets = {
-                PushUIConfig.ObjectiveTrackerFrameHook,
-                PushUIConfig.MinimapFrameHook
+                PushUIConfig.MinimapFrameHook,
+                PushUIConfig.SkadaFrameHook
             },
             alwaysDisplay = true,
             action = "Toggle",
             selected = true,
             alwaysAction = true,
-            binding = "ALT-SHIFT-V"
-        },
-        {
-            mode = PushUIFrames.Button,
-            skin = PushUIStyle.BackgroundFormatFillPurpleBlackBorder,
-            targets = {
-                PushUIConfig.GridFrameHook
-            },
-            alwaysDisplay = true,
-            action = "Toggle",
-            alwaysAction = true,
-            selected = false,
             binding = "ALT-SHIFT-V"
         }
     },
@@ -200,184 +177,250 @@ PushUIConfig.RightBottomFrame.switchers = {
 }
 
 -- UnitFrame Hook
-PushUIConfig.UnitFrameHook = {}
-PushUIConfig.UnitFrameHook.enable = true
-PushUIConfig.UnitFrameHook.anchorTarget = UIParent
-PushUIConfig.UnitFrameHook.anchorPoint = "CENTER"
-PushUIConfig.UnitFrameHook.HookBar = {
-    position = {
-        x = -223.57, y = -72
+PushUIConfig.PlayerFrameHook = {
+    enable = true,
+    hookbar = {
+        anchorTarget = UIParent,
+        anchorPoint = "CENTER",
+        displaySide = "CENTER",
+        position = { x = -223.57, y = -72 },
+        size = { w = 200, h = 40 }
     },
-    size = {
-        w = 200, h = 40
+    lifebar = {
+        orientation = "HORIZONTAL",
+        position = { x = 0, y = -35 },
+        size = { w = 200, h = 5 },
+        anchorPoint = "TOPLEFT",
+        reverse = false,
+        fillColor = { PushUIColor.lifeColorDynamic },
+        background = function(frame)
+            PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
+        end
+    },
+    name = {
+        size = 14,
+        color = function(...) return {1, 1, 1} end,
+        outline = "OUTLINE",
+        align = "RIGHT",
+        fontName = "Fonts\\ARIALN.TTF",
+        anchorPoint = "TOPRIGHT", 
+        displaySide = "TOPLEFT",
+        position = { x = -PushUISize.padding, y = -PushUISize.padding * 2 }
+    },
+    percentage = {
+        size = 30,
+        color = PushUIColor.lifeColorDynamic,
+        outline = "OUTLINE",
+        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        align = "LEFT",
+        anchorPoint = "TOPLEFT",
+        displaySide = "TOPLEFT",
+        position = { x = 0, y = -2 }
+    },
+    healthvalue = {
+        size = 14,
+        color = function(...) return {1, 1, 1, 1} end,
+        outline = "OUTLINE",   -- "OUTLINE"
+        align = "RIGHT",
+        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        anchorPoint = "TOPRIGHT",
+        displaySide = "TOPLEFT",
+        position = { x = -PushUISize.padding, y = -(PushUISize.padding * 3 + 14) }
+    },
+    auras = {
+        width = 200,
+        size = { w = 30, h = 30 },
+        anchorPoint = "TOPLEFT",
+        displaySide = "BOTTOMLEFT",
+        position = { x = 0, y = -10 }
     }
 }
-PushUIConfig.UnitFrameHook.Name = {
-    display = true,
-    size = 14,
-    color = function(value, max, min, class)
-        return {1, 1, 1, 1}
-    end,
-    outline = "OUTLINE",   -- "OUTLINE"
-    align = "RIGHT",
-    fontName = "Fonts\\ARIALN.TTF",
-    anchorPoint = "TOPRIGHT",   -- anchor to HookBar's TOPLEFT
-    position = { x = -PushUISize.padding, y = -PushUISize.padding * 2 }
-}
-PushUIConfig.UnitFrameHook.LifeBar = {
-    display = true,
-    orientation = "HORIZONTAL",
-    position = {
-        x = 0, y = -35
-    },
-    size = {
-        w = 200, h = 5
-    },
-    anchorPoint = "TOPLEFT",   -- anchor to HookBar's TOPLEFT
-    fillColor = { PushUIColor.lifeColorDynamic },   -- To use default statusbar's api, must set this line
-    background = function(frame)
-        PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
-    end
-}
-PushUIConfig.UnitFrameHook.Percentage = {
-    display = true,
-    size = 30,
-    color = function(value, max, min, class)
-        return PushUIColor.lifeColorDynamic(value, max, min)
-    end,
-    outline = "OUTLINE",
-    fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
-    --fontName = "MSBT Transformers",
-    align = "LEFT",
-    anchorPoint = "TOPLEFT",   -- anchor to HookBar's TOPLEFT
-    position = { x = 0, y = -2 }
-}
-PushUIConfig.UnitFrameHook.HealthValue = {
-    display = true,
-    size = 14,
-    color = function(value, max, min, class)
-        return {1, 1, 1, 1}
-    end,
-    outline = "",   -- "OUTLINE"
-    align = "RIGHT",
-    fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
-    anchorPoint = "TOPRIGHT",   -- anchor to HookBar's TOPLEFT
-    position = { x = -PushUISize.padding, y = -(PushUISize.padding * 3 + 14) }
-}
-PushUIConfig.UnitFrameHook.Auras = {
-    display = true,
-    displayBuffFirst = true,
-    width = 200,
-    buff = {
-        available = true,
-        size = { w = 30, h = 30 },
-        displayPlayerOnly = false
-    }, 
-    debuff = {
-        available = true,
-        size = { w = 30, h = 30 },
-        displayPlayerOnly = false
-    },
-    anchorPoint = "BOTTOMLEFT",   -- anchor to HookBar's TOPLEFT
-    position = { x = 0, y = -10 }
-}
-PushUIConfig.UnitFrameHook.PowerBar = {
-    display = true
-    -- pending...
-}
-PushUIConfig.UnitFrameHook.ResourceBar = {
-    display = true
-    -- pending...
-}
 
--- TargetFrame Hook
-PushUIConfig.TargetFrameHook = {}
-PushUIConfig.TargetFrameHook.enable = true
-PushUIConfig.TargetFrameHook.anchorTarget = UIParent
-PushUIConfig.TargetFrameHook.anchorPoint = "CENTER"
-PushUIConfig.TargetFrameHook.HookBar = {
-    position = {
-        x = 223.57, y = -72
+-- Target Frame
+PushUIConfig.TargetFrameHook = {
+    enable = true,
+    hookbar = {
+        anchorTarget = UIParent,
+        anchorPoint = "CENTER",
+        displaySide = "CENTER",
+        position = { x = 223.57, y = -72 },
+        size = { w = 200, h = 40 }
     },
-    size = {
-        w = 200, h = 40
+    lifebar = {
+        orientation = "HORIZONTAL",
+        position = { x = 0, y = -35 },
+        size = { w = 200, h = 5 },
+        anchorPoint = "TOPLEFT",
+        reverse = true,
+        fillColor = { PushUIColor.lifeColorDynamic },
+        background = function(frame)
+            PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
+        end
+    },
+    name = {
+        size = 14,
+        color = function(...) return {1, 1, 1} end,
+        outline = "OUTLINE",
+        align = "LEFT",
+        fontName = "Fonts\\ARIALN.TTF",
+        anchorPoint = "TOPLEFT", 
+        displaySide = "TOPRIGHT",
+        position = { x = PushUISize.padding, y = -PushUISize.padding * 2 }
+    },
+    percentage = {
+        size = 30,
+        color = PushUIColor.lifeColorDynamic,
+        outline = "OUTLINE",
+        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        align = "RIGHT",
+        anchorPoint = "TOPRIGHT",
+        displaySide = "TOPRIGHT",
+        position = { x = 0, y = -2 }
+    },
+    healthvalue = {
+        size = 14,
+        color = function(...) return {1, 1, 1, 1} end,
+        outline = "OUTLINE",   -- "OUTLINE"
+        align = "LEFT",
+        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        anchorPoint = "TOPLEFT",
+        displaySide = "TOPRIGHT",
+        position = { x = PushUISize.padding, y = -(PushUISize.padding * 3 + 14) }
+    },
+    auras = {
+        width = 200,
+        size = { w = 30, h = 30 },
+        anchorPoint = "TOPRIGHT",
+        displaySide = "BOTTOMRIGHT",
+        position = { x = 0, y = -10 }
     }
 }
-PushUIConfig.TargetFrameHook.Name = {
-    display = true,
-    size = 14,
-    color = function(value, max, min, class)
-        return {1, 1, 1, 1}
-    end,
-    outline = "OUTLINE",   -- "OUTLINE"
-    align = "LEFT",
-    fontName = "Fonts\\ARIALN.TTF",
-    anchorPoint = "TOPLEFT",   -- anchor to HookBar's TOPLEFT
-    position = { x = PushUISize.padding, y = -PushUISize.padding * 2 }
-}
-PushUIConfig.TargetFrameHook.LifeBar = {
-    display = true,
-    orientation = "HORIZONTAL",
-    position = {
-        x = 0, y = -35
+
+-- TargetTarget Frame
+PushUIConfig.TargetTargetFrameHook = {
+    enable = true,
+    hookbar = {
+        anchorTarget = nil,
+        anchorPoint = "TOPLEFT",
+        displaySide = "BOTTOMRIGHT",
+        position = { x = 20, y = -10 },
+        size = { w = 100, h = 20 }
     },
-    size = {
-        w = 200, h = 5
+    lifebar = {
+        orientation = "HORIZONTAL",
+        position = { x = 0, y = -15 },
+        size = { w = 100, h = 5 },
+        anchorPoint = "TOPLEFT",
+        reverse = true,
+        fillColor = { PushUIColor.lifeColorDynamic },
+        background = function(frame)
+            PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
+        end
     },
-    anchorPoint = "TOPRIGHT",   -- anchor to HookBar's TOPLEFT
-    fillColor = { PushUIColor.lifeColorDynamic },   -- To use default statusbar's api, must set this line
-    background = function(frame)
-        PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
-    end
-}
-PushUIConfig.TargetFrameHook.Percentage = {
-    display = true,
-    size = 30,
-    color = function(value, max, min, class)
-        return PushUIColor.lifeColorDynamic(value, max, min)
-    end,
-    outline = "OUTLINE",
-    fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
-    --fontName = "MSBT Transformers",
-    align = "RIGHT",
-    anchorPoint = "TOPRIGHT",   -- anchor to HookBar's TOPLEFT
-    position = { x = 0, y = -2 }
-}
-PushUIConfig.TargetFrameHook.HealthValue = {
-    display = true,
-    size = 14,
-    color = function(value, max, min, class)
-        return {1, 1, 1, 1}
-    end,
-    outline = "",   -- "OUTLINE"
-    align = "LEFT",
-    fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
-    anchorPoint = "TOPLEFT",   -- anchor to HookBar's TOPLEFT
-    position = { x = PushUISize.padding, y = -(PushUISize.padding * 3 + 14) }
-}
-PushUIConfig.TargetFrameHook.Auras = {
-    display = true,
-    displayBuffFirst = true,
-    width = 200,
-    buff = {
-        available = true,
-        size = { w = 30, h = 30 },
-        displayPlayerOnly = true
-    }, 
-    debuff = {
-        available = true,
-        size = { w = 30, h = 30 },
-        displayPlayerOnly = true
+    name = {
+        size = 12,
+        color = function(...) return {1, 1, 1} end,
+        outline = "OUTLINE",
+        align = "LEFT",
+        fontName = "Fonts\\ARIALN.TTF",
+        anchorPoint = "TOPLEFT", 
+        displaySide = "TOPRIGHT",
+        position = { x = PushUISize.padding, y = -PushUISize.padding * 2 }
     },
-    anchorPoint = "BOTTOMRIGHT",   -- anchor to HookBar's TOPLEFT
-    position = { x = 0, y = -10 }
-}
-PushUIConfig.TargetFrameHook.PowerBar = {
-    display = true
-    -- pending...
-}
-PushUIConfig.TargetFrameHook.ResourceBar = {
-    display = true
-    -- pending...
+    percentage = {
+        size = 12,
+        color = PushUIColor.lifeColorDynamic,
+        outline = "OUTLINE",
+        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        align = "RIGHT",
+        anchorPoint = "TOPRIGHT",
+        displaySide = "TOPRIGHT",
+        position = { x = 0, y = -2 }
+    }
 }
 
+-- Focus
+PushUIConfig.FocusFrameHook = {
+    enable = true,
+    hookbar = {
+        anchorTarget = nil,
+        anchorPoint = "TOPRIGHT",
+        displaySide = "BOTTOMLEFT",
+        position = { x = -20, y = -10 },
+        size = { w = 100, h = 20 }
+    },
+    lifebar = {
+        orientation = "HORIZONTAL",
+        position = { x = 0, y = -15 },
+        size = { w = 100, h = 5 },
+        anchorPoint = "TOPLEFT",
+        reverse = false,
+        fillColor = { PushUIColor.lifeColorDynamic },
+        background = function(frame)
+            PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
+        end
+    },
+    name = {
+        size = 12,
+        color = function(...) return {1, 1, 1} end,
+        outline = "OUTLINE",
+        align = "RIGHT",
+        fontName = "Fonts\\ARIALN.TTF",
+        anchorPoint = "TOPRIGHT", 
+        displaySide = "TOPLEFT",
+        position = { x = -PushUISize.padding, y = -PushUISize.padding * 2 }
+    },
+    percentage = {
+        size = 12,
+        color = PushUIColor.lifeColorDynamic,
+        outline = "OUTLINE",
+        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        align = "LEFT",
+        anchorPoint = "TOPLEFT",
+        displaySide = "TOPLEFT",
+        position = { x = 0, y = -2 }
+    }
+}
+
+-- Pet
+PushUIConfig.PetFrameHook = {
+    enable = true,
+    hookbar = {
+        anchorTarget = nil,
+        anchorPoint = "TOPLEFT",
+        displaySide = "BOTTOMLEFT",
+        position = { x = 0, y = -60 },
+        size = { w = 100, h = 20 }
+    },
+    lifebar = {
+        orientation = "HORIZONTAL",
+        position = { x = 0, y = -15 },
+        size = { w = 100, h = 5 },
+        anchorPoint = "TOPLEFT",
+        reverse = false,
+        fillColor = { PushUIColor.lifeColorDynamic },
+        background = function(frame)
+            PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
+        end
+    },
+    name = {
+        size = 12,
+        color = function(...) return {1, 1, 1} end,
+        outline = "OUTLINE",
+        align = "RIGHT",
+        fontName = "Fonts\\ARIALN.TTF",
+        anchorPoint = "TOPRIGHT", 
+        displaySide = "TOPLEFT",
+        position = { x = -PushUISize.padding, y = -PushUISize.padding * 2 }
+    },
+    percentage = {
+        size = 12,
+        color = PushUIColor.lifeColorDynamic,
+        outline = "OUTLINE",
+        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        align = "LEFT",
+        anchorPoint = "TOPLEFT",
+        displaySide = "TOPLEFT",
+        position = { x = 0, y = -2 }
+    }
+}
