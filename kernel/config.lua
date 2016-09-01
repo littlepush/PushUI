@@ -194,7 +194,7 @@ PushUIConfig.PlayerFrameHook = {
         reverse = false,
         fillColor = { PushUIColor.lifeColorDynamic },
         background = function(frame)
-            PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
+            PushUIStyle.BackgroundFormat(frame, PushUIStyle.BackdropOutline, 0, 0, 0, 1, 0, 0, 0, 0.2)
         end
     },
     name = {
@@ -211,7 +211,7 @@ PushUIConfig.PlayerFrameHook = {
         size = 30,
         color = PushUIColor.lifeColorDynamic,
         outline = "OUTLINE",
-        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        fontName = "Interface\\AddOns\\PushUI\\media\\fontn.ttf",
         align = "LEFT",
         anchorPoint = "TOPLEFT",
         displaySide = "TOPLEFT",
@@ -222,7 +222,7 @@ PushUIConfig.PlayerFrameHook = {
         color = function(...) return {1, 1, 1, 1} end,
         outline = "OUTLINE",   -- "OUTLINE"
         align = "RIGHT",
-        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        fontName = "Interface\\AddOns\\PushUI\\media\\fontn.ttf",
         anchorPoint = "TOPRIGHT",
         displaySide = "TOPLEFT",
         position = { x = -PushUISize.padding, y = -(PushUISize.padding * 3 + 14) }
@@ -254,7 +254,7 @@ PushUIConfig.TargetFrameHook = {
         reverse = true,
         fillColor = { PushUIColor.lifeColorDynamic },
         background = function(frame)
-            PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
+            PushUIStyle.BackgroundFormat(frame, PushUIStyle.BackdropOutline, 0, 0, 0, 1, 0, 0, 0, 0.2)
         end
     },
     name = {
@@ -271,7 +271,7 @@ PushUIConfig.TargetFrameHook = {
         size = 30,
         color = PushUIColor.lifeColorDynamic,
         outline = "OUTLINE",
-        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        fontName = "Interface\\AddOns\\PushUI\\media\\fontn.ttf",
         align = "RIGHT",
         anchorPoint = "TOPRIGHT",
         displaySide = "TOPRIGHT",
@@ -282,7 +282,7 @@ PushUIConfig.TargetFrameHook = {
         color = function(...) return {1, 1, 1, 1} end,
         outline = "OUTLINE",   -- "OUTLINE"
         align = "LEFT",
-        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        fontName = "Interface\\AddOns\\PushUI\\media\\fontn.ttf",
         anchorPoint = "TOPLEFT",
         displaySide = "TOPRIGHT",
         position = { x = PushUISize.padding, y = -(PushUISize.padding * 3 + 14) }
@@ -314,7 +314,7 @@ PushUIConfig.TargetTargetFrameHook = {
         reverse = true,
         fillColor = { PushUIColor.lifeColorDynamic },
         background = function(frame)
-            PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
+            PushUIStyle.BackgroundFormat(frame, PushUIStyle.BackdropOutline, 0, 0, 0, 1, 0, 0, 0, 0.2)
         end
     },
     name = {
@@ -331,7 +331,7 @@ PushUIConfig.TargetTargetFrameHook = {
         size = 12,
         color = PushUIColor.lifeColorDynamic,
         outline = "OUTLINE",
-        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        fontName = "Interface\\AddOns\\PushUI\\media\\fontn.ttf",
         align = "RIGHT",
         anchorPoint = "TOPRIGHT",
         displaySide = "TOPRIGHT",
@@ -357,7 +357,7 @@ PushUIConfig.FocusFrameHook = {
         reverse = false,
         fillColor = { PushUIColor.lifeColorDynamic },
         background = function(frame)
-            PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
+            PushUIStyle.BackgroundFormat(frame, PushUIStyle.BackdropOutline, 0, 0, 0, 1, 0, 0, 0, 0.2)
         end
     },
     name = {
@@ -374,7 +374,7 @@ PushUIConfig.FocusFrameHook = {
         size = 12,
         color = PushUIColor.lifeColorDynamic,
         outline = "OUTLINE",
-        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        fontName = "Interface\\AddOns\\PushUI\\media\\fontn.ttf",
         align = "LEFT",
         anchorPoint = "TOPLEFT",
         displaySide = "TOPLEFT",
@@ -400,7 +400,7 @@ PushUIConfig.PetFrameHook = {
         reverse = false,
         fillColor = { PushUIColor.lifeColorDynamic },
         background = function(frame)
-            PushUIStyle.BackgroundSolidFormat(frame, 1, 1, 1, 0.2, 1, 1, 1, 0)
+            PushUIStyle.BackgroundFormat(frame, PushUIStyle.BackdropOutline, 0, 0, 0, 1, 0, 0, 0, 0.2)
         end
     },
     name = {
@@ -417,7 +417,7 @@ PushUIConfig.PetFrameHook = {
         size = 12,
         color = PushUIColor.lifeColorDynamic,
         outline = "OUTLINE",
-        fontName = "Interface\\AddOns\\PushUI\\media\\Bazooka.ttf",
+        fontName = "Interface\\AddOns\\PushUI\\media\\fontn.ttf",
         align = "LEFT",
         anchorPoint = "TOPLEFT",
         displaySide = "TOPLEFT",

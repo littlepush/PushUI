@@ -92,9 +92,9 @@ PushUIFrames.UnitFrame.CreateLifeBar = function(unithook, config)
     local _pos = _c.position or {x = 0, y = -35}
     local _size = _c.size or {w = 200, h = 5}
 
-    _lb:SetWidth(_size.w)
-    _lb:SetHeight(_size.h)
-    _lb:SetPoint(_a, unithook.HookBar, "TOPLEFT", _pos.x, _pos.y)
+    _lb:SetWidth(_size.w - 2)
+    _lb:SetHeight(_size.h - 2)
+    _lb:SetPoint(_a, unithook.HookBar, "TOPLEFT", _pos.x + 1, _pos.y - 1)
 
     if _c.reverse then
         _lb:SetReverseFill()
