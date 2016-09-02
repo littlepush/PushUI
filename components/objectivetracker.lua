@@ -169,10 +169,9 @@ OTH._showQuest = function(event, ...)
         end
     end
 end
-OTH._bonusBlock = nil
+
 
 OTH._scenarioBlock = nil
-
 OTH._formatScenarioBlock = function()
     local _b = OTH._scenarioBlock
     local _s = _b.scenario
@@ -302,21 +301,151 @@ OTH._showScenario = function(event, ...)
     OTH._scenarioBlock:Show()
 end
 
+
+OTH._bonusBlock = nil
+OTH._bonusIsInArea = false
+OTH._bonusQuestID = nil
+OTH._bonusTaskName = nil
+OTH._bonusNumObjectives = 0
+OTH._gainBonus = function(questLogIndex, questID)    
+    if not IsQuestBounty(questID) then
+        if IsQuestTask(questID) then
+            if QuestMapFrame_IsQuestWorldQuest(questID) then
+                print("world map quest")
+            else
+                OTH._bonusQuestID = questID
+                -- isInArea, isOnMap, numObjectives, taskName, displayAsObjective...
+                OTH._bonusIsInArea, _, OTH._bonusNumObjectives, OTH._bonusTaskName = GetTaskInfo(questID)
+                -- for objectiveIndex = 1, numObjectives do
+                --     local text, objectiveType, finished = GetQuestObjectiveInfo(questID, objectiveIndex, false)
+                --     print(text)
+                -- end
+                -- print(GetTaskInfo(questID))
+            end
+        end
+    end
+end
+
+OTH._bonusUpdate = function()
+    if nil ~= OTH._bonusQuestID then
+        OTH._bonusIsInArea, _, OTH._bonusNumObjectives, OTH._bonusTaskName = GetTaskInfo(OTH._bonusQuestID)
+
+        if OTH._bonusIsInArea == false then
+            OTH._bonusQuestID = nil
+            if nil ~= OTH._bonusBlock then
+                OTH._bonusBlock:Hide()
+            end
+        end
+    end
+end
+
+OTH._formatBonusBlock = function()
+    local _b = OTH._bonusBlock
+    --local _pb = _b.progressBar
+    local _titlefs = _b.titleFont
+    local _objectivesfs = _b.objectivesFont
+
+    local _objText = ""
+    for i = 1, OTH._bonusNumObjectives do
+        local _t = GetQuestObjectiveInfo(OTH._bonusQuestID, i, false)
+        if _objText == "" then
+            _objText = _t
+        else
+            _objText = _objText.."\n\n".._t
+        end
+    end
+
+    _objectivesfs:SetText(_objText)
+    local _objHeight = _objectivesfs:GetStringHeight()
+    _objectivesfs:SetHeight(_objHeight)
+
+    local _allheight = 10 + _titlefs:GetStringHeight() + 10 + _objHeight + 10
+
+    _b:SetHeight(_allheight)
+end
+
+OTH._showBonus = function()
+    if OTH._bonusQuestID == nil then return end
+
+    if OTH._bonusBlock == nil then
+        local _b = CreateFrame("Frame", OTH.name.."Bonus", UIParent)
+        PushUIConfig.skinType(_b)
+        OTH._bonusBlock = _b
+
+
+        local _fn = "Fonts\\ARIALN.TTF"
+        local _fsize = 14
+        local _foutline = "OUTLINE"
+
+        local _titlefs = _b:CreateFontString()
+        _titlefs:SetWidth(180)
+        _titlefs:SetHeight(_fsize)
+        _titlefs:SetFont(_fn, _fsize, _foutline)
+        _titlefs:SetJustifyH("LEFT")
+        _titlefs:SetPoint("TOPLEFT", _b, "TOPLEFT", 10, -10)
+        _titlefs:SetTextColor(unpack(PushUIColor.orange))
+        _b.titleFont = _titlefs
+
+        local _objectivesfs = _b:CreateFontString()
+        _objectivesfs:SetWidth(180)
+        _objectivesfs:SetMaxLines(10)
+        _objectivesfs:SetFont(_fn, _fsize - 1, _foutline)
+        _objectivesfs:SetJustifyH("LEFT")
+        _objectivesfs:SetPoint("TOPLEFT", _titlefs, "BOTTOMLEFT", 0, -10)
+        _b.objectivesFont = _objectivesfs
+
+        _b:SetWidth(200)
+    end
+
+    OTH._bonusBlock.titleFont:SetText(OTH._bonusTaskName)
+    OTH._formatBonusBlock()
+    OTH._bonusBlock:Show()
+
+    if nil ~= OTH._scenarioBlock then
+        OTH._bonusBlock:SetPoint("TOPLEFT", OTH._scenarioBlock, "BOTTOMLEFT", 0, -10)
+    else
+        OTH._bonusBlock:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 30, -30)
+    end
+end
+
+
 -- Hide objective tracker
 ObjectiveTrackerFrame:SetScript("OnShow", ObjectiveTrackerFrame.Hide)
 ObjectiveTrackerFrame:Hide()
 
-OTH._onUpdate = function()
+OTH._onUpdate = function(event, ...)
     OTH._gainQuest()
     OTH._showQuest()
+
+    if event == "QUEST_LOG_UPDATE" then
+        OTH._bonusUpdate()
+        OTH._showBonus()
+    end
+
+    if event == "QUEST_ACCEPTED" then
+        local questLogIndex, questID = ...
+        OTH._gainBonus(questLogIndex, questID)
+        if nil ~= OTH._bonusQuestID and OTH._bonusIsInArea then
+            OTH._showBonus()
+        end
+    end
 end
 
 OTH._onScenarioUpdate = function()
     OTH._showScenario()
+    OTH._showBonus()
 end
 
 OTH._onUpdate()
 OTH._onScenarioUpdate()
+
+OTH._eventDebug = function(event, ...)
+    if nil ~= event then
+        print("Track on event "..event)
+    else
+        print("Get event call but failed to get the event name")
+    end
+end
 
 PushUIAPI.RegisterEvent("QUEST_LOG_UPDATE", OTH, OTH._onUpdate)
 PushUIAPI.RegisterEvent("QUEST_WATCH_LIST_CHANGED", OTH, OTH._onUpdate)
@@ -325,10 +454,13 @@ PushUIAPI.RegisterEvent("QUEST_AUTOCOMPLETE", OTH, OTH._onUpdate)
 --PushUIAPI.RegisterEvent("QUEST_POI_UPDATE", OTH, OTH._onUpdate)
 --PushUIAPI.RegisterEvent("QUEST_TURNED_IN", OTH, OTH._onUpdate)
 PushUIAPI.RegisterEvent("ZONE_CHANGED_NEW_AREA", OTH, OTH._onUpdate)
---PushUIAPI.RegisterEvent("ZONE_CHANGED", OTH, OTH._onUpdate)
+PushUIAPI.RegisterEvent("ZONE_CHANGED", OTH, OTH._onUpdate)
 
 PushUIAPI.RegisterEvent("SCENARIO_UPDATE", OTH, OTH._onScenarioUpdate)
 PushUIAPI.RegisterEvent("SCENARIO_CRITERIA_UPDATE", OTH, OTH._onScenarioUpdate)
 PushUIAPI.RegisterEvent("SCENARIO_COMPLETED", OTH, OTH._onScenarioUpdate)
 
-
+PushUIAPI.RegisterEvent("SUPER_TRACKED_QUEST_CHANGED", OTH, OTH._eventDebug)
+PushUIAPI.RegisterEvent("SCENARIO_SPELL_UPDATE", OTH, OTH._eventDebug)
+--PushUIAPI.RegisterEvent("ZONE_CHANGED", OTH, OTH._eventDebug)
+PushUIAPI.RegisterEvent("QUEST_TURNED_IN", OTH, OTH._eventDebug)
