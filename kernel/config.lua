@@ -12,7 +12,13 @@ PushUIConfig.skinType = function(frame)
         0.53515625, 0.53515625, 0.53515625, 0.15
         )
 end
-
+PushUIConfig.skinHighlightType = function(frame)
+    PushUIStyle.BackgroundSolidFormat(
+        frame,
+        0.23046875, 0.23046875, 0.23046875, 0.65,
+        0.53515625, 0.53515625, 0.53515625, 0.75
+        )
+end
 PushUIConfig.actionButtonBorderColor = PushUIColor.gray
 
 -- Auto Scale when UI Resolution Changed.
