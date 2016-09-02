@@ -348,6 +348,10 @@ end
 
 OTH._bonusUpdate = function()
     if nil ~= OTH._bonusQuestID then
+        if IsQuestFlaggedCompleted(OTH._bonusQuestID) then
+            OTH._bonusQuestID = nil
+            return
+        end
         OTH._bonusIsInArea, _, OTH._bonusNumObjectives, OTH._bonusTaskName = GetTaskInfo(OTH._bonusQuestID)
 
         if OTH._bonusIsInArea == false then
