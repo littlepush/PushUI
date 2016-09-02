@@ -178,8 +178,6 @@ OTH._formatScenarioBlock = function()
     local _pb = _b.progressBar
 
     _b:SetWidth(200)
-    _pb:SetWidth(180)
-    _pb:SetHeight(15)
 
     _b.titleFont:SetText(_s.scenarioName.." (".._s.currentStage.."/".._s.numStages..")")
     local _name, _description, _numCriteria, _, _, _, _numSpells, _spellInfo, weightedProgress = C_Scenario.GetStepInfo()
@@ -195,21 +193,26 @@ OTH._formatScenarioBlock = function()
     _b:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 30, -30)
     _allHeight = _allHeight + 40
 
+    local _detailText = ""
     local _displayPB = false
     if _numCriteria ~= nil and _numCriteria > 0 then
-        local _, _, _, _value, _max = C_Scenario.GetCriteriaInfo(1)
-        _displayPB = true
-        _pb:SetMinMaxValues(0, _max)
-        _pb:SetValue(_value)
-        _pb.percentageFont:SetText(_value.."/".._max)
-    else
-        if _s.showCriteria and nil ~= weightedProgress then
-            _displayPB = true
-            _pb:SetMinMaxValues(0, 100)
-            _pb:SetValue(weightedProgress)
-            _pb.percentageFont:SetText(weightedProgress.."%%")
+        for i = 1, _numCriteria do
+            --print(C_Scenario.GetCriteriaInfo(i))
+            local _name, _, _, _value, _max = C_Scenario.GetCriteriaInfo(i)
+            if _detailText == "" then
+                _detailText = _value.."/".._max.." ".._name
+            else
+                _detailText = _detailText.."\n\n".._value.."/".._max.." ".._name
+            end
         end
     end
+    _b.detailFont:SetText(_detailText)
+    local _dh = _b.detailFont:GetStringHeight()
+    _b.detailFont:SetHeight(_dh)
+    if _dh > 0 then
+        _allHeight = _allHeight + _dh + 10
+    end
+
     if _displayPB then
         _pb:SetPoint("TOPLEFT", _b, "TOPLEFT", 10, -_allHeight)
         _pb:Show()
@@ -249,11 +252,7 @@ OTH._showScenario = function(event, ...)
 
     if not OTH._scenarioBlock then
         local _b = CreateFrame("Frame", OTH.name.."ScenarioBlock", UIParent)
-        local _pb = PushUIFrames.ProgressBar.Create(_b:GetName().."Progress", _b, nil, "HORIZONTAL")
         PushUIConfig.skinType(_b)
-        _pb:SetStatusBarColor(unpack(PushUIColor.green))
-        _pb:SetMinMaxValues(0, 100)
-        _b.progressBar = _pb
         OTH._scenarioBlock = _b
 
         local _fn = "Fonts\\ARIALN.TTF"
@@ -287,6 +286,22 @@ OTH._showScenario = function(event, ...)
         _descriptionfs:SetMaxLines(3)
         _b.descriptionFont = _descriptionfs
 
+        local _detailfs = _b:CreateFontString()
+        _detailfs:SetWidth(180)
+        _detailfs:SetFont(_fn, _fsize - 1, _foutline)
+        _detailfs:SetJustifyH("LEFT")
+        _detailfs:SetPoint("TOPLEFT", _descriptionfs, "BOTTOMLEFT", 0, -10)
+        _detailfs:SetMaxLines(10)
+        _b.detailFont = _detailfs
+
+        local _pb = PushUIFrames.ProgressBar.Create(_b:GetName().."Progress", _b, nil, "HORIZONTAL")
+        _pb:SetWidth(180)
+        _pb:SetHeight(15)
+        _pb:SetStatusBarColor(unpack(PushUIColor.green))
+        _pb:SetMinMaxValues(0, 100)
+        _pb:SetPoint("TOPLEFT", _detailfs, "BOTTOMLEFT", 0, -10)
+        _b.progressBar = _pb
+
         local _percentagefs = _pb:CreateFontString()
         _percentagefs:SetWidth(180)
         _percentagefs:SetHeight(15)
@@ -307,7 +322,12 @@ OTH._bonusIsInArea = false
 OTH._bonusQuestID = nil
 OTH._bonusTaskName = nil
 OTH._bonusNumObjectives = 0
-OTH._gainBonus = function(questLogIndex, questID)    
+OTH._gainBonus = function(questLogIndex, questID)
+    if not questID then return end
+    if IsQuestFlaggedCompleted(questID) then
+        OTH._bonusQuestID = nil
+        return
+    end
     if not IsQuestBounty(questID) then
         if IsQuestTask(questID) then
             if QuestMapFrame_IsQuestWorldQuest(questID) then
@@ -346,12 +366,18 @@ OTH._formatBonusBlock = function()
     local _objectivesfs = _b.objectivesFont
 
     local _objText = ""
+    local _showProgressBar = false
+    local _progressBarIndex = 0
     for i = 1, OTH._bonusNumObjectives do
-        local _t = GetQuestObjectiveInfo(OTH._bonusQuestID, i, false)
+        local _t, _objType = GetQuestObjectiveInfo(OTH._bonusQuestID, i, false)
         if _objText == "" then
             _objText = _t
         else
             _objText = _objText.."\n\n".._t
+        end
+        if _objType == "progressbar" then
+            _showProgressBar = true
+            _progressBarIndex = i
         end
     end
 
@@ -361,17 +387,32 @@ OTH._formatBonusBlock = function()
 
     local _allheight = 10 + _titlefs:GetStringHeight() + 10 + _objHeight + 10
 
+    if _showProgressBar then
+
+        local _pb = _b.progressBar
+        local _pencentagefs = _pb.percentageFont
+        local _percentage = GetQuestProgressBarPercent(OTH._bonusQuestID)
+
+        _pb:SetValue(_percentage)
+        _pencentagefs:SetText(_percentage)
+
+        _pb:Show()
+        _allheight = _allheight + _pb:GetHeight() + 10
+    else
+        _pb:Hide()
+    end
+
     _b:SetHeight(_allheight)
 end
 
 OTH._showBonus = function()
     if OTH._bonusQuestID == nil then return end
+    if not OTH._bonusIsInArea then return end
 
     if OTH._bonusBlock == nil then
         local _b = CreateFrame("Frame", OTH.name.."Bonus", UIParent)
         PushUIConfig.skinType(_b)
         OTH._bonusBlock = _b
-
 
         local _fn = "Fonts\\ARIALN.TTF"
         local _fsize = 14
@@ -393,6 +434,22 @@ OTH._showBonus = function()
         _objectivesfs:SetJustifyH("LEFT")
         _objectivesfs:SetPoint("TOPLEFT", _titlefs, "BOTTOMLEFT", 0, -10)
         _b.objectivesFont = _objectivesfs
+
+        local _pb = PushUIFrames.ProgressBar.Create(_b:GetName().."Progress", _b, nil, "HORIZONTAL")
+        _pb:SetStatusBarColor(unpack(PushUIColor.green))
+        _pb:SetMinMaxValues(0, 100)
+        _pb:SetPoint("TOPLEFT", _objectivesfs, "BOTTOMLEFT", 0, -10)
+        _b.progressBar = _pb
+        _pb:SetWidth(180)
+        _pb:SetHeight(15)
+
+        local _percentagefs = _pb:CreateFontString()
+        _percentagefs:SetWidth(180)
+        _percentagefs:SetHeight(15)
+        _percentagefs:SetFont(_fn, _fsize - 1, _foutline)
+        _percentagefs:SetJustifyH("CENTER")
+        _percentagefs:SetPoint("CENTER", _pb, "CENTER", 0, 0)
+        _pb.percentageFont = _percentagefs
 
         _b:SetWidth(200)
     end
@@ -439,6 +496,11 @@ end
 OTH._onUpdate()
 OTH._onScenarioUpdate()
 
+OTH._gainBonus(nil, GetSuperTrackedQuestID())
+if nil ~= OTH._bonusQuestID and OTH._bonusIsInArea then
+    OTH._showBonus()
+end
+
 OTH._eventDebug = function(event, ...)
     if nil ~= event then
         print("Track on event "..event)
@@ -460,7 +522,7 @@ PushUIAPI.RegisterEvent("SCENARIO_UPDATE", OTH, OTH._onScenarioUpdate)
 PushUIAPI.RegisterEvent("SCENARIO_CRITERIA_UPDATE", OTH, OTH._onScenarioUpdate)
 PushUIAPI.RegisterEvent("SCENARIO_COMPLETED", OTH, OTH._onScenarioUpdate)
 
-PushUIAPI.RegisterEvent("SUPER_TRACKED_QUEST_CHANGED", OTH, OTH._eventDebug)
-PushUIAPI.RegisterEvent("SCENARIO_SPELL_UPDATE", OTH, OTH._eventDebug)
---PushUIAPI.RegisterEvent("ZONE_CHANGED", OTH, OTH._eventDebug)
-PushUIAPI.RegisterEvent("QUEST_TURNED_IN", OTH, OTH._eventDebug)
+-- PushUIAPI.RegisterEvent("SUPER_TRACKED_QUEST_CHANGED", OTH, OTH._eventDebug)
+-- PushUIAPI.RegisterEvent("SCENARIO_SPELL_UPDATE", OTH, OTH._eventDebug)
+-- --PushUIAPI.RegisterEvent("ZONE_CHANGED", OTH, OTH._eventDebug)
+-- PushUIAPI.RegisterEvent("QUEST_TURNED_IN", OTH, OTH._eventDebug)
