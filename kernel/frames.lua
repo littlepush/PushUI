@@ -516,3 +516,21 @@ PushUIFrames.BottomFrame.Create = function(name, is_left, config)
 
     return _bf
 end
+
+-- Dock Frame
+
+PushUIFrames.DockFrame = {}
+PushUIFrames.DockFrame.CreateNewDock = function(name, color)
+    local _dock = CreateFrame("Frame", name, PushUIMainFrame)
+    local _dockTintFrame = CreateFrame("Frame", name.."Tint", _dock)
+    local _dockNormalPanel = CreateFrame("Frame", name.."Panel", _dock)
+    local _dockFloatPanel = CreateFrame("Frame", name.."FloatPanel", _dock)
+
+    _dock.tintBar = _dockTintFrame
+    _dock.panel = _dockNormalPanel
+    _dock.floatPanel = _dockFloatPanel
+
+
+    return _dock
+end
+

@@ -97,3 +97,44 @@ PushUIAPI._UnitUnRegisterEvent = function(e, obj)
         end
     end
 end
+
+-- Structures and Events
+
+-- Stack
+PushUIAPI.Stack = {}
+PushUIAPI.Stack._push = function(stack, obj)
+    if stack._storage == nil then return end
+    if obj == nil then return end
+    stack._storage[#stack._storage + 1] = obj
+end
+PushUIAPI.Stack._pop = function(stack)
+    if stack._storage == nil then return end
+    if #stack._storage == 0 then return end
+    stack._storage[#stack._storage] = nil
+end
+PushUIAPI.Stack._top = function(stack)
+    if stack._storage == nil then return nil end
+    if #stack._storage == 0 then return nil end
+    return stack._storage[#stack._storage]
+end
+PushUIAPI.Stack._size = function(stack)
+    if stack._storage == nil then return 0 end
+    return #stack._storage
+end
+PushUIAPI.Stack._clear = function(stack)
+    if stack._storage == nil then return end
+    local _s = #stack._storage
+    for i = 1, _s do stack._storage[i] = nil end
+end
+PushUIAPI.Stack.New = function()
+    local _stack = {}
+    _stack._storage = {}
+    _stack.Push = function(obj) PushUIAPI.Stack._push(_stack, obj) end
+    _stack.Pop = function() PushUIAPI.Stack._pop(_stack) end
+    _stack.Top = function() return PushUIAPI.Stack._top(_stack) end
+    _stack.Size = function() return PushUIAPI.Stack._size(_stack) end
+    _stack.Clear = function() PushUIAPI.Stack._clear(_stack) end
+    return _stack
+end
+PushUIAPI.Stack.Delete = function(stack) _stack.Clear(); stack = nil end
+

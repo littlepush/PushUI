@@ -107,6 +107,7 @@ PushUIMainFrame.OnBoot = function()
     SELECTED_CHAT_FRAME:AddMessage("Visit the project on Github https://github.com/littlepush/PushUI")
     SELECTED_CHAT_FRAME:AddMessage("Connect the author on Twitter: @littlepush")
     SELECTED_CHAT_FRAME:AddMessage("You are welcomed to join our guild: [TW][Lambda]!")
+    PushUIAPI.UnregisterEvent("PLAYER_ENTERING_WORLD", PushUIMainFrame)
 end
 PushUIAPI.RegisterEvent("PLAYER_ENTERING_WORLD", PushUIMainFrame, PushUIMainFrame.OnBoot)
 
