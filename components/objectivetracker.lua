@@ -323,11 +323,12 @@ OTH._bonusQuestID = nil
 OTH._bonusTaskName = nil
 OTH._bonusNumObjectives = 0
 OTH._gainBonus = function(questLogIndex, questID)
-    if not questID then return end
-    if IsQuestFlaggedCompleted(questID) then
+    if nil == questID then return end
+    if IsQuestComplete(questID) then
         OTH._bonusQuestID = nil
         return
     end
+    if questID == OTH._bonusQuestID then return end
     if not IsQuestBounty(questID) then
         if IsQuestTask(questID) then
             if QuestMapFrame_IsQuestWorldQuest(questID) then
@@ -348,13 +349,9 @@ end
 
 OTH._bonusUpdate = function()
     if nil ~= OTH._bonusQuestID then
-        if IsQuestFlaggedCompleted(OTH._bonusQuestID) then
-            OTH._bonusQuestID = nil
-            return
-        end
         OTH._bonusIsInArea, _, OTH._bonusNumObjectives, OTH._bonusTaskName = GetTaskInfo(OTH._bonusQuestID)
 
-        if OTH._bonusIsInArea == false then
+        if OTH._bonusIsInArea == false or not OTH._bonusNumObjectives then
             OTH._bonusQuestID = nil
             if nil ~= OTH._bonusBlock then
                 OTH._bonusBlock:Hide()
@@ -410,8 +407,12 @@ OTH._formatBonusBlock = function()
 end
 
 OTH._showBonus = function()
-    if OTH._bonusQuestID == nil then return end
-    if not OTH._bonusIsInArea then return end
+    if (OTH._bonusQuestID == nil) or (OTH._bonusIsInArea == false) then
+        if OTH._bonusBlock ~= nil and OTH._bonusBlock:IsShown() then
+            OTH._bonusBlock:Hide()
+        end
+        return
+    end
 
     if OTH._bonusBlock == nil then
         local _b = CreateFrame("Frame", OTH.name.."Bonus", UIParent)
@@ -462,10 +463,18 @@ OTH._showBonus = function()
     OTH._formatBonusBlock()
     OTH._bonusBlock:Show()
 
-    if nil ~= OTH._scenarioBlock then
+    if nil ~= OTH._scenarioBlock and OTH._scenarioBlock:IsShown() then
         OTH._bonusBlock:SetPoint("TOPLEFT", OTH._scenarioBlock, "BOTTOMLEFT", 0, -10)
     else
         OTH._bonusBlock:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 30, -30)
+    end
+end
+
+OTH._bonusCheckIfComplete = function(event, questID)
+    if questID ~= OTH._bonusQuestID then return end
+    OTH._bonusQuestID = nil
+    if OTH._bonusBlock ~= nil and OTH._bonusBlock:IsShown() then
+        OTH._bonusBlock:Hide()
     end
 end
 
@@ -478,17 +487,17 @@ OTH._onUpdate = function(event, ...)
     OTH._gainQuest()
     OTH._showQuest()
 
-    if event == "QUEST_LOG_UPDATE" then
-        OTH._bonusUpdate()
-        OTH._showBonus()
-    end
-
     if event == "QUEST_ACCEPTED" then
         local questLogIndex, questID = ...
         OTH._gainBonus(questLogIndex, questID)
         if nil ~= OTH._bonusQuestID and OTH._bonusIsInArea then
             OTH._showBonus()
         end
+    end
+
+    if event == "QUEST_LOG_UPDATE" or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" then
+        OTH._bonusUpdate()
+        OTH._showBonus()
     end
 end
 
@@ -500,9 +509,17 @@ end
 OTH._onUpdate()
 OTH._onScenarioUpdate()
 
-OTH._gainBonus(nil, GetSuperTrackedQuestID())
-if nil ~= OTH._bonusQuestID and OTH._bonusIsInArea then
-    OTH._showBonus()
+OTH._onPlayerEnteringWorld = function()
+    -- Recheck the bonus quest
+    -- local _areaId = GetCurrentMapAreaID()
+    local _tasks = GetTasksTable()
+    for i = 1, #_tasks do
+        OTH._gainBonus(nil, _tasks[i])
+        if nil ~= OTH._bonusQuestID and OTH._bonusIsInArea then
+            OTH._showBonus()
+            break
+        end
+    end
 end
 
 OTH._eventDebug = function(event, ...)
@@ -516,9 +533,9 @@ end
 PushUIAPI.RegisterEvent("QUEST_LOG_UPDATE", OTH, OTH._onUpdate)
 PushUIAPI.RegisterEvent("QUEST_WATCH_LIST_CHANGED", OTH, OTH._onUpdate)
 PushUIAPI.RegisterEvent("QUEST_ACCEPTED", OTH, OTH._onUpdate)
-PushUIAPI.RegisterEvent("QUEST_AUTOCOMPLETE", OTH, OTH._onUpdate)
---PushUIAPI.RegisterEvent("QUEST_POI_UPDATE", OTH, OTH._onUpdate)
---PushUIAPI.RegisterEvent("QUEST_TURNED_IN", OTH, OTH._onUpdate)
+PushUIAPI.RegisterEvent("VARIABLES_LOADED", OTH, OTH._onUpdate)
+PushUIAPI.RegisterEvent("QUEST_POI_UPDATE", OTH, OTH._onUpdate)
+PushUIAPI.RegisterEvent("QUEST_TURNED_IN", OTH, OTH._bonusCheckIfComplete)
 PushUIAPI.RegisterEvent("ZONE_CHANGED_NEW_AREA", OTH, OTH._onUpdate)
 PushUIAPI.RegisterEvent("ZONE_CHANGED", OTH, OTH._onUpdate)
 
@@ -526,7 +543,8 @@ PushUIAPI.RegisterEvent("SCENARIO_UPDATE", OTH, OTH._onScenarioUpdate)
 PushUIAPI.RegisterEvent("SCENARIO_CRITERIA_UPDATE", OTH, OTH._onScenarioUpdate)
 PushUIAPI.RegisterEvent("SCENARIO_COMPLETED", OTH, OTH._onScenarioUpdate)
 
--- PushUIAPI.RegisterEvent("SUPER_TRACKED_QUEST_CHANGED", OTH, OTH._eventDebug)
+PushUIAPI.RegisterEvent("PLAYER_ENTERING_WORLD", OTH, OTH._onPlayerEnteringWorld)
+PushUIAPI.RegisterEvent("SUPER_TRACKED_QUEST_CHANGED", OTH, OTH._onUpdate)
 -- PushUIAPI.RegisterEvent("SCENARIO_SPELL_UPDATE", OTH, OTH._eventDebug)
 -- --PushUIAPI.RegisterEvent("ZONE_CHANGED", OTH, OTH._eventDebug)
 -- PushUIAPI.RegisterEvent("QUEST_TURNED_IN", OTH, OTH._eventDebug)
