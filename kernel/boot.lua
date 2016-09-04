@@ -22,6 +22,7 @@ PushUIFrames.AllFrames = {}
 -- An event can has a serious functions to handle in order.
 local _eventDispatcher = CreateFrame("Frame")
 local _eventsMap = {}
+local _eventsMaskToUnregister = {}
 
 _eventDispatcher:SetScript("OnEvent", function(_, event, ...)
     if not (_eventDispatcher == _) then
@@ -29,10 +30,35 @@ _eventDispatcher:SetScript("OnEvent", function(_, event, ...)
     end
     print(event)
     for i = 1, #_eventsMap[event] do
-        local _f, _o = unpack(_eventsMap[event][i])
-        -- print("Dispatch Event: ".._o:GetName().."/"..event)
-        _f(event, ...)
+        if _eventsMap[event] == nil then
+            print("...unknow event, not register for "..event)
+        elseif _eventsMap[event][i] == nil then
+            print("...event "..event.." has no handler at index "..i)
+        else
+            local _f, _o = unpack(_eventsMap[event][i])
+            -- print("Dispatch Event: ".._o:GetName().."/"..event)
+            _f(event, ...)
+        end
     end
+
+    if _eventsMaskToUnregister[event] == nil then return end
+    for _, obj_to_remove in ipairs(_eventsMaskToUnregister[event]) do
+        for idx, rf in ipairs(_eventsMap[event]) do
+            local _f, _o = unpack(rf)
+            if ( _o == obj_to_remove ) then
+                table.remove(_eventsMap[event], idx)
+                break
+            end
+        end
+        if #_eventsMap[event] == 0 then
+            _eventsMap[event] = nil
+            _eventDispatcher:UnregisterEvent(event)
+        end
+    end
+    for i = 1, #_eventsMaskToUnregister[event] do
+        _eventsMaskToUnregister[event][i] = nil
+    end
+    _eventsMaskToUnregister[event] = nil
 end)
 
 PushUIAPI.RegisterEvent = function(event, obj, func)
@@ -47,17 +73,10 @@ PushUIAPI.RegisterEvent = function(event, obj, func)
 end
 
 PushUIAPI.UnregisterEvent = function(event, obj)
-    for idx, rf in ipairs(_eventsMap[event]) do
-        local _f, _o = unpack(_eventsMap[event][idx])
-        if ( _o == obj ) then
-            table.remove(_eventsMap[event], idx)
-            break
-        end
+    if _eventsMaskToUnregister[event] == nil then
+        _eventsMaskToUnregister[event] = {}
     end
-    if #_eventsMap[event] == 0 then
-        _eventsMap[event] = nil
-        _eventDispatcher:UnregisterEvent(event)
-    end
+    _eventsMaskToUnregister[event][#_eventsMaskToUnregister[event] + 1] = obj
 end
 
 PushUISize.Resolution = {}

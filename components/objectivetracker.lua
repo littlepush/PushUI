@@ -362,7 +362,7 @@ end
 
 OTH._formatBonusBlock = function()
     local _b = OTH._bonusBlock
-    --local _pb = _b.progressBar
+    local _pb = _b.progressBar
     local _titlefs = _b.titleFont
     local _objectivesfs = _b.objectivesFont
 
@@ -390,7 +390,7 @@ OTH._formatBonusBlock = function()
 
     if _showProgressBar then
 
-        local _pb = _b.progressBar
+        --local _pb = _b.progressBar
         local _pencentagefs = _pb.percentageFont
         local _percentage = GetQuestProgressBarPercent(OTH._bonusQuestID)
 
