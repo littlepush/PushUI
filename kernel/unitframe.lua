@@ -283,6 +283,12 @@ PushUIFrames.UnitFrame.CreateHealthValue = function(unithook, config)
     end
 end
 
+PushUIFrames.UnitFrame.__onAuraClick = function(btn)
+    local _aura = btn._auraInfo
+    if not _aura.isbuff then return end
+    CancelUnitBuff("player", _aura.name)
+end
+
 PushUIFrames.UnitFrame.__onAuraUpdate = function(btn, time)
     if not btn:IsShown() then return end
 
@@ -320,6 +326,7 @@ PushUIFrames.UnitFrame.__onUpdateAuraList = function(btnTable, unithook, config)
             _btn:SetWidth(_btnWidth)
             _btn:SetHeight(_btnHeight)
             PushUIConfig.skinType(_btn)
+            _btn:SetScript("OnClick", PushUIFrames.UnitFrame.__onAuraClick)
 
             -- Create aura count font string
             local _countfs = _btn:CreateFontString(_btn:GetName().."Count")
