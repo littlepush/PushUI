@@ -27,6 +27,7 @@ _eventDispatcher:SetScript("OnEvent", function(_, event, ...)
     if not (_eventDispatcher == _) then
         return
     end
+    print(event)
     for i = 1, #_eventsMap[event] do
         local _f, _o = unpack(_eventsMap[event][i])
         -- print("Dispatch Event: ".._o:GetName().."/"..event)

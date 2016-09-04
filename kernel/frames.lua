@@ -520,17 +520,33 @@ end
 -- Dock Frame
 
 PushUIFrames.DockFrame = {}
-PushUIFrames.DockFrame.CreateNewDock = function(name, color)
+
+PushUIFrames.DockFrame.CreateNewStack = function(name, side)
+    local _frameStack = CreateFrame("Frame", name, PushUIMainFrame)
+    _frameStack.tintStack = PushUIAPI.Vector.New()
+    _frameStack.panelStack = PushUIAPI.Vector.New()
+
+    
+end
+PushUIFrames.DockFrame.CreateNewDock = function(name, color, parentStack)
     local _dock = CreateFrame("Frame", name, PushUIMainFrame)
-    local _dockTintFrame = CreateFrame("Frame", name.."Tint", _dock)
+    local _dockTintFrame = CreateFrame("Button", name.."Tint", _dock)
     local _dockNormalPanel = CreateFrame("Frame", name.."Panel", _dock)
+    local _dockPanelTint = CreateFrame("Button", name.."PanelTint", _dockNormalPanel)
     local _dockFloatPanel = CreateFrame("Frame", name.."FloatPanel", _dock)
 
     _dock.tintBar = _dockTintFrame
     _dock.panel = _dockNormalPanel
+    _dock.panel.tintBar = _dockPanelTint
     _dock.floatPanel = _dockFloatPanel
-
+    _dock.parentStack = parentStack
 
     return _dock
 end
+PushUIFrames.DockFrame.OpenDock = function(dock)
+    _dock.tintBar:Hide()
+    _dock.panel:Show()
+    _dock.floatPanel:Hide()
 
+    _dock.parentStack.Push(_dock.panel)
+end

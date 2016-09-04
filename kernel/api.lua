@@ -136,5 +136,67 @@ PushUIAPI.Stack.New = function()
     _stack.Clear = function() PushUIAPI.Stack._clear(_stack) end
     return _stack
 end
-PushUIAPI.Stack.Delete = function(stack) _stack.Clear(); stack = nil end
+PushUIAPI.Stack.Delete = function(stack) _stack.Clear() end
 
+-- Vector
+PushUIAPI.Vector = {}
+PushUIAPI.Vector._pushFront = function(vector, obj)
+    if vector._storage == nil or obj == nil then return end
+    table.insert(vector._storage, 1, obj)
+end
+PushUIAPI.Vector._pushBack = function(vector, obj)
+    if vector._storage == nil or obj == nil then return end
+    table.insert(vector._storage, obj)
+end
+PushUIAPI.Vector._popFront = function(vector)
+    if vector._storage == nil or #vector._storage == 0 then return end
+    table.remove(vector._storage, 1)
+end
+PushUIAPI.Vector._popBack = function(vector)
+    if vector._storage == nil or #vector._storage == 0 then return end
+    table.remove(vector._storage)
+end
+PushUIAPI.Vector._front = function(vector)
+    if vector._storage == nil or #vector._storage == 0 then return nil end
+    return vector._storage[1]
+end
+PushUIAPI.Vector._back = function(vector)
+    if vector._storage == nil or #vector._storage == 0 then return nil end
+    return vector._storage[#vector._storage]
+end
+PushUIAPI.Vector._erase = function(vector, index)
+    if vector._storage == nil or #vector._storage < index then return end
+    if index <= 0 then return end
+    table.remove(vector._storage, index)
+end
+PushUIAPI.Vector._insert = function(vector, index, obj)
+    if vector._storage == nil or #vector._storage < (index + 1) then return end
+    if index <= 0 or obj == nil then return end
+    table.insert(vector._storage, index, obj)
+end
+PushUIAPI.Vector._size = function(vector)
+    if vector._storage == nil return 0 end
+    return #vector._storage
+end
+PushUIAPI.Vector._clear = function(vector)
+    if vector._storage == nil then return end
+    local _s = #vector._storage
+    for i = 1, _s do vector._storage[i] = nil end
+end
+PushUIAPI.Vector.New = function()
+    local _vector = {}
+    _vector._storage = {}
+    _vector.PushFront = function(obj) PushUIAPI.Vector._pushFront(_vector, obj) end
+    _vector.PushBack = function(obj) PushUIAPI.Vector._pushBack(_vector, obj) end
+    _vector.PopFront = function() PushUIAPI.Vector._popFront(_vector) end
+    _vector.PopBack = function() PushUIAPI.Vector._popBack(_vector) end
+    _vector.Front = function() return PushUIAPI.Vector._front(_vector) end
+    _vector.Back = function() return PushUIAPI.Vector._back(_vector) end
+    _vector.Erase = function(index) PushUIAPI.Vector._erase(_vector, index) end
+    _vector.Insert = function(index, obj) PushUIAPI.Vector._insert(_vector, index, obj) end
+    _vector.Size = function() return PushUIAPI.Vector._size(_vector) end
+    _vector.Clear = function() PushUIAPI.Vector._clear(_vector) end
+
+    return _vector
+end 
+PushUIAPI.Vector.Delete = function(vector) vector.Clear() end
