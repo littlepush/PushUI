@@ -618,7 +618,7 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, panelStack, tintSta
 
         -- Do Animate
         _p.PlayAnimationStage("OnClickToShow", function(self, ...)
-            if _f.DidAppear then _f.DidAppear
+            if _f.DidAppear then _f.DidAppear() end
             _d.panelStack.Push(_p)
             tint.PlayAnimationStage("AfterPanelShow", function(...)
                 _d.tintStack.Erase(tint)
