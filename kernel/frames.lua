@@ -521,14 +521,15 @@ end
 
 PushUIFrames.DockFrame = {}
 
-PushUIFrames.DockFrame.CreateNewStack = function(name, side)
+PushUIFrames.DockFrame.CreateNewPanelStack = function(name, side)
     local _frameStack = CreateFrame("Frame", name, PushUIMainFrame)
-    _frameStack.tintStack = PushUIAPI.Vector.New()
     _frameStack.panelStack = PushUIAPI.Vector.New()
-
-    
 end
-PushUIFrames.DockFrame.CreateNewDock = function(name, color, parentStack)
+PushUIFrames.DockFrame.CreateNewTintStack = function(name)
+    local _tintStack = CreateFrame("Frame", name, PushUIMainFrame)
+    _tintStack.tintStack = PushUIAPI.Vector.New()
+end
+PushUIFrames.DockFrame.CreateNewDock = function(name, color, panelStack, tintStack)
     local _dock = CreateFrame("Frame", name, PushUIMainFrame)
     local _dockTintFrame = CreateFrame("Button", name.."Tint", _dock)
     local _dockNormalPanel = CreateFrame("Frame", name.."Panel", _dock)
@@ -539,14 +540,106 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, parentStack)
     _dock.panel = _dockNormalPanel
     _dock.panel.tintBar = _dockPanelTint
     _dock.floatPanel = _dockFloatPanel
-    _dock.parentStack = parentStack
+    
+    -- Init Style
+    _dockFloatPanel:SetPoint("BOTTOM", _dockTintFrame, "TOP", 0, -5)
+    _dockPanelTint:SetPoint("BOTTOM", _dockNormalPanel, "TOP", 0, -2)
+    _dockPanelTint:SetHeight(5)
+    _dockTintFrame:SetWidth(32)
+    _dockTintFrame:SetHeight(20)
+    local _r,_g,_b,_a = unpack(color)
+    PushUIStyle.BackgroundSolidFormat(
+        _dockTintFrame, 
+        _r,_g,_b,_a,
+        0, 0, 0, 1      -- Black border
+        )
+    PushUIStyle.BackgroundSolidFormat(
+        _dockPanelTint,
+        _r,_g,_b,_a,
+        0, 0, 0, 1      -- Black border
+        )
+    _dockNormalPanel:SetAlpha(0)
+    _dockFloatPanel:SetAlpha(0)
+
+    _dock.panelStack = panelStack
+    _dock.tintStack = tintStack
+
+    -- Set Animation For Float Panel
+    PushUIFrames.Animations.EnableAnimationForFrame(_dockFloatPanel)
+    PushUIFrames.Animations.AddStage(_dockFloatPanel, "OnTintEnterToDisplay")
+    _dockFloatPanel.AnimationStage("OnTintEnterToDisplay").EnableFade(0.35, 1)
+
+    PushUIFrames.Animations.AddStage(_dockFloatPanel, "OnTintLeaveToHide")
+    _dockFloatPanel.AnimationStage("OnTintLeaveToHide").EnableFade(0.35, 0)
+
+    _dockTintFrame:SetScript("OnEnter", function(tint, ...)
+        local _d = tint:GetParent()
+        local _f = _d.floatPanel
+        if _f.WillAppear then _f.WillAppear(_f) end
+        -- Do animate to display the float
+        _f.PlayAnimationStage("OnTintEnterToDisplay", function(self, ...)
+            if _f.DidAppear then _f.DidAppear(_f) end
+        end)
+    end)
+
+    _dockTintFrame:SetScript("OnLeave", function(tint, ...)
+        local _d = tint:GetParent()
+        local _f = _d.floatPanel
+        --_f:SetPoint("BOTTOM", tint, "TOP", 0, -5)
+        if _f.WillDisappear then _f.WillDisappear(_f) end
+
+        _f.PlayAnimationStage("OnTintLeaveToHide", function(self, ...)
+            if _f.DidDisappear then _f.DidDisappear(_f) end
+            _f:Hide()
+        end)
+    end)
+
+    -- Enable Animation for panel
+    PushUIFrames.Animations.EnableAnimationForFrame(_dockNormalPanel)
+    PushUIFrames.Animations.AddStage(_dockNormalPanel, "OnClickToShow")
+    _dockFloatPanel.AnimationStage("OnClickToShow").EnableFade(0.35, 1)
+
+    PushUIFrames.Animations.AddStage(_dockFloatPanel, "OnClickToHide")
+    _dockFloatPanel.AnimationStage("OnClickToHide").EnableFade(0.35, 0)
+
+    PushUIFrames.Animations.EnableAnimationForFrame(_dockTintFrame)
+    PushUIFrames.Animations.AddStage(_dockTintFrame, "AfterPanelShow")
+    _dockTintFrame.AnimationStage("AfterPanelShow").EnableFade(0.35, 0)
+
+    PushUIFrames.Animations.AddStage(_dockTintFrame, "WhilePanelHiding")
+    _dockTintFrame.AnimationStage("WhilePanelHiding").EnableFade(0.35, 1)
+
+    -- Click the tint icon
+    _dockTintFrame:SetScript("OnClick", function(tint, ...)
+        local _d = tint:GetParent()
+        local _p = _d.panel
+
+        if _p.WillAppear then _p.WillAppear(_p) end
+
+        -- Do Animate
+        _p.PlayAnimationStage("OnClickToShow", function(self, ...)
+            if _f.DidAppear then _f.DidAppear
+            _d.panelStack.Push(_p)
+            tint.PlayAnimationStage("AfterPanelShow", function(...)
+                _d.tintStack.Erase(tint)
+            end)
+        end)
+    end)
+
+    _dockPanelTint:SetScript("OnClick", function(paneltint, ...)
+        local _p = paneltint:GetParent()
+        local _d = _p:GetParent()
+        local _t = _d.tintBar
+
+        if _p.WillDisappear then _p.WillDisappear(_p) end
+
+        _d.tintStack.Push(_t)
+        _p.PlayAnimationStage("OnClickToHide")
+        _t.PlayAnimationStage("WhilePanelHiding", function(...)
+            if _p.DidDisappear then _p.DidDisappear(_p) end
+            _d.panelStack.ErasePanel(_p)
+        end)
+    end)
 
     return _dock
-end
-PushUIFrames.DockFrame.OpenDock = function(dock)
-    _dock.tintBar:Hide()
-    _dock.panel:Show()
-    _dock.floatPanel:Hide()
-
-    _dock.parentStack.Push(_dock.panel)
 end

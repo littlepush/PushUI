@@ -10,6 +10,7 @@ kernel\api.target.lua
 kernel\api.player.lua
 kernel\api.auras.lua
 kernel\preference.lua
+kernel\animations.lua
 kernel\frames.lua
 kernel\unitframe.lua
 kernel\config.lua

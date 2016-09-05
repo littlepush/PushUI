@@ -175,7 +175,7 @@ PushUIAPI.Vector._insert = function(vector, index, obj)
     table.insert(vector._storage, index, obj)
 end
 PushUIAPI.Vector._size = function(vector)
-    if vector._storage == nil return 0 end
+    if vector._storage == nil then return 0 end
     return #vector._storage
 end
 PushUIAPI.Vector._clear = function(vector)
