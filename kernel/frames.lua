@@ -521,45 +521,132 @@ end
 
 PushUIFrames.DockFrame = {}
 
-PushUIFrames.DockFrame.CreateNewPanelStack = function(name, side)
-    local _frameStack = CreateFrame("Frame", name, PushUIMainFrame)
+PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
+    local _frameStack = CreateFrame("Frame", name, UIParent)
+    _frameStack:ClearAllPoints()
     _frameStack.panelStack = PushUIAPI.Vector.New()
+    _frameStack._allPanelWidth = 0
+    _frameStack._pushSide = side
+
+    if side == "LEFT" then
+        _frameStack.__anchor = "TOPLEFT"
+        _frameStack.__relativeAnchor = "TOPLEFT"
+        _frameStack.__abs = 1
+    else
+        _frameStack.__anchor = "TOPRIGHT"
+        _frameStack.__relativeAnchor = "TOPRIGHT"
+        _frameStack.__abs = -1
+    end
+
+    _frameStack.Push = function(panel, animationStage, onFinished)
+        if not panel or panel.pushAvailable == false then return end
+        if animationStage then
+            panel:SetPoint(
+                _frameStack.__anchor, 
+                _frameStack, 
+                _frameStack.__relativeAnchor, 
+                _frameStack:GetWidth() * _frameStack.__abs,
+                0)
+            panel.AnimationStage(animationStage).EnableTranslation(
+                0.35, _frameStack._allPanelWidth * _frameStack.__abs, 0)
+            panel.PlayAnimationStage(animationStage, onFinished)
+        else
+            panel:SetPoint(
+                _frameStack.__anchor,
+                _frameStack,
+                _frameStack.__relativeAnchor,
+                _frameStack._allPanelWidth * _frameStack.__abs, 
+                0)
+            panel:SetAlpha(1)
+        end
+        _frameStack._allPanelWidth = _frameStack._allPanelWidth + panel:GetWidth()
+        _frameStack.panelStack.PushBack(panel)
+    end
+
+    _frameStack.Erase = function(panel, animationStage, onFinished)
+        if not panel or panel.pushAvailable == false then return end
+        local _resizeFromIndex = 1
+        for i = 1, _frameStack.panelStack.Size() do
+            if _frameStack.panelStack.ObjectAtIndex(i):GetName() == panel:GetName() then
+                _frameStack.panelStack.Erase(i)
+                _resizeFromIndex = i
+                break
+            end
+        end
+        _frameStack._allPanelWidth = _frameStack._allPanelWidth - panel:GetWidth()
+
+        if animationStage then
+            panel.AnimationStage(animationStage).EnableTranslation(
+                0.35, _frameStack:GetWidth() * _frameStack.__abs, 0)
+            panel.PlayAnimationStage(animationStage, onFinished)
+        else
+            panel:SetPoint(
+                _frameStack.__anchor,
+                _frameStack,
+                _frameStack.__relativeAnchor,
+                _frameStack:GetWidth() * _frameStack.__abs,
+                0)
+            panel:SetAlpha(0)
+        end
+
+        local _skipSize = 0
+        local _eraseAnimationName = _frameStack:GetName().."EraseAnimation"
+        for i = 1, _resizeFromIndex - 1 do
+            _skipSize = _skipSize + _frameStack.panelStack.ObjectAtIndex(i):GetWidth()
+        end
+        for i = _resizeFromIndex, _frameStack.panelStack.Size() do
+            local _p = _frameStack.panelStack.ObjectAtIndex(i)
+            PushUIFrames.Animations.EnableAnimationForFrame(_p)
+            PushUIFrames.Animations.AddStage(_p, _eraseAnimationName)
+            _p.AnimationStage(_eraseAnimationName).EnableTranslation(0.35, 
+                _skipSize * _frameStack.__abs, 0)
+            _skipSize = _skipSize + _p:GetWidth()
+            _p.PlayAnimationStage(_eraseAnimationName)
+        end
+    end
+
+    return _frameStack
 end
-PushUIFrames.DockFrame.CreateNewTintStack = function(name)
-    local _tintStack = CreateFrame("Frame", name, PushUIMainFrame)
-    _tintStack.tintStack = PushUIAPI.Vector.New()
-end
+
 PushUIFrames.DockFrame.CreateNewDock = function(name, color, panelStack, tintStack)
-    local _dock = CreateFrame("Frame", name, PushUIMainFrame)
-    local _dockTintFrame = CreateFrame("Button", name.."Tint", _dock)
-    local _dockNormalPanel = CreateFrame("Frame", name.."Panel", _dock)
+    local _dock = {}
+    local _dockTintFrame = CreateFrame("Button", name.."Tint", tintStack)
+    local _dockNormalPanel = CreateFrame("Frame", name.."Panel", panelStack)
     local _dockPanelTint = CreateFrame("Button", name.."PanelTint", _dockNormalPanel)
-    local _dockFloatPanel = CreateFrame("Frame", name.."FloatPanel", _dock)
+    local _dockFloatPanel = CreateFrame("Frame", name.."FloatPanel", tintStack)
 
     _dock.tintBar = _dockTintFrame
     _dock.panel = _dockNormalPanel
     _dock.panel.tintBar = _dockPanelTint
     _dock.floatPanel = _dockFloatPanel
     
+    _dockTintFrame.dock = _dock
+    _dockNormalPanel.dock = _dock
+    _dockPanelTint.dock = _dock
+    _dockFloatPanel.dock = _dock
+
     -- Init Style
-    _dockFloatPanel:SetPoint("BOTTOM", _dockTintFrame, "TOP", 0, -5)
-    _dockPanelTint:SetPoint("BOTTOM", _dockNormalPanel, "TOP", 0, -2)
-    _dockPanelTint:SetHeight(5)
+    _dockFloatPanel:SetPoint("BOTTOM", _dockTintFrame, "TOP", 0, 5)
+    _dockPanelTint:SetPoint("BOTTOM", _dockNormalPanel, "TOP", 0, 2)
+    _dockPanelTint:SetPoint("LEFT", _dockNormalPanel, "LEFT", 0, 0)
+    _dockPanelTint:SetPoint("RIGHT", _dockNormalPanel, "RIGHT", 0, 0)
+    _dockPanelTint:SetHeight(8)
     _dockTintFrame:SetWidth(32)
     _dockTintFrame:SetHeight(20)
-    local _r,_g,_b,_a = unpack(color)
+    local _r,_g,_b = unpack(color)
     PushUIStyle.BackgroundSolidFormat(
         _dockTintFrame, 
-        _r,_g,_b,_a,
+        _r,_g,_b,1,
         0, 0, 0, 1      -- Black border
         )
     PushUIStyle.BackgroundSolidFormat(
         _dockPanelTint,
-        _r,_g,_b,_a,
+        _r,_g,_b,1,
         0, 0, 0, 1      -- Black border
         )
     _dockNormalPanel:SetAlpha(0)
     _dockFloatPanel:SetAlpha(0)
+    _dockNormalPanel:SetHeight(panelStack:GetHeight())
 
     _dock.panelStack = panelStack
     _dock.tintStack = tintStack
@@ -572,22 +659,27 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, panelStack, tintSta
     PushUIFrames.Animations.AddStage(_dockFloatPanel, "OnTintLeaveToHide")
     _dockFloatPanel.AnimationStage("OnTintLeaveToHide").EnableFade(0.35, 0)
 
+    _dockTintFrame:EnableMouse(true)
+    _dockPanelTint:EnableMouse(true)
+
     _dockTintFrame:SetScript("OnEnter", function(tint, ...)
-        local _d = tint:GetParent()
+        local _d = tint.dock
         local _f = _d.floatPanel
         if _f.WillAppear then _f.WillAppear(_f) end
         -- Do animate to display the float
+        _f.CancelAnimationStage("OnTintLeaveToHide")
         _f.PlayAnimationStage("OnTintEnterToDisplay", function(self, ...)
             if _f.DidAppear then _f.DidAppear(_f) end
         end)
     end)
 
     _dockTintFrame:SetScript("OnLeave", function(tint, ...)
-        local _d = tint:GetParent()
+        local _d = tint.dock
         local _f = _d.floatPanel
         --_f:SetPoint("BOTTOM", tint, "TOP", 0, -5)
         if _f.WillDisappear then _f.WillDisappear(_f) end
 
+        _f.CancelAnimationStage("OnTintEnterToDisplay")
         _f.PlayAnimationStage("OnTintLeaveToHide", function(self, ...)
             if _f.DidDisappear then _f.DidDisappear(_f) end
             _f:Hide()
@@ -597,10 +689,10 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, panelStack, tintSta
     -- Enable Animation for panel
     PushUIFrames.Animations.EnableAnimationForFrame(_dockNormalPanel)
     PushUIFrames.Animations.AddStage(_dockNormalPanel, "OnClickToShow")
-    _dockFloatPanel.AnimationStage("OnClickToShow").EnableFade(0.35, 1)
+    _dockNormalPanel.AnimationStage("OnClickToShow").EnableFade(0.35, 1)
 
-    PushUIFrames.Animations.AddStage(_dockFloatPanel, "OnClickToHide")
-    _dockFloatPanel.AnimationStage("OnClickToHide").EnableFade(0.35, 0)
+    PushUIFrames.Animations.AddStage(_dockNormalPanel, "OnClickToHide")
+    _dockNormalPanel.AnimationStage("OnClickToHide").EnableFade(0.35, 0)
 
     PushUIFrames.Animations.EnableAnimationForFrame(_dockTintFrame)
     PushUIFrames.Animations.AddStage(_dockTintFrame, "AfterPanelShow")
@@ -611,15 +703,22 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, panelStack, tintSta
 
     -- Click the tint icon
     _dockTintFrame:SetScript("OnClick", function(tint, ...)
-        local _d = tint:GetParent()
+        local _d = tint.dock
         local _p = _d.panel
 
         if _p.WillAppear then _p.WillAppear(_p) end
 
+        local _f = _d.floatPanel
+        --_f:SetPoint("BOTTOM", tint, "TOP", 0, -5)
+        if _f.WillDisappear then _f.WillDisappear(_f) end
+        _f.CancelAnimationStage("OnTintEnterToDisplay")
+        _f.CancelAnimationStage("OnTintLeaveToHide")
+        _f:SetAlpha(0)
+        if _f.DidDisappear then _f.DidDisappear(_f) end
+
         -- Do Animate
-        _p.PlayAnimationStage("OnClickToShow", function(self, ...)
-            if _f.DidAppear then _f.DidAppear() end
-            _d.panelStack.Push(_p)
+        _d.panelStack.Push(_p, "OnClickToShow", function(self, ...)
+            if _p.DidAppear then _p.DidAppear() end
             tint.PlayAnimationStage("AfterPanelShow", function(...)
                 _d.tintStack.Erase(tint)
             end)
@@ -627,17 +726,16 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, panelStack, tintSta
     end)
 
     _dockPanelTint:SetScript("OnClick", function(paneltint, ...)
-        local _p = paneltint:GetParent()
-        local _d = _p:GetParent()
+        local _p = paneltint.dock.panel
+        local _d = _p.dock
         local _t = _d.tintBar
 
         if _p.WillDisappear then _p.WillDisappear(_p) end
 
-        _d.tintStack.Push(_t)
-        _p.PlayAnimationStage("OnClickToHide")
-        _t.PlayAnimationStage("WhilePanelHiding", function(...)
-            if _p.DidDisappear then _p.DidDisappear(_p) end
-            _d.panelStack.ErasePanel(_p)
+        _d.panelStack.Erase(_p, "OnClickToHide", function(...)
+            _d.tintStack.Push(_t, "WhilePanelHiding", function(...)
+                if _p.DidDisappear then _p.DidDisappear(_p) end
+            end)
         end)
     end)
 

@@ -183,6 +183,12 @@ PushUIAPI.Vector._clear = function(vector)
     local _s = #vector._storage
     for i = 1, _s do vector._storage[i] = nil end
 end
+PushUIAPI.Vector._index = function(vector, index)
+    if vector._storage == nil then return nil end
+    if index > #vector._storage then return nil end
+    if index <= 0 then return nil end
+    return vector._storage[index]
+end
 PushUIAPI.Vector.New = function()
     local _vector = {}
     _vector._storage = {}
@@ -196,6 +202,7 @@ PushUIAPI.Vector.New = function()
     _vector.Insert = function(index, obj) PushUIAPI.Vector._insert(_vector, index, obj) end
     _vector.Size = function() return PushUIAPI.Vector._size(_vector) end
     _vector.Clear = function() PushUIAPI.Vector._clear(_vector) end
+    _vector.ObjectAtIndex = function(index) return PushUIAPI.Vector._index(_vector, index) end
 
     return _vector
 end 

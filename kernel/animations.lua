@@ -298,7 +298,7 @@ PushUIFrames.Animations.AddStage = function(frame, stage_name)
             _stage.__theTranslationAnimation:SetDuration(duration)
             _stage.__theTranslationAnimation.__toX = to_x
             _stage.__theTranslationAnimation.__toY = to_y
-            _stage.__theTranslationAnimation:SetOffset(offset_x, offset_y)
+            _stage.__theTranslationAnimation:SetOffset(to_x, to_y)
         else
             local _a = PushUIFrames.Animations._translation(_stage, duration, to_x, to_y)
             _stage.__theTranslationAnimation = _a

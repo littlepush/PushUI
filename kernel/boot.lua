@@ -28,7 +28,6 @@ _eventDispatcher:SetScript("OnEvent", function(_, event, ...)
     if not (_eventDispatcher == _) then
         return
     end
-    print(event)
     for i = 1, #_eventsMap[event] do
         if _eventsMap[event] == nil then
             print("...unknow event, not register for "..event)
