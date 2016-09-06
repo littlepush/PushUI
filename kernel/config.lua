@@ -72,7 +72,7 @@ PushUIConfig.RightDockContainer = {
 PushUIConfig.ChatFrameDock = {
     container = "PushUIFramesLeftDockContainer",
     tint = "PushUIFrameLeftTintContainer",
-    color = PushUIColor.white,
+    color = PushUIColor.yellow,
     displayOnLoad = true,
     width = 400
 }
@@ -80,10 +80,10 @@ PushUIConfig.SkadaFrameDock = {
     container = "PushUIFramesRightDockContainer",
     tint = "PushUIFrameRightTintContainer",
     color = PushUIColor.red,
-    color2 = PushUIConfig.green,
-    color3 = PushUIConfig.blue,
+    color2 = PushUIColor.green,
+    color3 = PushUIColor.blue,
     displayOnLoad = true,
-    width = 200
+    width = 180
 }
 PushUIConfig.MinimapFrameDock = {
     container = "PushUIFramesRightDockContainer",

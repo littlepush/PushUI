@@ -26,7 +26,8 @@ PushUIConfig.skinType(_chatdock.panel)
 PushUIConfig.skinType(_chatdock.floatPanel)
 
 local _floatLabel = PushUIFrames.Label.Create(_name.."FloatLabel", _chatdock.floatPanel, true)
-_floatLabel:SetTextString("Chat")
+_floatLabel.SetTextString("Chat")
+_floatLabel:SetPoint("TOPLEFT", _chatdock.floatPanel, "TOPLEFT", 0, 0)
 
 CHAT_FRAME_FADE_OUT_TIME = 0
 -- Seconds to wait before fading out chat frames the mouse moves out of.
@@ -83,9 +84,9 @@ GeneralDockManager:SetParent(_chatdock.panel)
 
 _chatdock.__resize = function()
     SELECTED_CHAT_FRAME:ClearAllPoints()
-    SELECTED_CHAT_FRAME:SetPoint("TOPLEFT", _chatdock.panel, "TOPLEFT", 0, 0)
-    SELECTED_CHAT_FRAME:SetWidth(_config.width)
-    SELECTED_CHAT_FRAME:SetHeight(_chatdock.panel:GetHeight())
+    SELECTED_CHAT_FRAME:SetPoint("TOPLEFT", _chatdock.panel, "TOPLEFT", 5, -5)
+    SELECTED_CHAT_FRAME:SetWidth(_config.width - 10)
+    SELECTED_CHAT_FRAME:SetHeight(_chatdock.panel:GetHeight() - 10)
 end
 
 --NUM_CHAT_WINDOWS is the max number of available chat frame.

@@ -189,6 +189,13 @@ PushUIAPI.Vector._index = function(vector, index)
     if index <= 0 then return nil end
     return vector._storage[index]
 end
+PushUIAPI.Vector._contains = function(vector, obj)
+    if vector._storage == nil then return false end
+    for i = 1, #vector._storage do
+        if vector._storage[i] == obj then return true end
+    end
+    return false
+end
 PushUIAPI.Vector.New = function()
     local _vector = {}
     _vector._storage = {}
@@ -203,6 +210,7 @@ PushUIAPI.Vector.New = function()
     _vector.Size = function() return PushUIAPI.Vector._size(_vector) end
     _vector.Clear = function() PushUIAPI.Vector._clear(_vector) end
     _vector.ObjectAtIndex = function(index) return PushUIAPI.Vector._index(_vector, index) end
+    _vector.Contains = function(obj) return PushUIAPI.Vector._contains(_vector, obj) end
 
     return _vector
 end 

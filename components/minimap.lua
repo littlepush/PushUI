@@ -26,10 +26,11 @@ PushUIConfig.skinType(_minimapdock.floatPanel)
 
 local _floatLabel = PushUIFrames.Label.Create(_name.."FloatLabel", _minimapdock.floatPanel, true)
 _floatLabel:SetTextString("Minimap")
+_floatLabel:SetPoint("TOPLEFT", _minimapdock.floatPanel, "TOPLEFT", 0, 0)
 
 _minimapdock.floatPanel.WillAppear = function()
     local _x, _y = UnitPosition("player")
-    _floatLabel:SetTextString(("%.2f"):format(_x)..", "..("%.2f"):format(_y))
+    _floatLabel.SetTextString(("%.2f"):format(_x)..", "..("%.2f"):format(_y))
 end
 
 _minimapdock.panel.WillDisappear = function()
@@ -42,9 +43,9 @@ end
 _minimapdock.__resize = function()
     local _mm = Minimap
     _mm:ClearAllPoints()
-    _mm:SetWidth(_config.width)
-    _mm:SetHeight(_minimapdock.panel:GetHeight())
-    _mm:SetPoint("TOPLEFT", _minimapdock.panel, "TOPLEFT", 0, 0)
+    _mm:SetWidth(_config.width - 10)
+    _mm:SetHeight(_minimapdock.panel:GetHeight() - 10)
+    _mm:SetPoint("TOPLEFT", _minimapdock.panel, "TOPLEFT", 5, -5)
 end
 
 _minimapdock.__init = function(...)
@@ -70,7 +71,8 @@ _minimapdock.__init = function(...)
             "MinimapBorder",
             "GarrisonLandingPageMinimapButton",
             "TimeManagerClockButton",
-            "GameTimeFrame"
+            "GameTimeFrame",
+            "MiniMapMailFrame"
         }
 
         for i = 1, #frames do
@@ -99,14 +101,15 @@ _minimapdock.__init = function(...)
             Minimap_ZoomOut()
         end
     end)
+    if _config.displayOnLoad then
+        _panelContainer.Push(_minimapdock.panel)
+    else
+        _tintContainer.Push(_minimapdock.tintBar)
+    end
+    _minimapdock.__resize()
 
+    PushUIAPI.UnregisterEvent("PLAYER_ENTERING_WORLD", _minimapdock)
 end
 
-_minimapdock.__init()
-_minimapdock.__resize()
+PushUIAPI.RegisterEvent("PLAYER_ENTERING_WORLD", _minimapdock, _minimapdock.__init)
 
-if _config.displayOnLoad then
-    _panelContainer.Push(_minimapdock.panel)
-else
-    _tintContainer.Push(_minimapdock.tintBar)
-end

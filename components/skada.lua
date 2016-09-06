@@ -5,9 +5,6 @@ local
     
 if not IsAddOnLoaded("Skada") then return end
 
-local _skadaWinCount = #Skada:GetWindows()
-
--- Create default config
 local _config = PushUIConfig.SkadaFrameDock
 if not _config then 
     _config = {
@@ -20,86 +17,105 @@ if not _config then
         width = 200
     }
 end
-local _panelContainer = _G[_config.container]
-local _tintContainer = _G[_config.tint]
-local _name = "PushUIFrameSkadaFrameDock"
+_config._panelContainer = _G[_config.container]
+_config._tintContainer = _G[_config.tint]
+_config._defaultDockName = "PushUIFrameSkadaFrameDock"
 
-local _colors = {
-    [1] = _config.color,
-    [2] = _config.color2,
-    [3] = _config.color3
-}
-
-local _skadaWins = Skada:GetWindows()
+_config._colors = {}
+_config._colors[#_config._colors + 1] = _config.color
+_config._colors[#_config._colors + 1] = _config.color2
+_config._colors[#_config._colors + 1] = _config.color3
 
 local function _winResize(swin, panel)
     swin:ClearAllPoints()
     swin:SetBackdrop(nil)
     swin.button:Hide()
-    swin:SetWidth(_config.width)
-    swin:SetHeight(panel:GetHeight())
-    swin:SetBarWidth(_config.width)
+    swin:SetWidth(_config.width - 10)
+    swin:SetHeight(panel:GetHeight() - 10)
+    swin:SetBarWidth(_config.width - 10)
     swin:SetBarHeight(panel:GetHeight() / 8 - 0.5)
-    swin:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, 0)
+    swin:SetPoint("TOPLEFT", panel, "TOPLEFT", 5, -5)
 end
 
-local _skadadockGroup = {}
+_config._skadadockGroup = {}
 
-for i = 1, _skadaWinCount do
+local function _createDockForSkadaWin(swin, name)
+    local _gc = #_config._skadadockGroup
+    local _cc = #_config._colors
+    local _cindex = 1 + math.fmod(_gc, _cc)
+    local _color = _config._colors[_cindex]
     local _skadadock = PushUIFrames.DockFrame.CreateNewDock(
-        _name..i, _colors[i], "BOTTOM", _panelContainer, _tintContainer)
+        name, _color, "BOTTOM", _config._panelContainer, _config._tintContainer)
     _skadadock.panel:SetWidth(_config.width)
     PushUIConfig.skinType(_skadadock.panel)
     PushUIConfig.skinType(_skadadock.floatPanel)
 
-    local _flb = PushUIFrames.Label.Create(_name..i.."FloatLabel", _skadadock.floatPanel, true)
-    _flb:SetTextString(_skadaWins[i].bargroup:GetName())
+    local _flb = PushUIFrames.Label.Create(name.."FloatLabel", _skadadock.floatPanel, true)
+    _flb.SetTextString(swin.bargroup:GetName())
+    _flb:SetPoint("TOPLEFT", _skadadock.floatPanel, "TOPLEFT", 0, 0)
 
-    _skadaWins[i].bargroup:SetParent(_skadadock.panel)
-    _winResize(_skadaWins[i].bargroup, _skadadock.panel)
+    swin.bargroup:SetParent(_skadadock.panel)
+    swin.bargroup.dockPanel = _skadadock.panel
+    _winResize(swin.bargroup, _skadadock.panel)
 
-    _skadadockGroup[i] = _skadadock
-end
+    _config._skadadockGroup[#_config._skadadockGroup + 1] = _skadadock
 
-local _skada = Skada.displays['bar']
-
-hooksecurefunc(_skada, 'AddDisplayOptions', function(self, win, options)
-    options.baroptions.args.barspacing = nil
-    options.baroptions.args.barslocked = true
-    options.titleoptions.args.texture = nil
-    options.titleoptions.args.bordertexture = nil
-    options.titleoptions.args.thickness = nil
-    options.titleoptions.args.margin = nil
-    options.titleoptions.args.color = nil
-    options.windowoptions = nil
-end)
-
-hooksecurefunc(_skada, 'ApplySettings', function(self, win)
-    local _s = win.bargroup
-    local _name = win.bargroup:GetName()
-
-    _winResize(_s, _s:GetParent())
-end)
-
-for k,v in pairs(Skada:GetWindows()) do
-    v.bargroup:HookScript("OnShow", function(self, ...)
-        if v.bargroup:GetParent():GetAlpha() == 0 then
-            self:Hide()
-        end
-    end)
-    v.bargroup:HookScript("OnHide", function(self, ...)
-        if v.bargroup:GetParent():GetAlpha() ~= 0 then
-            self:Show()
-        end
-    end)
-end
-
-if _config.displayOnLoad then
-    for i = 1, #_skadadockGroup do
-        _panelContainer.Push(_skadadockGroup[i].panel)
-    end
-else
-    for i = 1, #_skadadockGroup do
-        _tintContainer.Push(_skadadockGroup[i].tintBar)
+    if _config.displayOnLoad then
+        _config._panelContainer.Push(_skadadock.panel)
+    else
+        _config._tintContainer.Push(_skadadock.tintBar)
     end
 end
+
+local function _skadaDockInit()
+    -- Create default config
+    local _skadaWinCount = #Skada:GetWindows()
+    local _skadaWins = Skada:GetWindows()
+
+    for i = 1, _skadaWinCount do
+        if _skadaWins[i].bargroup.dockPanel == nil then 
+            local _defaultDockName = _config._defaultDockName.._skadaWins[i].bargroup:GetName()
+            _createDockForSkadaWin(_skadaWins[i], _defaultDockName)
+        end
+    end
+
+    local _skada = Skada.displays['bar']
+
+    hooksecurefunc(_skada, 'AddDisplayOptions', function(self, win, options)
+        options.baroptions.args.barspacing = nil
+        options.baroptions.args.barslocked = true
+        options.titleoptions.args.texture = nil
+        options.titleoptions.args.bordertexture = nil
+        options.titleoptions.args.thickness = nil
+        options.titleoptions.args.margin = nil
+        options.titleoptions.args.color = nil
+        options.windowoptions = nil
+    end)
+
+    hooksecurefunc(_skada, 'ApplySettings', function(self, win)
+        local _s = win.bargroup
+        local _name = win.bargroup:GetName()
+        if _s.dockPanel == nil then
+            _createDockForSkadaWin(win, _defaultDockName.._name)
+        else
+            _winResize(_s, _s.dockPanel)
+        end
+    end)
+
+    for k,v in pairs(Skada:GetWindows()) do
+        v.bargroup:HookScript("OnShow", function(self, ...)
+            if v.bargroup:GetParent():GetAlpha() == 0 then
+                self:Hide()
+            end
+        end)
+        v.bargroup:HookScript("OnHide", function(self, ...)
+            if v.bargroup:GetParent():GetAlpha() ~= 0 then
+                self:Show()
+            end
+        end)
+    end
+
+    PushUIAPI.UnregisterEvent("PLAYER_ENTERING_WORLD", _config._skadadockGroup)
+end
+
+PushUIAPI.RegisterEvent("PLAYER_ENTERING_WORLD", _config._skadadockGroup, _skadaDockInit)

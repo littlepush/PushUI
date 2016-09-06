@@ -198,19 +198,22 @@ PushUIFrames.Label.Create = function(name, parent, autoResizeParent)
     local _lb = CreateFrame("Frame", name, parent)
     _lb.__autoresize = autoResizeParent
     _lb.__padding = 5
+    _lb:SetParent(parent)
 
     local _fs = _lb:CreateFontString()
     _lb.__text = _fs
 
     _lb.__resize = function()
-        local _fw = _fs:GetStringWidth()
-        local _fh = _fs:GetStringHeight()
-        _fs:SetWidth(_fw)
-        _fs:SetHeight(_fh)
+        local _fw = _lb.__text:GetStringWidth()
+        local _fh = _lb.__text:GetStringHeight()
+        _lb.__text:SetWidth(_fw)
+        _lb.__text:SetHeight(_fh)
 
         _lb:SetWidth(_fw + 2 * _lb.__padding)
         _lb:SetHeight(_fh + 2 * _lb.__padding)
-        
+
+        _lb.__text:ClearAllPoints()
+        _lb.__text:SetPoint("TOPLEFT", _lb, "TOPLEFT", _lb.__padding, -_lb.__padding)
         if _lb.__autoresize then
             local _p = _lb:GetParent()
             _p:SetWidth(_lb:GetWidth())
@@ -226,17 +229,16 @@ PushUIFrames.Label.Create = function(name, parent, autoResizeParent)
 
     _lb.SetPadding = function(padding)
         _lb.__padding = padding
-        _fs:ClearAllPoints()
-        _fs:SetPoint("TOPLEFT", _lb, "TOPLEFT", _lb.__padding, -_lb.__padding)
-        _fs:SetPoint("TOPRIGHT", _lb, "TOPRIGHT", -_lb.__padding, -_lb.__padding)
-        _fs:SetPoint("BOTTOMLEFT", _lb, "BOTTOMLEFT", _lb.__padding, _lb.__padding)
-        _fs:SetPoint("BOTTOMRIGHT", _lb, "BOTTOMRIGHT", -_lb.__padding, _lb.__padding)
         _lb.__resize()
     end
 
     _lb.SetMaxLines = function(lines)
         _lb.__text:SetMaxLines(lines)
         _lb.__resize()
+    end
+
+    _lb.SetTextColor = function(...)
+        _lb.__text:SetTextColor(...)
     end
 
     _lb.SetFont = function(fn, fs, fo)
@@ -263,6 +265,7 @@ PushUIFrames.Label.Create = function(name, parent, autoResizeParent)
     _lb.SetPadding(5)
     _lb.SetMaxLines(10)
     _lb.SetFont()
+    _lb.SetTextColor(1, 1, 1, 1)
 
     return _lb
 end
@@ -600,12 +603,10 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
     local _frameStack = CreateFrame("Frame", name, UIParent)
     _frameStack:ClearAllPoints()
     _frameStack.panelStack = PushUIAPI.Vector.New()
-    _frameStack._allPanelWidth = 5
     _frameStack._pushSide = side
+    _frameStack._padding = 5
+    _frameStack._allPanelWidth = _frameStack._padding
     --_frameStack:SetFrameStrata("BACKGROUND")
-
-
-    local _padding = 5
 
     if side == "LEFT" then
         _frameStack.__anchor = "TOPLEFT"
@@ -619,22 +620,31 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
 
     _frameStack.Push = function(panel, animationStage, onFinished)
         if not panel or panel.pushAvailable == false then return end
+        if _frameStack.panelStack.Contains(panel) then return end
+        _frameStack.panelStack.PushBack(panel)
+
         panel:SetPoint(
             _frameStack.__anchor, 
             _frameStack, 
             _frameStack.__relativeAnchor, 
             _frameStack._allPanelWidth * _frameStack.__abs, 0)
+
         if animationStage then
-            panel.PlayAnimationStage(animationStage, onFinished)
+            panel.PlayAnimationStage(animationStage, function(...)
+                _frameStack._allPanelWidth = _frameStack._allPanelWidth + panel:GetWidth() + _frameStack._padding
+                if onFinished then onFinished() end
+            end)
         else
             panel:SetAlpha(1)
+            _frameStack._allPanelWidth = _frameStack._allPanelWidth + panel:GetWidth() + _frameStack._padding
         end
-        _frameStack._allPanelWidth = _frameStack._allPanelWidth + panel:GetWidth() + _padding
-        _frameStack.panelStack.PushBack(panel)
     end
 
     _frameStack.Erase = function(panel, animationStage, onFinished)
         if not panel or panel.pushAvailable == false then return end
+
+        if not _frameStack.panelStack.Contains(panel) then return end
+
         local _resizeFromIndex = 1
         for i = 1, _frameStack.panelStack.Size() do
             if _frameStack.panelStack.ObjectAtIndex(i):GetName() == panel:GetName() then
@@ -643,7 +653,7 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
                 break
             end
         end
-        _frameStack._allPanelWidth = _frameStack._allPanelWidth - panel:GetWidth() - _padding
+        _frameStack._allPanelWidth = _frameStack._allPanelWidth - panel:GetWidth() - _frameStack._padding
 
         if animationStage then
             panel.PlayAnimationStage(animationStage, onFinished)
@@ -651,10 +661,10 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
             panel:SetAlpha(0)
         end
 
-        local _skipSize = 0
+        local _skipSize = _frameStack._padding
         local _eraseAnimationName = _frameStack:GetName().."EraseAnimation"
         for i = 1, _resizeFromIndex - 1 do
-            _skipSize = _skipSize + _frameStack.panelStack.ObjectAtIndex(i):GetWidth() + _padding
+            _skipSize = _skipSize + _frameStack.panelStack.ObjectAtIndex(i):GetWidth() + _frameStack._padding
         end
         for i = _resizeFromIndex, _frameStack.panelStack.Size() do
             local _p = _frameStack.panelStack.ObjectAtIndex(i)
@@ -662,7 +672,7 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
             PushUIFrames.Animations.AddStage(_p, _eraseAnimationName)
             _p.AnimationStage(_eraseAnimationName).EnableTranslation(0.35, 
                 _skipSize * _frameStack.__abs, 0)
-            _skipSize = _skipSize + _p:GetWidth() + _padding
+            _skipSize = _skipSize + _p:GetWidth() + _frameStack._padding
             _p.PlayAnimationStage(_eraseAnimationName)
         end
     end
@@ -677,6 +687,9 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, tintSide, panelStac
     local _dockPanelTint = CreateFrame("Button", name.."PanelTint", _dockNormalPanel)
     local _dockFloatPanel = CreateFrame("Frame", name.."FloatPanel", tintStack)
     _dockNormalPanel:SetFrameStrata("BACKGROUND")
+    _dockPanelTint:SetFrameStrata("TOOLTIP")
+    _dockTintFrame:SetFrameStrata("TOOLTIP")
+    _dockFloatPanel:SetFrameStrata("TOOLTIP")
 
     _dock.tintBar = _dockTintFrame
     _dock.panel = _dockNormalPanel
@@ -692,14 +705,16 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, tintSide, panelStac
     _dockFloatPanel:SetPoint("BOTTOM", _dockTintFrame, "TOP", 0, 5)
 
     if tintSide == "TOP" then
-        _dockPanelTint:SetPoint("TOP", _dockNormalPanel, "BOTTOM", 0, -2)
-    else
         _dockPanelTint:SetPoint("BOTTOM", _dockNormalPanel, "TOP", 0, 2)
+        _dockPanelTint:SetPoint("BOTTOMLEFT", _dockNormalPanel, "TOPLEFT", 0, 0)
+        _dockPanelTint:SetPoint("BOTTOMRIGHT", _dockNormalPanel, "TOPRIGHT", 0, 0)
+    else
+        _dockPanelTint:SetPoint("TOP", _dockNormalPanel, "BOTTOM", 0, -2)
+        _dockPanelTint:SetPoint("TOPLEFT", _dockNormalPanel, "BOTTOMLEFT", 0, 0)
+        _dockPanelTint:SetPoint("TOPRIGHT", _dockNormalPanel, "BOTTOMRIGHT", 0, 0)
     end
 
-    _dockPanelTint:SetPoint("LEFT", _dockNormalPanel, "LEFT", 0, 0)
-    _dockPanelTint:SetPoint("RIGHT", _dockNormalPanel, "RIGHT", 0, 0)
-    _dockPanelTint:SetHeight(5)
+    _dockPanelTint:SetHeight(8)
     _dockTintFrame:SetWidth(32)
     _dockTintFrame:SetHeight(20)
     local _r,_g,_b = unpack(color)
@@ -713,6 +728,7 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, tintSide, panelStac
         _r,_g,_b,1,
         0, 0, 0, 0.3
         )
+
     _dockNormalPanel:SetAlpha(0)
     _dockFloatPanel:SetAlpha(0)
     _dockPanelTint:SetAlpha(0)
@@ -806,11 +822,14 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, tintSide, panelStac
         local _d = _p.dock
         local _t = _d.tintBar
 
+        if _p.AnimationStage("OnClickToHide"):IsPlaying() then return end
+
         if _p.WillDisappear then _p.WillDisappear(_p) end
 
         _d.panelStack.Erase(_p, "OnClickToHide", function(...)
+            if _p.DidDisappear then _p.DidDisappear(_p) end
             _d.tintStack.Push(_t, "WhilePanelHiding", function(...)
-                if _p.DidDisappear then _p.DidDisappear(_p) end
+                -- log
             end)
         end)
     end)
