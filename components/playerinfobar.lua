@@ -29,11 +29,11 @@ local _floatLabel = PushUIFrames.Label.Create(_name.."FloatLabel", _uibdock.floa
 _floatLabel:SetPoint("TOPLEFT", _uibdock.floatPanel, "TOPLEFT", 0, 0)
 
 _uibdock.floatPanel.WillAppear = function()
-    local _exp = PushUIAPI.UnitExp.Value() / PushUIAPI.UnitExp.MaxValue()
+    local _exp = PushUIAPI.UnitExp.Value() / PushUIAPI.UnitExp.MaxValue() * 100
     local _repName = "Nan"
     local _rep = "nan"
     if PushUIAPI.WatchedFactionInfo.CanDisplay() then
-        _rep = PushUIAPI.WatchedFactionInfo.Value() / PushUIAPI.WatchedFactionInfo.MaxValue()
+        _rep = PushUIAPI.WatchedFactionInfo.Value() / PushUIAPI.WatchedFactionInfo.MaxValue() * 100
         _rep = ("%.2f"):format(_rep)
         _repName = PushUIAPI.WatchedFactionInfo.name
     end
@@ -42,7 +42,7 @@ _uibdock.floatPanel.WillAppear = function()
     _userinfo = _userinfo.."Rep: ".._repName.." ".._rep.."%\n\n"
 
     if PushUIAPI.Artifact.CanDisplay() then
-        local _artValue = ("%.2f"):format(PushUIAPI.Artifact.Value() / PushUIAPI.Artifact.MaxValue()).."%"
+        local _artValue = ("%.2f"):format(PushUIAPI.Artifact.Value() / PushUIAPI.Artifact.MaxValue() * 100).."%"
         _userinfo = _userinfo..PushUIAPI.Artifact.name..": ".._artValue
     end
 

@@ -59,6 +59,35 @@ PushUIColor.purple = {0.82, 0.47, 0.69}
 PushUIColor.alphaAvailable = 0.9
 PushUIColor.alphaDim = 0.3
 
+PushUIColor.classColor = {
+    ["DEATHKNIGHT"] = {r = 0.77, g = 0.12, b = 0.23},
+    ["DEMONHUNTER"] = {r = 0.64, g = 0.19, b = 0.79},
+    ["DRUID"] = {r = 1, g = 0.49, b = 0.04},
+    ["HUNTER"] = {r = 0.58, g = 0.86, b = 0.49},
+    ["MAGE"] = {r = 0, g = 0.76, b = 1},
+    ["MONK"] = {r = 0.0, g = 1.00 , b = 0.59},
+    ["PALADIN"] = {r = 1, g = 0.22, b = 0.52},
+    ["PRIEST"] = {r = 0.8, g = 0.87, b = .9},
+    ["ROGUE"] = {r = 1, g = 0.91, b = 0.2},
+    ["SHAMAN"] = {r = 0, g = 0.6, b = 0.6},
+    ["WARLOCK"] = {r = 0.6, g = 0.47, b = 0.85},
+    ["WARRIOR"] = {r = 0.9, g = 0.65, b = 0.45},
+}
+PushUIColor.getColorByClass = function(unit)
+    local r, g, b = 1, 1, 1
+
+    if UnitIsPlayer(unit) then
+        local _, class = UnitClass(unit)
+        local _c = PushUIColor.classColor[class or "WARRIOR"]
+        r, g, b = _c.r, _c.g, _c.b
+    elseif (not UnitPlayerControlled(unit) and UnitIsTapDenied(unit)) or UnitIsDead(unit) then
+        r, g, b = .6, .6, .6
+    else
+        r, g, b = unpack(PushUIColor.green)
+    end
+    return r, g, b
+end
+
 -- Life Color
 PushUIColor.lifeColorDynamic = function(v, max, min)
     local _p = v / (max - min) * 100;
