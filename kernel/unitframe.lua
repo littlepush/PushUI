@@ -262,7 +262,13 @@ PushUIFrames.UnitFrame.CreateHealthValue = function(unithook, config)
     _fs:SetAllPoints(_hf)
 
     _fs.OnValueChange = function()
-        _fs:SetText(UnitHealth(unithook.object))
+        local _hv = UnitHealth(unithook.object)
+        if _hv > 1000000 then
+            _hv = ("%.2f"):format(_hv / 1000000).."m"
+        elseif _hv > 1000 then
+            _hv = ("%.2f"):format(_hv / 1000).."k"
+        end
+        _fs:SetText(_hv)
         _fs:SetTextColor(unpack(_c.color(
                 unithook.apiObject.Value(),
                 unithook.apiObject.MaxValue(),

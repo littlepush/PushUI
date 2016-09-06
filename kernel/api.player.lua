@@ -189,10 +189,11 @@ end
 
 -- Artifact 
 PushUIAPI.Artifact = {}
+PushUIAPI.Artifact.name = ""
 PushUIAPI.Artifact._value = 0
 PushUIAPI.Artifact._maxValue = 0
 PushUIAPI.Artifact._generateArtifactInfo = function()
-    local _, _, _, _, totalXP, pointsSpent, _, _, _, _, _, _ = C_ArtifactUI.GetEquippedArtifactInfo();
+    local _, _, name, _, totalXP, pointsSpent, _, _, _, _, _, _ = C_ArtifactUI.GetEquippedArtifactInfo();
     local numPoints = 0;
     local xpForNextPoint = C_ArtifactUI.GetCostForPointAtRank(pointsSpent);
     while totalXP >= xpForNextPoint and xpForNextPoint > 0 do
@@ -203,6 +204,7 @@ PushUIAPI.Artifact._generateArtifactInfo = function()
 
         xpForNextPoint = C_ArtifactUI.GetCostForPointAtRank(pointsSpent);
     end
+    PushUIAPI.Artifact.name = name
     PushUIAPI.Artifact._value = totalXP
     PushUIAPI.Artifact._maxValue = xpForNextPoint
     --return numPoints, totalXP, xpForNextPoint;

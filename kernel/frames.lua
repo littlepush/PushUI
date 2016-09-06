@@ -619,7 +619,7 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
     end
 
     _frameStack.Push = function(panel, animationStage, onFinished)
-        if not panel or panel.pushAvailable == false then return end
+        if not panel or not panel.dock or panel.dock.pushAvailable == false then return end
         if _frameStack.panelStack.Contains(panel) then return end
         _frameStack.panelStack.PushBack(panel)
 
@@ -641,7 +641,7 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
     end
 
     _frameStack.Erase = function(panel, animationStage, onFinished)
-        if not panel or panel.pushAvailable == false then return end
+        if not panel or not panel.dock or panel.dock.pushAvailable == false then return end
 
         if not _frameStack.panelStack.Contains(panel) then return end
 
@@ -690,6 +690,8 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, tintSide, panelStac
     _dockPanelTint:SetFrameStrata("TOOLTIP")
     _dockTintFrame:SetFrameStrata("TOOLTIP")
     _dockFloatPanel:SetFrameStrata("TOOLTIP")
+
+    _dock.pushAvailable = true
 
     _dock.tintBar = _dockTintFrame
     _dock.panel = _dockNormalPanel
@@ -740,10 +742,10 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, tintSide, panelStac
     -- Set Animation For Float Panel
     PushUIFrames.Animations.EnableAnimationForFrame(_dockFloatPanel)
     PushUIFrames.Animations.AddStage(_dockFloatPanel, "OnTintEnterToDisplay")
-    _dockFloatPanel.AnimationStage("OnTintEnterToDisplay").EnableFade(0.35, 1)
+    _dockFloatPanel.AnimationStage("OnTintEnterToDisplay").EnableFade(0.3, 1)
 
     PushUIFrames.Animations.AddStage(_dockFloatPanel, "OnTintLeaveToHide")
-    _dockFloatPanel.AnimationStage("OnTintLeaveToHide").EnableFade(0.35, 0)
+    _dockFloatPanel.AnimationStage("OnTintLeaveToHide").EnableFade(0.3, 0)
 
     _dockTintFrame:EnableMouse(true)
     _dockPanelTint:EnableMouse(true)
@@ -775,17 +777,17 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, tintSide, panelStac
     -- Enable Animation for panel
     PushUIFrames.Animations.EnableAnimationForFrame(_dockNormalPanel)
     PushUIFrames.Animations.AddStage(_dockNormalPanel, "OnClickToShow")
-    _dockNormalPanel.AnimationStage("OnClickToShow").EnableFade(0.35, 1)
+    _dockNormalPanel.AnimationStage("OnClickToShow").EnableFade(0.3, 1)
 
     PushUIFrames.Animations.AddStage(_dockNormalPanel, "OnClickToHide")
-    _dockNormalPanel.AnimationStage("OnClickToHide").EnableFade(0.35, 0)
+    _dockNormalPanel.AnimationStage("OnClickToHide").EnableFade(0.3, 0)
 
     PushUIFrames.Animations.EnableAnimationForFrame(_dockTintFrame)
     PushUIFrames.Animations.AddStage(_dockTintFrame, "AfterPanelShow")
-    _dockTintFrame.AnimationStage("AfterPanelShow").EnableFade(0.35, 0)
+    _dockTintFrame.AnimationStage("AfterPanelShow").EnableFade(0.3, 0)
 
     PushUIFrames.Animations.AddStage(_dockTintFrame, "WhilePanelHiding")
-    _dockTintFrame.AnimationStage("WhilePanelHiding").EnableFade(0.35, 1)
+    _dockTintFrame.AnimationStage("WhilePanelHiding").EnableFade(0.3, 1)
 
     -- Click the tint icon
     _dockTintFrame:SetScript("OnClick", function(tint, ...)

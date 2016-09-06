@@ -74,7 +74,7 @@ PushUIConfig.ChatFrameDock = {
     tint = "PushUIFrameLeftTintContainer",
     color = PushUIColor.yellow,
     displayOnLoad = true,
-    width = 400
+    width = 350
 }
 PushUIConfig.SkadaFrameDock = {
     container = "PushUIFramesRightDockContainer",
@@ -96,7 +96,8 @@ PushUIConfig.PlayerInfoFrameDock = {
     container = "PushUIFramesLeftDockContainer",
     tint = "PushUIFrameLeftTintContainer",
     color = PushUIColor.orange,
-    displayOnLoad = true
+    displayOnLoad = false,
+    width = 150
 }
 PushUIConfig.PlayerAssetsFrameDock = {
     container = "PushUIFramesLeftDockContainer",

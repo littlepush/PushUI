@@ -23,9 +23,12 @@ components\actionbars.lua
 components\chatframe.lua
 components\skada.lua
 components\minimap.lua
+components\playerinfobar.lua
+
 components\objectivetracker.lua
 components\grid.lua
 components\tooltip.lua
+
 components\playerframe.lua
 components\targetframe.lua
 components\targettargetframe.lua
