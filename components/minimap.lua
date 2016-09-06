@@ -3,44 +3,51 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-local PushUIFrameMinimapHook = PushUIFrames.Frame.Create("PushUIFrameMinimapHook", PushUIConfig.MinimapFrameHook)
-PushUIFrameMinimapHook.HookParent = PushUIConfig.MinimapFrameHook.parent.HookFrame
-PushUIFrameMinimapHook.ToggleCanShow = true
-PushUIFrameMinimapHook.Toggle = function(statue)
-    PushUIFrameMinimapHook.ToggleCanShow = statue
-    if statue then
-        Minimap:Show()
-    else
-        Minimap:Hide()
-    end
+-- Create default config
+local _config = PushUIConfig.MinimapFrameDock
+if not _config then 
+    _config = {
+        container = "PushUIFramesRightDockContainer",
+        tint = "PushUIFrameRightTintContainer",
+        color = PushUIColor.gray,
+        displayOnLoad = true,
+        width = 150
+    }
+end
+local _panelContainer = _G[_config.container]
+local _tintContainer = _G[_config.tint]
+local _name = "PushUIFrameMinimapFrameDock"
+
+local _minimapdock = PushUIFrames.DockFrame.CreateNewDock(
+    _name, _config.color, "BOTTOM", _panelContainer, _tintContainer)
+_minimapdock.panel:SetWidth(_config.width)
+PushUIConfig.skinType(_minimapdock.panel)
+PushUIConfig.skinType(_minimapdock.floatPanel)
+
+local _floatLabel = PushUIFrames.Label.Create(_name.."FloatLabel", _minimapdock.floatPanel, true)
+_floatLabel:SetTextString("Minimap")
+
+_minimapdock.floatPanel.WillAppear = function()
+    local _x, _y = UnitPosition("player")
+    _floatLabel:SetTextString(("%.2f"):format(_x)..", "..("%.2f"):format(_y))
 end
 
-PushUIFrameMinimapHook.ReSize = function(...)
-    local mm = Minimap
-
-    PushUIConfig.MinimapFrameHook.align = PushUIConfig.MinimapFrameHook.align or "right"
-    local _align = PushUIConfig.MinimapFrameHook.align
-
-    local _w, _h, _x, _y = PushUIFrameMinimapHook.HookParent.GetBlockRect(
-                            1, 2, PushUIConfig.MinimapFrameHook.align,
-                            PushUIConfig.MinimapFrameHook.mustBeSquare)
-
-    _x = _x * PushUISize.Resolution.scale
-    _y = _y * PushUISize.Resolution.scale
-    _w = _w * PushUISize.Resolution.scale
-    _h = _h * PushUISize.Resolution.scale
-
-    mm:ClearAllPoints()
-
-    local _anchor = "TOPLEFT"
-    local _objAnchor = "TOPLEFT"
-
-    mm:SetWidth(_w)
-    mm:SetHeight(_h)
-    mm:SetPoint(_anchor, PushUIFrameMinimapHook.HookParent, _objAnchor, _x, _y)
+_minimapdock.panel.WillDisappear = function()
+    Minimap:Hide()
+end
+_minimapdock.panel.DidAppear = function()
+    Minimap:Show()
 end
 
-PushUIFrameMinimapHook.Init = function(...)
+_minimapdock.__resize = function()
+    local _mm = Minimap
+    _mm:ClearAllPoints()
+    _mm:SetWidth(_config.width)
+    _mm:SetHeight(_minimapdock.panel:GetHeight())
+    _mm:SetPoint("TOPLEFT", _minimapdock.panel, "TOPLEFT", 0, 0)
+end
+
+_minimapdock.__init = function(...)
     
     local mc = MinimapCluster
     local mm = Minimap
@@ -67,15 +74,19 @@ PushUIFrameMinimapHook.Init = function(...)
         }
 
         for i = 1, #frames do
-            _G[frames[i]]:Hide()
-            _G[frames[i]].Show = function(...) end
+            local _f = _G[frames[i]]
+            if _f ~= nil then
+                _G[frames[i]]:Hide()
+                _G[frames[i]].Show = function(...) end
+            end
         end
     end
 
     -- No North Arrow
     MinimapCompassTexture:SetTexture(nil)
 
-    mm:SetParent(PushUIFrameMinimapHook.HookParent)
+    mm:SetParent(_minimapdock.panel)
+    mc:SetParent(_minimapdock.panel)
     mc:Hide()
 
     MinimapBackdrop:Hide()
@@ -89,11 +100,13 @@ PushUIFrameMinimapHook.Init = function(...)
         end
     end)
 
-    PushUIFrameMinimapHook.ReSize()
 end
 
-PushUIAPI.RegisterEvent(
-    "PLAYER_ENTERING_WORLD", 
-    PushUIFrameMinimapHook,
-    PushUIFrameMinimapHook.Init
-)
+_minimapdock.__init()
+_minimapdock.__resize()
+
+if _config.displayOnLoad then
+    _panelContainer.Push(_minimapdock.panel)
+else
+    _tintContainer.Push(_minimapdock.tintBar)
+end

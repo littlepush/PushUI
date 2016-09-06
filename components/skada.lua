@@ -5,107 +5,101 @@ local
     
 if not IsAddOnLoaded("Skada") then return end
 
-local PushUIFrameSkadaHook = PushUIFrames.Frame.Create("PushUIFrameSkadaHook", PushUIConfig.SkadaFrameHook)
-PushUIFrameSkadaHook.HookParent = PushUIConfig.SkadaFrameHook.parent.HookFrame
-PushUIFrameSkadaHook.ToggleCanShow = true
+local _skadaWinCount = #Skada:GetWindows()
 
-PushUIFrameSkadaHook.Toggle = function(statue)
-    PushUIFrameSkadaHook.ToggleCanShow = statue
-    if statue then
-        for index,win in pairs(Skada:GetWindows()) do
-            win.bargroup:Show()
-        end
-    else
-        for index,win in pairs(Skada:GetWindows()) do
-            win.bargroup:Hide()
-        end
-    end
+-- Create default config
+local _config = PushUIConfig.SkadaFrameDock
+if not _config then 
+    _config = {
+        container = "PushUIFramesRightDockContainer",
+        tint = "PushUIFrameRightTintContainer",
+        color = PushUIColor.red,
+        color2 = PushUIConfig.green,
+        color3 = PushUIConfig.blue,
+        displayOnLoad = true,
+        width = 200
+    }
 end
+local _panelContainer = _G[_config.container]
+local _tintContainer = _G[_config.tint]
+local _name = "PushUIFrameSkadaFrameDock"
 
-PushUIFrameSkadaHook.ReSizeBarGroup = function(swin, index, win_count)
+local _colors = {
+    [1] = _config.color,
+    [2] = _config.color2,
+    [3] = _config.color3
+}
+
+local _skadaWins = Skada:GetWindows()
+
+local function _winResize(swin, panel)
     swin:ClearAllPoints()
-    --GetBlockRect
-    local _w, _h, _x, _y = PushUIFrameSkadaHook.HookParent.GetBlockRect(index, win_count)
-    _w = _w * PushUISize.Resolution.scale
-    _h = _h * PushUISize.Resolution.scale
-    _x = _x * PushUISize.Resolution.scale
-    _y = _y * PushUISize.Resolution.scale
-
-    local bc = 8
-    if not PushUIConfig.SkadaFrameHook.barCount then
-        bc = PushUIConfig.SkadaFrameHook.barCount
-    end
-
     swin:SetBackdrop(nil)
     swin.button:Hide()
-    swin:SetWidth(_w)
-    swin:SetBarWidth(_w)
-    swin:SetBarHeight(_h / bc - 0.5)
-    swin:SetHeight(_h)
-
-    swin:SetPoint('TOPLEFT', PushUIFrameSkadaHook.HookParent, 'TOPLEFT', _x, _y)
+    swin:SetWidth(_config.width)
+    swin:SetHeight(panel:GetHeight())
+    swin:SetBarWidth(_config.width)
+    swin:SetBarHeight(panel:GetHeight() / 8 - 0.5)
+    swin:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, 0)
 end
 
-PushUIFrameSkadaHook.ReSize = function(...)
-    for k,v in pairs(Skada:GetWindows()) do
-        PushUIFrameSkadaHook.ReSizeBarGroup(v.bargroup, k, #Skada:GetWindows())
-    end
+local _skadadockGroup = {}
+
+for i = 1, _skadaWinCount do
+    local _skadadock = PushUIFrames.DockFrame.CreateNewDock(
+        _name..i, _colors[i], "BOTTOM", _panelContainer, _tintContainer)
+    _skadadock.panel:SetWidth(_config.width)
+    PushUIConfig.skinType(_skadadock.panel)
+    PushUIConfig.skinType(_skadadock.floatPanel)
+
+    local _flb = PushUIFrames.Label.Create(_name..i.."FloatLabel", _skadadock.floatPanel, true)
+    _flb:SetTextString(_skadaWins[i].bargroup:GetName())
+
+    _skadaWins[i].bargroup:SetParent(_skadadock.panel)
+    _winResize(_skadaWins[i].bargroup, _skadadock.panel)
+
+    _skadadockGroup[i] = _skadadock
 end
 
-PushUIFrameSkadaHook.Init = function(...)
-    if not Skada then return end
-    if not PushUIFrameSkadaHook.HookParent then return end
-    if not PushUIFrameSkadaHook.HookParent.GetBlockRect then return end
+local _skada = Skada.displays['bar']
 
-    local _skada = Skada.displays['bar']
+hooksecurefunc(_skada, 'AddDisplayOptions', function(self, win, options)
+    options.baroptions.args.barspacing = nil
+    options.baroptions.args.barslocked = true
+    options.titleoptions.args.texture = nil
+    options.titleoptions.args.bordertexture = nil
+    options.titleoptions.args.thickness = nil
+    options.titleoptions.args.margin = nil
+    options.titleoptions.args.color = nil
+    options.windowoptions = nil
+end)
 
-    hooksecurefunc(_skada, 'AddDisplayOptions', function(self, win, options)
-        options.baroptions.args.barspacing = nil
-        options.baroptions.args.barslocked = true
-        options.titleoptions.args.texture = nil
-        options.titleoptions.args.bordertexture = nil
-        options.titleoptions.args.thickness = nil
-        options.titleoptions.args.margin = nil
-        options.titleoptions.args.color = nil
-        options.windowoptions = nil
-    end)
+hooksecurefunc(_skada, 'ApplySettings', function(self, win)
+    local _s = win.bargroup
+    local _name = win.bargroup:GetName()
 
-    hooksecurefunc(_skada, 'ApplySettings', function(self, win)
-        local _s = win.bargroup
-        local _name = win.bargroup:GetName()
+    _winResize(_s, _s:GetParent())
+end)
 
-        local _index = 0
-        for k,v in pairs(Skada:GetWindows()) do
-            if v.bargroup:GetName() == _name then
-                _index = k
-                break
-            end
+for k,v in pairs(Skada:GetWindows()) do
+    v.bargroup:HookScript("OnShow", function(self, ...)
+        if v.bargroup:GetParent():GetAlpha() == 0 then
+            self:Hide()
         end
-        PushUIFrameSkadaHook.ReSizeBarGroup(_s, _index, #Skada:GetWindows())
     end)
-
-    for k,v in pairs(Skada:GetWindows()) do
-        v.bargroup:HookScript("OnShow", function(self, ...)
-            if not PushUIFrameSkadaHook.ToggleCanShow then
-                self:Hide()
-            end
-        end)
-        v.bargroup:HookScript("OnHide", function(self, ...)
-            if PushUIFrameSkadaHook.ToggleCanShow then
-                self:Show()
-            end
-        end)
-    end
-
-    PushUIFrameSkadaHook.ReSize()
-
-    if not PushUIConfig.SkadaFrameHook.displayOnLoad then
-        PushUIFrameSkadaHook.Toggle(false)
-    end
+    v.bargroup:HookScript("OnHide", function(self, ...)
+        if v.bargroup:GetParent():GetAlpha() ~= 0 then
+            self:Show()
+        end
+    end)
 end
 
-PushUIAPI.RegisterEvent(
-    "PLAYER_ENTERING_WORLD", 
-    PushUIFrameSkadaHook,
-    PushUIFrameSkadaHook.Init
-)
+if _config.displayOnLoad then
+    for i = 1, #_skadadockGroup do
+        _panelContainer.Push(_skadadockGroup[i].panel)
+    end
+else
+    for i = 1, #_skadadockGroup do
+        _tintContainer.Push(_skadadockGroup[i].tintBar)
+    end
+end

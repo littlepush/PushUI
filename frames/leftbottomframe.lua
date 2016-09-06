@@ -3,29 +3,22 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-local PushUIFrameLeftBottomFrame = PushUIFrames.BottomFrame.Create("PushUIFrameLeftBottomFrame", true, PushUIConfig.LeftBottomFrame)
-PushUIFrameLeftBottomFrame.InitializeSwitcher()
-
-PushUIFrameLeftBottomFrame.Init = function(event, ...)
-    local f = PushUIFrameLeftBottomFrame
-    PushUIConfig.skinType(f)
-    f.ReSize()
+if not (PushUIConfig.LeftDockContainer and PushUIConfig.LeftDockContainer.enable) then
+    return
 end
 
-PushUIFrameLeftBottomFrame.Init()
+local _dockContainer = PushUIFrames.DockFrame.CreateDockContainer(
+    PushUIConfig.LeftDockContainer.name, PushUIConfig.LeftDockContainer.side)
+_dockContainer:SetWidth((GetScreenWidth() - PushUIFrameActionBarFrame:GetWidth()) / 2)
+_dockContainer:SetHeight(PushUIConfig.LeftDockContainer.height)
+_dockContainer:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, PushUISize.screenBottomPadding)
 
--- Test Successful
--- local _leftDockContainer = PushUIFrames.DockFrame.CreateDockContainer("PushUIFramesDockContainerLeft", "LEFT")
--- _leftDockContainer:SetWidth(GetScreenWidth())
--- _leftDockContainer:SetHeight(PushUISize.blockNormalHeight)
--- _leftDockContainer:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
--- PushUIConfig.skinType(_leftDockContainer)
-
--- local _tintDockContainer = PushUIFrames.DockFrame.CreateDockContainer("PushUIFramesDockContainerTint", "RIGHT")
--- _tintDockContainer:SetWidth(GetScreenWidth())
--- _tintDockContainer:SetHeight(20)
--- _tintDockContainer:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", 0, 0)
--- PushUIConfig.skinType(_tintDockContainer)
+local _tintContainer = PushUIFrames.DockFrame.CreateDockContainer(
+    PushUIConfig.LeftDockContainer.tintContainer.name, 
+    PushUIConfig.LeftDockContainer.tintContainer.side)
+_tintContainer:SetWidth(GetScreenWidth() / 2)
+_tintContainer:SetHeight(PushUIConfig.LeftDockContainer.tintContainer.height)
+_tintContainer:SetPoint("TOPLEFT", _dockContainer, "BOTTOMLEFT", 0, 0)
 
 -- local _colors = {PushUIColor.red, PushUIColor.blue, PushUIColor.orange}
 -- for i = 1, 3 do

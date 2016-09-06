@@ -6,6 +6,7 @@ local
 PushUIFrames.Frame = {}
 PushUIFrames.Button = {}
 PushUIFrames.ProgressBar = {}
+PushUIFrames.Label = {}
 
 PushUIFrames.Frame.Create = function(name, config)
     local _f = CreateFrame("Frame", name, UIParent)
@@ -190,6 +191,80 @@ PushUIFrames.ProgressBar.Create = function(name, parent, config, orientation)
         end
     end
     return _pb
+end
+
+PushUIFrames.Label.Create = function(name, parent, autoResizeParent)
+    if nil == autoResizeParent then autoResizeParent = false end
+    local _lb = CreateFrame("Frame", name, parent)
+    _lb.__autoresize = autoResizeParent
+    _lb.__padding = 5
+
+    local _fs = _lb:CreateFontString()
+    _lb.__text = _fs
+
+    _lb.__resize = function()
+        local _fw = _fs:GetStringWidth()
+        local _fh = _fs:GetStringHeight()
+        _fs:SetWidth(_fw)
+        _fs:SetHeight(_fh)
+
+        _lb:SetWidth(_fw + 2 * _lb.__padding)
+        _lb:SetHeight(_fh + 2 * _lb.__padding)
+        
+        if _lb.__autoresize then
+            local _p = _lb:GetParent()
+            _p:SetWidth(_lb:GetWidth())
+            _p:SetHeight(_lb:GetHeight())
+        end
+    end
+
+    _lb.SetTextString = function(text)
+        local _f = _lb.__text
+        _f:SetText(text)
+        _lb.__resize()
+    end
+
+    _lb.SetPadding = function(padding)
+        _lb.__padding = padding
+        _fs:ClearAllPoints()
+        _fs:SetPoint("TOPLEFT", _lb, "TOPLEFT", _lb.__padding, -_lb.__padding)
+        _fs:SetPoint("TOPRIGHT", _lb, "TOPRIGHT", -_lb.__padding, -_lb.__padding)
+        _fs:SetPoint("BOTTOMLEFT", _lb, "BOTTOMLEFT", _lb.__padding, _lb.__padding)
+        _fs:SetPoint("BOTTOMRIGHT", _lb, "BOTTOMRIGHT", -_lb.__padding, _lb.__padding)
+        _lb.__resize()
+    end
+
+    _lb.SetMaxLines = function(lines)
+        _lb.__text:SetMaxLines(lines)
+        _lb.__resize()
+    end
+
+    _lb.SetFont = function(fn, fs, fo)
+        local _n, _s, _o = _lb.__text:GetFont()
+        if fn ~= nil then
+            _n = fn
+        end
+        if _n == nil then _n = "Fonts\\ARIALN.TTF" end
+
+        if fs ~= nil and fs > 0 then
+            _s = fs
+        end
+        if _s == nil or _s <= 0 then _s = 14 end
+        if fo ~= nil then
+            _o = fo
+        end
+        if _o == nil or _o == "" then _o = "OUTLINE" end
+        _lb.__text:SetFont(_n, _s, _o)
+
+        _lb.__resize()
+    end
+
+    -- Default padding is 5
+    _lb.SetPadding(5)
+    _lb.SetMaxLines(10)
+    _lb.SetFont()
+
+    return _lb
 end
 
 -- Create and config for the bottom frame
@@ -525,8 +600,12 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
     local _frameStack = CreateFrame("Frame", name, UIParent)
     _frameStack:ClearAllPoints()
     _frameStack.panelStack = PushUIAPI.Vector.New()
-    _frameStack._allPanelWidth = 0
+    _frameStack._allPanelWidth = 5
     _frameStack._pushSide = side
+    --_frameStack:SetFrameStrata("BACKGROUND")
+
+
+    local _padding = 5
 
     if side == "LEFT" then
         _frameStack.__anchor = "TOPLEFT"
@@ -540,26 +619,17 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
 
     _frameStack.Push = function(panel, animationStage, onFinished)
         if not panel or panel.pushAvailable == false then return end
+        panel:SetPoint(
+            _frameStack.__anchor, 
+            _frameStack, 
+            _frameStack.__relativeAnchor, 
+            _frameStack._allPanelWidth * _frameStack.__abs, 0)
         if animationStage then
-            panel:SetPoint(
-                _frameStack.__anchor, 
-                _frameStack, 
-                _frameStack.__relativeAnchor, 
-                _frameStack:GetWidth() * _frameStack.__abs,
-                0)
-            panel.AnimationStage(animationStage).EnableTranslation(
-                0.35, _frameStack._allPanelWidth * _frameStack.__abs, 0)
             panel.PlayAnimationStage(animationStage, onFinished)
         else
-            panel:SetPoint(
-                _frameStack.__anchor,
-                _frameStack,
-                _frameStack.__relativeAnchor,
-                _frameStack._allPanelWidth * _frameStack.__abs, 
-                0)
             panel:SetAlpha(1)
         end
-        _frameStack._allPanelWidth = _frameStack._allPanelWidth + panel:GetWidth()
+        _frameStack._allPanelWidth = _frameStack._allPanelWidth + panel:GetWidth() + _padding
         _frameStack.panelStack.PushBack(panel)
     end
 
@@ -573,26 +643,18 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
                 break
             end
         end
-        _frameStack._allPanelWidth = _frameStack._allPanelWidth - panel:GetWidth()
+        _frameStack._allPanelWidth = _frameStack._allPanelWidth - panel:GetWidth() - _padding
 
         if animationStage then
-            panel.AnimationStage(animationStage).EnableTranslation(
-                0.35, _frameStack:GetWidth() * _frameStack.__abs, 0)
             panel.PlayAnimationStage(animationStage, onFinished)
         else
-            panel:SetPoint(
-                _frameStack.__anchor,
-                _frameStack,
-                _frameStack.__relativeAnchor,
-                _frameStack:GetWidth() * _frameStack.__abs,
-                0)
             panel:SetAlpha(0)
         end
 
         local _skipSize = 0
         local _eraseAnimationName = _frameStack:GetName().."EraseAnimation"
         for i = 1, _resizeFromIndex - 1 do
-            _skipSize = _skipSize + _frameStack.panelStack.ObjectAtIndex(i):GetWidth()
+            _skipSize = _skipSize + _frameStack.panelStack.ObjectAtIndex(i):GetWidth() + _padding
         end
         for i = _resizeFromIndex, _frameStack.panelStack.Size() do
             local _p = _frameStack.panelStack.ObjectAtIndex(i)
@@ -600,7 +662,7 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
             PushUIFrames.Animations.AddStage(_p, _eraseAnimationName)
             _p.AnimationStage(_eraseAnimationName).EnableTranslation(0.35, 
                 _skipSize * _frameStack.__abs, 0)
-            _skipSize = _skipSize + _p:GetWidth()
+            _skipSize = _skipSize + _p:GetWidth() + _padding
             _p.PlayAnimationStage(_eraseAnimationName)
         end
     end
@@ -608,12 +670,13 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
     return _frameStack
 end
 
-PushUIFrames.DockFrame.CreateNewDock = function(name, color, panelStack, tintStack)
+PushUIFrames.DockFrame.CreateNewDock = function(name, color, tintSide, panelStack, tintStack)
     local _dock = {}
     local _dockTintFrame = CreateFrame("Button", name.."Tint", tintStack)
     local _dockNormalPanel = CreateFrame("Frame", name.."Panel", panelStack)
     local _dockPanelTint = CreateFrame("Button", name.."PanelTint", _dockNormalPanel)
     local _dockFloatPanel = CreateFrame("Frame", name.."FloatPanel", tintStack)
+    _dockNormalPanel:SetFrameStrata("BACKGROUND")
 
     _dock.tintBar = _dockTintFrame
     _dock.panel = _dockNormalPanel
@@ -627,10 +690,16 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, panelStack, tintSta
 
     -- Init Style
     _dockFloatPanel:SetPoint("BOTTOM", _dockTintFrame, "TOP", 0, 5)
-    _dockPanelTint:SetPoint("BOTTOM", _dockNormalPanel, "TOP", 0, 2)
+
+    if tintSide == "TOP" then
+        _dockPanelTint:SetPoint("TOP", _dockNormalPanel, "BOTTOM", 0, -2)
+    else
+        _dockPanelTint:SetPoint("BOTTOM", _dockNormalPanel, "TOP", 0, 2)
+    end
+
     _dockPanelTint:SetPoint("LEFT", _dockNormalPanel, "LEFT", 0, 0)
     _dockPanelTint:SetPoint("RIGHT", _dockNormalPanel, "RIGHT", 0, 0)
-    _dockPanelTint:SetHeight(8)
+    _dockPanelTint:SetHeight(5)
     _dockTintFrame:SetWidth(32)
     _dockTintFrame:SetHeight(20)
     local _r,_g,_b = unpack(color)
@@ -642,10 +711,11 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, panelStack, tintSta
     PushUIStyle.BackgroundSolidFormat(
         _dockPanelTint,
         _r,_g,_b,1,
-        0, 0, 0, 1      -- Black border
+        0, 0, 0, 0.3
         )
     _dockNormalPanel:SetAlpha(0)
     _dockFloatPanel:SetAlpha(0)
+    _dockPanelTint:SetAlpha(0)
     _dockNormalPanel:SetHeight(panelStack:GetHeight())
 
     _dock.panelStack = panelStack
@@ -725,6 +795,12 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, panelStack, tintSta
         end)
     end)
 
+    PushUIFrames.Animations.EnableAnimationForFrame(_dockPanelTint)
+    PushUIFrames.Animations.AddStage(_dockPanelTint, "OnMouseEnter")
+    _dockPanelTint.AnimationStage("OnMouseEnter").EnableFade(0.3, 1)
+    PushUIFrames.Animations.AddStage(_dockPanelTint, "OnMouseLeave")
+    _dockPanelTint.AnimationStage("OnMouseLeave").EnableFade(0.3, 0)
+
     _dockPanelTint:SetScript("OnClick", function(paneltint, ...)
         local _p = paneltint.dock.panel
         local _d = _p.dock
@@ -737,6 +813,15 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, panelStack, tintSta
                 if _p.DidDisappear then _p.DidDisappear(_p) end
             end)
         end)
+    end)
+
+    _dockPanelTint:SetScript("OnEnter", function(pt, ...)
+        pt.CancelAnimationStage("OnMouseLeave")
+        pt.PlayAnimationStage("OnMouseEnter")
+    end)
+    _dockPanelTint:SetScript("OnLeave", function(pt, ...)
+        pt.CancelAnimationStage("OnMouseEnter")
+        pt.PlayAnimationStage("OnMouseLeave")
     end)
 
     return _dock

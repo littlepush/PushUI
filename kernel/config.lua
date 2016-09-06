@@ -46,140 +46,64 @@ PushUIConfig.ActionBarGridPlacedCood = {}
 
 PushUIConfig.ActionBarFontSize = 8
 
--- Left Bottom Frame
-PushUIConfig.LeftBottomFrame = {}
--- PushUIConfig.LeftBottomFrame.HookFrame = nil
--- Right Bottom Frame
-PushUIConfig.RightBottomFrame = {}
--- PushUIConfig.RightBottomFrame.HookFrame = nil
-
--- Chat Frame
-PushUIConfig.ChatFrameHook = {}
-PushUIConfig.ChatFrameHook.parent = PushUIConfig.LeftBottomFrame
-PushUIConfig.ChatFrameHook.displayOnLoad = true
-
--- Skada Frame
-PushUIConfig.SkadaFrameHook = {}
-PushUIConfig.SkadaFrameHook.parent = PushUIConfig.RightBottomFrame
-PushUIConfig.SkadaFrameHook.displayOnLoad = true
-PushUIConfig.SkadaFrameHook.barCount = 8
-
--- Minimap
-PushUIConfig.MinimapFrameHook = {}
-PushUIConfig.MinimapFrameHook.parent = PushUIConfig.RightBottomFrame
-PushUIConfig.MinimapFrameHook.align = "right"
-PushUIConfig.MinimapFrameHook.mustBeSquare = true
-PushUIConfig.MinimapFrameHook.allowZoom = true
-
--- Objective Tracker
-PushUIConfig.ObjectiveTrackerFrameHook = {}
-PushUIConfig.ObjectiveTrackerFrameHook.enable = false
-PushUIConfig.ObjectiveTrackerFrameHook.parent = PushUIConfig.RightBottomFrame
-PushUIConfig.ObjectiveTrackerFrameHook.align = "left"
-PushUIConfig.ObjectiveTrackerFrameHook.wheelStep = 15
-PushUIConfig.ObjectiveTrackerFrameHook.scrollside = -1   -- can be 1 or -1
-
--- Grid Tracker
-PushUIConfig.GridFrameHook = {}
-PushUIConfig.GridFrameHook.parent = PushUIConfig.RightBottomFrame
-
-
--- Scale
-PushUIConfig.LeftBottomFrame.scale = 1.0
-
--- Stick to action bar
--- If false, will stick to the left bottom corner of screen
-PushUIConfig.LeftBottomFrame.stickToActionBar = true
-
--- Distance to the stick side
-PushUIConfig.LeftBottomFrame.stickPadding = 4
-
--- Block Count
-PushUIConfig.LeftBottomFrame.blockCount = 2
-
--- Switcher
-PushUIConfig.LeftBottomFrame.switchers = {
-    left = {
-        {
-            mode = PushUIFrames.ProgressBar,
-            skin = PushUIStyle.BackgroundFormatForProgressBar,
-            targets = {
-                PushUIAPI.UnitExp,
-                PushUIAPI.WatchedFactionInfo
-            },
-            alwaysDisplay = false,
-            action = nil,
-            fillColor = {
-                PushUIColor.expColorDynamic,
-                PushUIColor.factionColorDynamic
-            }
-        }
-    },
-    groupleft = false,
-    right = {
-        {
-            mode = PushUIFrames.Button,
-            skin = PushUIStyle.BackgroundFormatFillBlueBlackBorder,
-            targets = {
-                PushUIConfig.ChatFrameHook
-            },
-            alwaysDisplay = true,
-            action = "Toggle",
-            selected = true,
-            alwaysAction = true,-- true: selected = not selected, false: only active when selected == false
-            binding = "ALT-V",
-        }
-    },
-    groupright = true
+-- Left Dock Container
+PushUIConfig.LeftDockContainer = {
+    enable = true,
+    side = "RIGHT",
+    height = PushUISize.blockNormalHeight,
+    name = "PushUIFramesLeftDockContainer", 
+    tintContainer = {
+        side = "RIGHT",
+        height = PushUISize.screenBottomPadding,
+        name = "PushUIFrameLeftTintContainer"
+    }
 }
-
--- Scale
-PushUIConfig.RightBottomFrame.scale = 1.0
-
--- Stick to action bar
--- If false, will stick to the left bottom corner of screen
-PushUIConfig.RightBottomFrame.stickToActionBar = true
-
--- Distance to the stick side
-PushUIConfig.RightBottomFrame.stickPadding = 4
-
--- Block Count
-PushUIConfig.RightBottomFrame.blockCount = 2
--- If display Switcher
-PushUIConfig.RightBottomFrame.switchers = {
-    left = {
-        {
-            mode = PushUIFrames.Button,
-            skin = PushUIStyle.BackgroundFormatFillOrangeBlackBorder,
-            targets = {
-                PushUIConfig.MinimapFrameHook,
-                PushUIConfig.SkadaFrameHook
-            },
-            alwaysDisplay = true,
-            action = "Toggle",
-            selected = true,
-            alwaysAction = true,
-            binding = "ALT-SHIFT-V"
-        }
-    },
-    groupleft = true,
-    right = {
-        {
-            mode = PushUIFrames.ProgressBar,
-            skin = PushUIStyle.BackgroundFormatForProgressBar,
-            targets = {
-                PushUIAPI.Artifact
-            },
-            alwaysDisplay = false,
-            action = nil,
-            fillColor = {
-                function(...)
-                    return {unpack(PushUIColor.orange), 1}
-                end
-            }
-        }
-    },
-    groupright = false
+PushUIConfig.RightDockContainer = {
+    enable = true,
+    side = "LEFT",
+    height = PushUISize.blockNormalHeight,
+    name = "PushUIFramesRightDockContainer",
+    tintContainer = {
+        side = "LEFT",
+        height = PushUISize.screenBottomPadding,
+        name = "PushUIFrameRightTintContainer"
+    }
+}
+PushUIConfig.ChatFrameDock = {
+    container = "PushUIFramesLeftDockContainer",
+    tint = "PushUIFrameLeftTintContainer",
+    color = PushUIColor.white,
+    displayOnLoad = true,
+    width = 400
+}
+PushUIConfig.SkadaFrameDock = {
+    container = "PushUIFramesRightDockContainer",
+    tint = "PushUIFrameRightTintContainer",
+    color = PushUIColor.red,
+    color2 = PushUIConfig.green,
+    color3 = PushUIConfig.blue,
+    displayOnLoad = true,
+    width = 200
+}
+PushUIConfig.MinimapFrameDock = {
+    container = "PushUIFramesRightDockContainer",
+    tint = "PushUIFrameRightTintContainer",
+    color = PushUIColor.gray,
+    displayOnLoad = true, 
+    width = 150
+}
+PushUIConfig.PlayerInfoFrameDock = {
+    container = "PushUIFramesLeftDockContainer",
+    tint = "PushUIFrameLeftTintContainer",
+    color = PushUIColor.orange,
+    displayOnLoad = true
+}
+PushUIConfig.PlayerAssetsFrameDock = {
+    container = "PushUIFramesLeftDockContainer",
+    tint = "PushUIFrameLeftTintContainer",
+    color = PushUIColor.purple,
+    displayOnLoad = false,
+    pushAvailable = false
 }
 
 -- UnitFrame Hook
