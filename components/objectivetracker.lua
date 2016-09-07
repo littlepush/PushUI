@@ -229,38 +229,40 @@ _othook._gainNormalQuests = function()
     local _nq = GetNumQuestWatches()
     local _qlist = PushUIAPI.Vector.New()
     for i = 1, _nq do
-        local _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16 = GetQuestWatchInfo(i)
-        if _1 == nil then break end
-        local _relativedBlock = nil
-        local _index = _othook.normalQuests.Search(_1, function(q, id) return q.questID == id end)
-        if _index > 0 then
-            _relativedBlock = _othook.normalQuests.ObjectAtIndex(_index).usingBlock
-        end
-        if _relativedBlock == nil then
-            _relativedBlock = _othook._getNormalQuestBlock()
-            _relativedBlock.questID = _1
-        end
-        local _q = {
-            questID = _1,
-            title = i.." ".._2,
-            questLogIndex = _3,
-            numObjectives = _4,
-            requiredMoney = _5,
-            isComplete = _6,
-            startEvent = _7,
-            isAutoComplete = _8,
-            failureTime = _9,
-            timeElapsed = _10,
-            questType = _11,
-            isTask = _12,
-            isBounty = _13,
-            isStory = _14,
-            isOnMap = _15,
-            hasLocalPOI = _16,
-            usingBlock = _relativedBlock
-        }
-        _qlist.PushBack(_q)
-        _othook._formatNormalQuestBlock(_relativedBlock, _q)
+        repeat 
+            local _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16 = GetQuestWatchInfo(i)
+            if _1 == nil or _2 == nil then break end
+            local _relativedBlock = nil
+            local _index = _othook.normalQuests.Search(_1, function(q, id) return q.questID == id end)
+            if _index > 0 then
+                _relativedBlock = _othook.normalQuests.ObjectAtIndex(_index).usingBlock
+            end
+            if _relativedBlock == nil then
+                _relativedBlock = _othook._getNormalQuestBlock()
+                _relativedBlock.questID = _1
+            end
+            local _q = {
+                questID = _1,
+                title = i.." ".._2,
+                questLogIndex = _3,
+                numObjectives = _4,
+                requiredMoney = _5,
+                isComplete = _6,
+                startEvent = _7,
+                isAutoComplete = _8,
+                failureTime = _9,
+                timeElapsed = _10,
+                questType = _11,
+                isTask = _12,
+                isBounty = _13,
+                isStory = _14,
+                isOnMap = _15,
+                hasLocalPOI = _16,
+                usingBlock = _relativedBlock
+            }
+            _qlist.PushBack(_q)
+            _othook._formatNormalQuestBlock(_relativedBlock, _q)
+        until true
     end
 
     -- Set to the quest list.
