@@ -78,7 +78,9 @@ local _repLabel = PushUIFrames.Label.Create(_name.."RepLabel", _uibdock.panel)
 _repLabel.SetPadding(0)
 _repLabel.SetFont(nil, 14)
 _repLabel.__onDataUpdate = function()
-    _repLabel.SetTextString(PushUIAPI.WatchedFactionInfo.name..", "..PushUIAPI.WatchedFactionInfo.rank..":")
+    local _repName = PushUIAPI.WatchedFactionInfo.name or "Nan"
+    local _repRank = PushUIAPI.WatchedFactionInfo.rank or "nan"
+    _repLabel.SetTextString(_repName..", ".._repRank..":")
 end
 PushUIAPI.WatchedFactionInfo.RegisterForValueChanged(_repLabel, _repLabel.__onDataUpdate)
 PushUIAPI.WatchedFactionInfo.RegisterForDisplayStatus(_repLabel, _repLabel.__onDataUpdate)
@@ -97,7 +99,8 @@ local _artiLabel = PushUIFrames.Label.Create(_name.."ArtifactLabel", _uibdock.pa
 _artiLabel.SetPadding(0)
 _artiLabel.SetFont(nil, 14)
 _artiLabel.__onDataUpdate = function()
-    _artiLabel.SetTextString(PushUIAPI.Artifact.name..":")
+    local _artiName = PushUIAPI.Artifact.name or "Nan"
+    _artiLabel.SetTextString(_artiName..":")
 end
 PushUIAPI.WatchedFactionInfo.RegisterForValueChanged(_artiLabel, _artiLabel.__onDataUpdate)
 PushUIAPI.WatchedFactionInfo.RegisterForDisplayStatus(_artiLabel, _artiLabel.__onDataUpdate)

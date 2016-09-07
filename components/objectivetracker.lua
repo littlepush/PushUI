@@ -3,29 +3,208 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-local PushUIFramesObjectiveTrackerHook = {}
-local OTH = PushUIFramesObjectiveTrackerHook
-OTH.name = "PushUIFramesObjectiveTrackerHook"
-local _quests = {}
-local _bonus = {}
-local _scenario = {}
-OTH.quests = _quests
-OTH.bonus = _bonus
-OTH.scenario = _scenario
+-- The quest system has 6 different module:
+-- Normal, Achievement, Auto Accept/Complete, Scenario, Bonus, World
+-- This module will not support Achievement right now.
 
-OTH._gainQuest = function()
-    local _oqc = #_quests
-    for i = 1, _oqc do _quests[i] = nil end
+local _config = PushUIConfig.ObjectiveTrackerHook
+if not _config then
+    _config = {
+        width = 200,
+        height = 34,
+        titleLineCount = 3,
+        padding = 8,
+        hideInCombat = true,
+        titleFontSize = 14,
+        objectiveFontSize = 13,
+        outline = "OUTLINE",
+        fontName = "Fonts\\ARIALN.TTF",
+        autoResize = true
+    }
+end
+
+local PushUIFramesObjectiveTrackerHook = {}
+local _othook = PushUIFramesObjectiveTrackerHook    -- alias
+_othook.name = "PushUIFramesObjectiveTrackerHook"
+local _normalQuestContainer = CreateFrame("Frame", _othook.name.."Container", UIParent)
+local _nqcontainer = _normalQuestContainer  --alias
+_othook.normalQuestContainer = _nqcontainer
+_nqcontainer:SetWidth(_config.width)
+_nqcontainer:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -30, -30)
+
+-- Cause auto accept/complete quest is also a normal quest, we don't need to 
+-- cache this quest in our code.
+_othook.normalQuests = PushUIAPI.Vector.New()
+_othook.scenarioQuest = nil
+_othook.bonusQuest = nil
+_othook.worldQuest = nil
+
+-- Freed Block Stack
+_othook._normalQuestBlockStack = PushUIAPI.Stack.New()
+
+_othook._normalQuestReleaseFreeBlock = function(block)
+    block.questID = nil
+    block:Hide()
+    _othook._normalQuestBlockStack.Push(block)
+end
+_othook._normalQuestGetFreeBlock = function(block)
+    if _othook._normalQuestBlockStack.Size() > 0 then
+        local _b = _othook._normalQuestBlockStack.Top()
+        _othook._normalQuestBlockStack.Pop()
+        _b:Show()
+        return _b
+    end
+    return nil
+end
+
+_othook._openNormalQuestOnMap = function(questBlock, ...)
+    QuestMapFrame_OpenToQuestDetails(questBlock.questID)
+end
+
+_othook._createNormalQuestBlock = function()
+    local _block = CreateFrame("Frame", nil, _nqcontainer)
+    _block:SetWidth(_config.width)
+    _block:SetHeight(_config.height)
+    PushUIConfig.skinType(_block)
+
+    local _titleLabel = PushUIFrames.Label.Create(nil, _block, _config.autoResize)
+    _titleLabel.SetFont(_config.fontName, _config.titleFontSize, _config.outline)
+    _titleLabel.SetMaxLines(_config.titleLineCount)
+    _titleLabel.SetJustifyH("LEFT")
+    _titleLabel.SetPadding(_config.padding)
+    _titleLabel:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, 0)
+    _block.titleLabel = _titleLabel
+
+    local _detailBlcok = CreateFrame("Frame", nil, _block)
+    _detailBlcok:SetFrameLevel(_block:GetFrameLevel() - 1)
+    _detailBlcok:SetWidth(_config.width)
+    _detailBlcok:SetPoint("TOPRIGHT", _block, "TOPLEFT", -_config.padding, 0)
+    _block.detailPanel = _detailBlcok
+    PushUIConfig.skinType(_detailBlcok)
+    _detailBlcok:SetAlpha(0)
+
+    local _detailLabel = PushUIFrames.Label.Create(nil, _detailBlcok, true)
+    _detailLabel.SetFont(_config.fontName, _config.objectiveFontSize, _config.outline)
+    _detailLabel:SetPoint("TOPRIGHT", _detailBlcok, "TOPRIGHT", 0, 0)
+    _detailLabel.SetJustifyH("LEFT")
+    _detailLabel.SetMaxLines(20)
+    _detailLabel.SetPadding(_config.padding)
+    _detailBlcok.objectiveLabel = _detailLabel
+
+    _block:EnableMouse(true)
+    _block:SetScript("OnMouseDown", _othook._openNormalQuestOnMap)
+
+    PushUIFrames.Animations.EnableAnimationForFrame(_detailBlcok)
+    PushUIFrames.Animations.AddStage(_detailBlcok, "OnMouseIn")
+    _detailBlcok.AnimationStage("OnMouseIn").EnableFade(0.3, 1)
+    _detailBlcok.AnimationStage("OnMouseIn").EnableTranslation(0.3, -_config.padding, 0)
+    --_detailBlcok.AnimationStage("OnMouseIn").EnableScale(0.3, 1, "TOPLEFT")
+
+    PushUIFrames.Animations.AddStage(_detailBlcok, "OnMouseOut")
+    --_detailBlcok.AnimationStage("OnMouseOut").EnableScale(0.3, 0.01, "TOPLEFT")
+    _detailBlcok.AnimationStage("OnMouseOut").EnableTranslation(0.3, _config.width, 0)
+    _detailBlcok.AnimationStage("OnMouseOut").EnableFade(0.3, 0)
+
+    _block:SetScript("OnEnter", function(self, ...)
+        PushUIConfig.skinHighlightType(self)
+        if _block.hasDetailInfo then
+            self.detailPanel.CancelAnimationStage("OnMouseOut")
+            self.detailPanel.PlayAnimationStage("OnMouseIn")
+        end
+    end)
+    _block:SetScript("OnLeave", function(self, ...)
+        PushUIConfig.skinType(self)
+        if _block.hasDetailInfo then
+            self.detailPanel.CancelAnimationStage("OnMouseIn")
+            self.detailPanel.PlayAnimationStage("OnMouseOut")
+        end
+    end)
+
+    return _block
+end
+
+_othook._getNormalQuestBlock = function()
+    local _newBlock = _othook._normalQuestGetFreeBlock()
+    if _newBlock == nil then
+        _newBlock = _othook._createNormalQuestBlock()
+    end
+    return _newBlock
+end
+
+_othook._formatNormalQuestBlock = function(block, quest)
+    local _finishCount = 0
+    local _titleLb = block.titleLabel
+    local _detail = block.detailPanel
+    local _detailLb = _detail.objectiveLabel
+    local _detailText = ""
+    if quest.numObjectives == nil or quest.numObjectives == 0 then
+        block.hasDetailInfo = false
+    else
+        block.hasDetailInfo = true
+    end
+
+    if block.hasDetailInfo then
+        for i = 1, quest.numObjectives do
+            local text, _, finished = GetQuestLogLeaderBoard(i, quest.questLogIndex);
+            if finished then
+                _finishCount = _finishCount + 1
+            end
+            if _detailText ~= "" then
+                _detailText = _detailText.."\n\n"..text
+            else
+                _detailText = text
+            end
+        end
+        _titleLb.SetTextString(quest.title.."  (".._finishCount.."/"..quest.numObjectives..")")
+    else
+        _titleLb.SetTextString(quest.title)
+    end
+    if quest.isComplete then
+        _titleLb.SetTextColor(unpack(PushUIColor.green))
+    elseif quest.isOnMap then
+        _titleLb.SetTextColor(unpack(PushUIColor.orange))
+    else
+        _titleLb.SetTextColor(unpack(PushUIColor.white))
+    end
+
+    _detailLb.SetTextString(_detailText)
+end
+
+_othook._displayNormalQuest = function(...)
+    local _qc = _othook.normalQuests.Size()
+    local _ah = 0
+    for i = 1, _qc do
+        local _q = _othook.normalQuests.ObjectAtIndex(i)
+        local _b = _q.usingBlock
+
+        _b:ClearAllPoints()
+        _b:SetPoint("TOPRIGHT", _nqcontainer, "TOPRIGHT", 0, -_ah)
+        _ah = _b:GetHeight() + _config.padding + _ah
+    end
+    _nqcontainer:SetHeight(_ah)
+end
+
+_othook._gainNormalQuests = function()
     -- 1: questID, 2: title, 3: questLogIndex, 4: numObjectives, 
     -- 5: requiredMoney, 6: isComplete, 7: startEvent, 8: isAutoComplete, 
     -- 9: failureTime, 10: timeElapsed, 11: questType, 12: isTask, 
     -- 13: isBounty, 14: isStory, 15: isOnMap, 16: hasLocalPOI
-    local _qc = GetNumQuestWatches()
-    for i = 1, _qc do
+    local _nq = GetNumQuestWatches()
+    local _qlist = PushUIAPI.Vector.New()
+    for i = 1, _nq do
         local _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16 = GetQuestWatchInfo(i)
-        _quests[i] = {
+        local _relativedBlock = nil
+        local _index = _othook.normalQuests.Search(_1, function(q, id) return q.questID == id end)
+        if _index > 0 then
+            _relativedBlock = _othook.normalQuests.ObjectAtIndex(_index).usingBlock
+        end
+        if _relativedBlock == nil then
+            _relativedBlock = _othook._getNormalQuestBlock()
+            _relativedBlock.questID = _1
+        end
+        local _q = {
             questID = _1,
-            title = _2,
+            title = i.." ".._2,
             questLogIndex = _3,
             numObjectives = _4,
             requiredMoney = _5,
@@ -39,153 +218,36 @@ OTH._gainQuest = function()
             isBounty = _13,
             isStory = _14,
             isOnMap = _15,
-            hasLocalPOI = _16
+            hasLocalPOI = _16,
+            usingBlock = _relativedBlock
         }
+        _qlist.PushBack(_q)
+        _othook._formatNormalQuestBlock(_relativedBlock, _q)
     end
-end
 
-OTH._openQuestOnMap = function(block)
-    QuestMapFrame_OpenToQuestDetails(block.quest.questID)
-end
-
-OTH._initBlock = function(block)
-    block:SetWidth(200)
-    block:SetHeight(24)
-    PushUIConfig.skinType(block)
-
-    local _fs = block:CreateFontString()
-
-    local _fn = "Fonts\\ARIALN.TTF"
-    local _fsize = 14
-    local _foutline = "OUTLINE"
-
-    _fs:SetFont(_fn, _fsize, _foutline)
-
-    -- align
-    local _align = "LEFT"
-    _fs:SetJustifyH(_align)
-
-    local _w = 180
-    local _h = _fsize
-    _fs:SetWidth(180)
-    _fs:SetHeight(_fsize)
-    _fs:ClearAllPoints()
-    _fs:SetPoint("TOPLEFT", block, "TOPLEFT", 10, -5)
-
-    block.text = _fs
-
-    local _detailBlcok = CreateFrame("Frame", block:GetName().."Detail", block)
-    PushUIConfig.skinType(_detailBlcok)
-    _detailBlcok:SetWidth(200)
-    _detailBlcok:SetPoint("TOPRIGHT", block, "TOPLEFT", 200, 0)
-    local _detailfs = _detailBlcok:CreateFontString()
-    _detailfs:SetWidth(180)
-    _detailfs:SetMaxLines(10)
-    _detailfs:SetFont(_fn, _fsize - 2, _foutline)
-    _detailfs:SetJustifyH("LEFT")
-    _detailfs:SetPoint("TOPLEFT", _detailBlcok, "TOPLEFT", 10, -10)
-    _detailBlcok.detailFont = _detailfs
-    block.detailPanel = _detailBlcok
-    _detailBlcok:SetAlpha(0)
-    --_detailBlcok:SetScale(0.01)
-    --_detailBlcok:Hide()
-
-    PushUIFrames.Animations.EnableAnimationForFrame(_detailBlcok)
-    PushUIFrames.Animations.AddStage(_detailBlcok, "OnMouseIn")
-    _detailBlcok.AnimationStage("OnMouseIn").EnableFade(0.3, 1)
-    _detailBlcok.AnimationStage("OnMouseIn").EnableTranslation(0.3, -10, 0)
-    --_detailBlcok.AnimationStage("OnMouseIn").EnableScale(0.3, 1, "TOPLEFT")
-
-    PushUIFrames.Animations.AddStage(_detailBlcok, "OnMouseOut")
-    --_detailBlcok.AnimationStage("OnMouseOut").EnableScale(0.3, 0.01, "TOPLEFT")
-    _detailBlcok.AnimationStage("OnMouseOut").EnableTranslation(0.3, 200, 0)
-    _detailBlcok.AnimationStage("OnMouseOut").EnableFade(0.3, 0)
-
-    block:SetScript("OnEnter", function(self, ...)
-        self.detailPanel.CancelAnimationStage("OnMouseOut")
-        self.detailPanel.PlayAnimationStage("OnMouseIn")
-        PushUIConfig.skinHighlightType(self)
-    end)
-    block:SetScript("OnLeave", function(self, ...)
-        self.detailPanel.CancelAnimationStage("OnMouseIn")
-        self.detailPanel.PlayAnimationStage("OnMouseOut")
-        PushUIConfig.skinType(self)
-    end)
-    block:EnableMouse(true)
-    block:SetScript("OnMouseDown", function(self, ...)
-        OTH._openQuestOnMap(self)
-    end)
-end
-
-OTH._formatBlock = function(block)
-    local _quest = block.quest
-    local _finishCount = 0
-    local _detail = block.detailPanel
-    local _detailfs = _detail.detailFont
-    local _detailText = ""
-    if _quest.numObjectives ~= nil then
-        for i = 1, _quest.numObjectives do
-            local text, _, finished = GetQuestLogLeaderBoard(i, _quest.questLogIndex);
-            if finished then
-                _finishCount = _finishCount + 1
-            end
-            if _detailText ~= "" then
-                _detailText = _detailText.."\n\n"..text
-            else
-                _detailText = text
-            end
+    -- Set to the quest list.
+    local _old_nq = #_othook.normalQuests
+    for i = 1, _old_nq do
+        local _q = _othook.normalQuests.ObjectAtIndex(i)
+        local _nindex = _qlist.Search(_q.questID, function(qobj, id) return qobj.questID == id end)
+        if _nindex == 0 then
+            -- The quest is not in list
+            _othook._normalQuestReleaseFreeBlock(_q.usingBlock)
         end
-        block.text:SetText(_quest.title.."  (".._finishCount.."/".._quest.numObjectives..")")
-    else
-        block.text:SetText(_quest.title)
+        _q.usingBlock = nil
     end
-    if _quest.isComplete then
-        block.text:SetTextColor(unpack(PushUIColor.green))
-    elseif _quest.isOnMap then
-        block.text:SetTextColor(unpack(PushUIColor.orange))
-    else
-        block.text:SetTextColor(unpack(PushUIColor.white))
-    end
+    _othook.normalQuests.Clear()
 
-    if _detailText == "" then
-        _detailText = _quest.title
-    end
-    _detailfs:SetText(_detailText)
-    local _th = _detailfs:GetStringHeight()
-    _detailfs:SetHeight(_th)
-    _detail:SetHeight(_th + 20)
+    -- Replace the vector with new 
+    _othook.normalQuests = _qlist
 end
 
-OTH._blocks = {}
-OTH._showQuest = function(event, ...)
-    local _qc = #_quests
-    local _bc = #OTH._blocks
-
-    for i = 1, _qc do
-        local _blockFrame = nil
-        if i <= _bc then
-            _blockFrame = OTH._blocks[i]
-        else
-            _blockFrame = CreateFrame("Frame", OTH.name.."Block"..i, UIParent)
-            OTH._blocks[i] = _blockFrame
-            _bc = _bc + 1
-            OTH._initBlock(_blockFrame)
-        end
-        _blockFrame.quest = _quests[i]
-        _blockFrame:ClearAllPoints()
-        OTH._formatBlock(_blockFrame)
-        _blockFrame:Show()
-        _blockFrame:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -30, -(i - 1) * 28 - 30)
-    end
-
-    if _qc < _bc then
-        for i = _qc + 1, _bc do
-            OTH._blocks[i]:Hide()
-        end
-    end
+_othook.OnNormalQuestListChange = function(...)
+    _othook._gainNormalQuests()
+    _othook._displayNormalQuest()
 end
 
-
+local OTH = PushUIFramesObjectiveTrackerHook
 OTH._scenarioBlock = nil
 OTH._formatScenarioBlock = function()
     local _b = OTH._scenarioBlock
@@ -499,8 +561,7 @@ ObjectiveTrackerFrame:SetScript("OnShow", ObjectiveTrackerFrame.Hide)
 ObjectiveTrackerFrame:Hide()
 
 OTH._onUpdate = function(event, ...)
-    OTH._gainQuest()
-    OTH._showQuest()
+    _othook.OnNormalQuestListChange()
 
     if event == "QUEST_ACCEPTED" then
         local questLogIndex, questID = ...

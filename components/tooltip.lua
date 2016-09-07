@@ -93,7 +93,7 @@ local function __onTooltipSetUnit(tip_data)
         end
 
         local n = guildName and 3 or 2
-        local class = UnitClass(unit)
+        local class = UnitClass(unit) or ""
         _G["GameTooltipTextLeft"..n]:SetFormattedText("%s %s "..color.."%s", level, race, class)
 
         if UnitIsPVP(unit) then

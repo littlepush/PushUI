@@ -111,17 +111,43 @@ PushUIFrameActionBarLayout.DefaultButtonPlace = function(btn, row, col)
 end
 
 PushUIFrameActionBarLayout.ReSizeVehicleButton = function()
-    local _barWidth = PushUIFrameActionBarFrame:GetWidth()
-    -- PushUISize.actionButtonPadding
-    -- PushUIConfig.ActionBarGridScale
-    -- PushUISize.Resolution.scale
     local _padding = (
         PushUISize.actionButtonPadding * 
         PushUIConfig.ActionBarGridScale * 
         PushUISize.Resolution.scale)
-    local _btnW = ((_barWidth - _padding) / (NUM_PET_ACTION_SLOTS + 2)) - _padding
+    local _vlb = _G["MainMenuBarVehicleLeaveButton"]
+    _vlb:SetScript("OnShow", _vlb.Hide)
+    _vlb:Hide()
+    -- _vlb:ClearAllPoints()
+    -- _vlb:SetPoint("BOTTOMLEFT", PushUIFrameActionBarFrame, "TOPLEFT", _padding, _padding)
 
-        
+    local _vlframe = CreateFrame(
+        "Frame",
+        "PushUIFrameActionBarLayoutLeaveVehicleFrame",
+        PushUIFrameActionBarFrame,
+        "SecureHandlerStateTemplate"
+        )
+    --PushUIConfig.skinType(_vlframe)
+    _vlframe:SetWidth(PushUISize.actionButtonSize * PushUIConfig.ActionBarGridScale)
+    _vlframe:SetHeight(PushUISize.actionButtonSize * PushUIConfig.ActionBarGridScale)
+    _vlframe:SetPoint("BOTTOMLEFT", PushUIFrameActionBarFrame, "TOPLEFT", _padding, _padding)
+
+    local _vlbtn = CreateFrame(
+        "Button", 
+        "PushUIFrameActionBarLayoutLeaveVehicleButton", 
+        _vlframe, 
+        "SecureHandlerClickTemplate, SecureHandlerStateTemplate")
+    PushUIConfig.skinType(_vlbtn)
+    _vlbtn:RegisterForClicks("AnyUp")
+    _vlbtn:SetScript("OnClick", VehicleExit)
+    _vlbtn:SetScript("OnEnter", function(...) PushUIConfig.skinHighlightType(_vlbtn) end)
+    _vlbtn:SetScript("OnLeave", function(...) PushUIConfig.skinType(_vlbtn) end)
+    _vlbtn:SetAllPoints()
+
+    RegisterStateDriver(_vlbtn, "visibility", "[petbattle][vehicleui][overridebar] hide; [@vehicle,exists][possessbar] show; hide")
+    RegisterStateDriver(_vlframe, "visibility", "[petbattle][vehicleui][overridebar][possessbar,@vehicle,exists] hide; show")
+
+    PushUIFrameActionBarLayout._vehicleButton = _vlbtn
 end
 
 PushUIFrameActionBarLayout.ReSizePetButtons = function()
@@ -157,6 +183,7 @@ PushUIFrameActionBarLayout.RestoreToDefault = function()
         PushUIFrameActionBarLayout.DefaultButtonPlace(_mbrbtn, 3, i)
     end
     PushUIFrameActionBarLayout.ReSizePetButtons()
+    PushUIFrameActionBarLayout.ReSizeVehicleButton()
 end
 
 PushUIFrameActionBarLayout.ApplyFormat = function(btn)
@@ -306,6 +333,7 @@ PushUIFrameActionBarLayout.ReSize = function()
     end
 
     PushUIFrameActionBarLayout.ReSizePetButtons()
+    PushUIFrameActionBarLayout.ReSizeVehicleButton()
 end
 
 PushUIFrameActionBarLayout.Init = function(...)

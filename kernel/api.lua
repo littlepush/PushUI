@@ -196,6 +196,13 @@ PushUIAPI.Vector._contains = function(vector, obj)
     end
     return false
 end
+PushUIAPI.Vector._search = function(vector, obj, comp)
+    if vector._storage == nil then return 0 end
+    for i = 1, #vector._storage do
+        if comp(vector._storage[i], obj) then return i end
+    end
+    return 0
+end
 PushUIAPI.Vector.New = function()
     local _vector = {}
     _vector._storage = {}
@@ -211,6 +218,7 @@ PushUIAPI.Vector.New = function()
     _vector.Clear = function() PushUIAPI.Vector._clear(_vector) end
     _vector.ObjectAtIndex = function(index) return PushUIAPI.Vector._index(_vector, index) end
     _vector.Contains = function(obj) return PushUIAPI.Vector._contains(_vector, obj) end
+    _vector.Search = function(obj, comp) return PushUIAPI.Vector._search(_vector, obj, comp) end
 
     return _vector
 end 

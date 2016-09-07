@@ -241,6 +241,10 @@ PushUIFrames.Label.Create = function(name, parent, autoResizeParent)
         _lb.__text:SetTextColor(...)
     end
 
+    _lb.SetJustifyH = function(...)
+        _lb.__text:SetJustifyH(...)
+    end
+
     _lb.SetFont = function(fn, fs, fo)
         local _n, _s, _o = _lb.__text:GetFont()
         if fn ~= nil then
