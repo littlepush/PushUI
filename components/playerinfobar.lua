@@ -88,7 +88,7 @@ _repLabel.__onDataUpdate()
 local _repBarConfig = {
     targets = { PushUIAPI.WatchedFactionInfo },
     fillColor = { PushUIColor.factionColorDynamic },
-    alwaysDisplay = true
+    alwaysDisplay = false
 }
 local _repBar = PushUIFrames.ProgressBar.Create(_name.."RepBar", _uibdock.panel, _repBarConfig, "HORIZONTAL")
 _repBar:SetWidth(_config.width - 10)
@@ -108,7 +108,7 @@ _artiLabel.__onDataUpdate()
 local _artiBarConfig = {
     targets = { PushUIAPI.Artifact },
     fillColor = { function(...) return {unpack(PushUIColor.yellow), 1} end },
-    alwaysDisplay = true
+    alwaysDisplay = false
 }
 local _artiBar = PushUIFrames.ProgressBar.Create(_name.."ArtifactBar", _uibdock.panel, _artiBarConfig, "HORIZONTAL")
 _artiBar:SetWidth(_config.width - 10)
