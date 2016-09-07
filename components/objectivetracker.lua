@@ -7,19 +7,22 @@ local
 -- Normal, Achievement, Auto Accept/Complete, Scenario, Bonus, World
 -- This module will not support Achievement right now.
 
+-- Hide objective tracker
+ObjectiveTrackerFrame:SetScript("OnShow", ObjectiveTrackerFrame.Hide)
+ObjectiveTrackerFrame:Hide()
+
 local _config = PushUIConfig.ObjectiveTrackerHook
 if not _config then
     _config = {
         width = 200,
-        height = 34,
         titleLineCount = 3,
-        padding = 8,
+        padding = 5,
         hideInCombat = true,
-        titleFontSize = 14,
-        objectiveFontSize = 13,
+        titleFontSize = 12,
+        objectiveFontSize = 12,
         outline = "OUTLINE",
         fontName = "Fonts\\ARIALN.TTF",
-        autoResize = true
+        autoResize = false
     }
 end
 
@@ -31,6 +34,33 @@ local _nqcontainer = _normalQuestContainer  --alias
 _othook.normalQuestContainer = _nqcontainer
 _nqcontainer:SetWidth(_config.width)
 _nqcontainer:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -30, -30)
+
+PushUIFrames.Animations.EnableAnimationForFrame(_nqcontainer)
+PushUIFrames.Animations.AddStage(_nqcontainer, "RegenEnable")
+_nqcontainer.AnimationStage("RegenEnable").EnableFade(0.35, 1)
+
+PushUIFrames.Animations.AddStage(_nqcontainer, "RegenDisable")
+_nqcontainer.AnimationStage("RegenDisable").EnableFade(0.35, 0)
+
+_nqcontainer.regenEnable = function(...)
+    print("enable")
+    _nqcontainer.CancelAnimationStage("RegenDisable")
+    _nqcontainer:Show()
+    _nqcontainer.PlayAnimationStage("RegenEnable")
+end
+
+_nqcontainer.regenDisable = function(...)
+    print("disable")
+    _nqcontainer.CancelAnimationStage("RegenEnable")
+    _nqcontainer.PlayAnimationStage("RegenDisable", function(...) 
+        _nqcontainer:Hide() 
+    end)
+end
+
+if _config.hideInCombat then
+    PushUIAPI.RegisterEvent("PLAYER_REGEN_ENABLED", _nqcontainer, _nqcontainer.regenEnable)
+    PushUIAPI.RegisterEvent("PLAYER_REGEN_DISABLED", _nqcontainer, _nqcontainer.regenDisable)
+end
 
 -- Cause auto accept/complete quest is also a normal quest, we don't need to 
 -- cache this quest in our code.
@@ -62,9 +92,10 @@ _othook._openNormalQuestOnMap = function(questBlock, ...)
 end
 
 _othook._createNormalQuestBlock = function()
+    local _height = _config.titleFontSize + _config.padding * 2
     local _block = CreateFrame("Frame", nil, _nqcontainer)
     _block:SetWidth(_config.width)
-    _block:SetHeight(_config.height)
+    _block:SetHeight(_height)
     PushUIConfig.skinType(_block)
 
     local _titleLabel = PushUIFrames.Label.Create(nil, _block, _config.autoResize)
@@ -72,6 +103,9 @@ _othook._createNormalQuestBlock = function()
     _titleLabel.SetMaxLines(_config.titleLineCount)
     _titleLabel.SetJustifyH("LEFT")
     _titleLabel.SetPadding(_config.padding)
+    if _config.autoResize == false then
+        _titleLabel.SetForceWidth(_config.width)
+    end
     _titleLabel:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, 0)
     _block.titleLabel = _titleLabel
 
@@ -88,6 +122,9 @@ _othook._createNormalQuestBlock = function()
     _detailLabel:SetPoint("TOPRIGHT", _detailBlcok, "TOPRIGHT", 0, 0)
     _detailLabel.SetJustifyH("LEFT")
     _detailLabel.SetMaxLines(20)
+    if _config.autoResize == false then
+        _detailLabel.SetForceWidth(_config.width)
+    end
     _detailLabel.SetPadding(_config.padding)
     _detailBlcok.objectiveLabel = _detailLabel
 
@@ -226,12 +263,14 @@ _othook._gainNormalQuests = function()
     end
 
     -- Set to the quest list.
-    local _old_nq = #_othook.normalQuests
+    local _old_nq = _othook.normalQuests.Size()
     for i = 1, _old_nq do
         local _q = _othook.normalQuests.ObjectAtIndex(i)
-        local _nindex = _qlist.Search(_q.questID, function(qobj, id) return qobj.questID == id end)
+        local _nindex = _qlist.Search(_q.questID, function(qobj, id) 
+            return qobj.questID == id end)
         if _nindex == 0 then
             -- The quest is not in list
+            print("Release a block")
             _othook._normalQuestReleaseFreeBlock(_q.usingBlock)
         end
         _q.usingBlock = nil
@@ -246,6 +285,31 @@ _othook.OnNormalQuestListChange = function(...)
     _othook._gainNormalQuests()
     _othook._displayNormalQuest()
 end
+
+-- Scenario Quest
+_othook._gainScenarioQuest = function()
+    local _1, _2, _3, _4, _5, _6, _7, _8, _9, _10 = C_Scenario.GetInfo()
+    if not _1 then return end
+    if 0 == _2 and 0 == _3 then return end
+    local _s = {
+        scenarioName = _1,
+        currentStage = _2,
+        numStages = _3,
+        flags = _4,
+        unknow1 = _5,
+        unknow2 = _6,
+        unknow3 = _7,
+        xp = _8, 
+        money = _9,
+        scenarioType = _10,
+        showCriteria = C_Scenario.ShouldShowCriteria()
+    }
+    _othook.scenarioQuest = _s
+end
+_othook.IsScenarioQuestValidate = function()
+
+end
+
 
 local OTH = PushUIFramesObjectiveTrackerHook
 OTH._scenarioBlock = nil
@@ -555,10 +619,6 @@ OTH._bonusCheckIfComplete = function(event, questID)
     end
 end
 
-
--- Hide objective tracker
-ObjectiveTrackerFrame:SetScript("OnShow", ObjectiveTrackerFrame.Hide)
-ObjectiveTrackerFrame:Hide()
 
 OTH._onUpdate = function(event, ...)
     _othook.OnNormalQuestListChange()

@@ -25,7 +25,7 @@ for i = 1, #tooltips do
     _bg:SetPoint("TOPLEFT", 1, -1)
     _bg:SetPoint("BOTTOMRIGHT", -1, 1)
     _bg:SetFrameLevel(_t:GetFrameLevel() - 1)
-    PushUIConfig.skinType(_bg)
+    PushUIConfig.skinTooltipType(_bg)
 end
 
 hooksecurefunc("GameTooltip_SetDefaultAnchor", function(self, parent)

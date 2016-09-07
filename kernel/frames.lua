@@ -199,18 +199,32 @@ PushUIFrames.Label.Create = function(name, parent, autoResizeParent)
     _lb.__autoresize = autoResizeParent
     _lb.__padding = 5
     _lb:SetParent(parent)
+    _lb.__forceWidth = 0
+    _lb.__forceHeight = 0
 
     local _fs = _lb:CreateFontString()
     _lb.__text = _fs
 
     _lb.__resize = function()
-        local _fw = _lb.__text:GetStringWidth()
-        local _fh = _lb.__text:GetStringHeight()
-        _lb.__text:SetWidth(_fw)
-        _lb.__text:SetHeight(_fh)
+        if _lb.__forceWidth ~= 0 then
+            _lb.__text:SetWidth(_lb.__forceWidth - 2 * _lb.__padding)
+            _lb:SetWidth(_lb.__forceWidth)
+        else
+            _lb.__text:SetWidth(0)
+            local _fw = _lb.__text:GetStringWidth()
+            _lb.__text:SetWidth(_fw)
+            _lb:SetWidth(_fw + 2 * _lb.__padding)
+        end
 
-        _lb:SetWidth(_fw + 2 * _lb.__padding)
-        _lb:SetHeight(_fh + 2 * _lb.__padding)
+        if _lb.__forceHeight ~= 0 then
+            _lb.__text:SetHeight(_lb.__forceHeight - 2 * _lb.__padding)
+            _lb:SetHeight(_lb.__forceHeight)
+        else
+            _lb.__text:SetHeight(0)
+            local _fh = _lb.__text:GetStringHeight()
+            _lb.__text:SetHeight(_fh)
+            _lb:SetHeight(_fh + 2 * _lb.__padding)
+        end
 
         _lb.__text:ClearAllPoints()
         _lb.__text:SetPoint("TOPLEFT", _lb, "TOPLEFT", _lb.__padding, -_lb.__padding)
@@ -219,6 +233,16 @@ PushUIFrames.Label.Create = function(name, parent, autoResizeParent)
             _p:SetWidth(_lb:GetWidth())
             _p:SetHeight(_lb:GetHeight())
         end
+    end
+
+    _lb.SetForceWidth = function(w)
+        _lb.__forceWidth = w
+        _lb.__resize()
+    end
+
+    _lb.SetForceHeight = function(h)
+        _lb.__forceHeight = h
+        _lb.__resize()
     end
 
     _lb.SetTextString = function(text)
@@ -252,10 +276,10 @@ PushUIFrames.Label.Create = function(name, parent, autoResizeParent)
         end
         if _n == nil then _n = "Fonts\\ARIALN.TTF" end
 
-        if fs ~= nil and fs > 0 then
+        if fs ~= nil and fs > 1 then
             _s = fs
         end
-        if _s == nil or _s <= 0 then _s = 14 end
+        if _s == nil or _s < 1 then _s = 14 end
         if fo ~= nil then
             _o = fo
         end

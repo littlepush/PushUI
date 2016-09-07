@@ -352,6 +352,26 @@ PushUIFrames.UnitFrame.__onUpdateAuraList = function(btnTable, unithook, config)
             PushUIStyle.BackgroundFormatForProgressBar(_pb)
             _btn:SetScript("OnUpdate", PushUIFrames.UnitFrame.__onAuraUpdate)
             _btn._pb = _pb
+
+            local _tipframe = CreateFrame("Frame", unithook.name.."AurasButtonTip"..i, _btn)
+            PushUIConfig.skinTooltipType(_tipframe)
+            _tipframe:SetPoint("TOPLEFT", _pb, "BOTTOMLEFT", 0, -PushUISize.padding)
+
+            local _tiplb = PushUIFrames.Label.Create(_tipframe:GetName().."Label", _tipframe, true)
+            _tiplb.SetFont(nil, 14)
+            _btn.tipFrame = _tipframe
+            _btn.tipLabel = _tiplb
+            --_tiplb:SetAllPoints(_tipframe)
+            _tiplb:SetPoint("TOPLEFT", _tipframe, "TOPLEFT")
+            _tipframe:Hide()
+
+            _btn:SetScript("OnEnter", function(self, ...)
+                self.tipLabel.SetTextString(self._auraInfo.name)
+                self.tipFrame:Show()
+            end)
+            _btn:SetScript("OnLeave", function(self, ...)
+                self.tipFrame:Hide()
+            end)
         end
 
         -- Get Aura and set the button's display status
