@@ -180,8 +180,9 @@ PushUIAPI.Vector._size = function(vector)
 end
 PushUIAPI.Vector._clear = function(vector)
     if vector._storage == nil then return end
-    local _s = #vector._storage
-    for i = 1, _s do vector._storage[i] = nil end
+    repeat
+        table.remove(vector._storage)
+    until #vector._storage == 0
 end
 PushUIAPI.Vector._index = function(vector, index)
     if vector._storage == nil then return nil end
@@ -235,15 +236,15 @@ end
 function PushUIAPI.Map:_unset(map, key)
 	if map._storage == nil then return end
 	if not map._storage[key] then return end
-	local _idx = 1
-	for k, _ in pairs(map._storage) do
-		if k == key then
-			table.remove(map._storage, _idx)
-			map._size = map._size - 1
-			break
-		end
-		_idx = _idx + 1
-	end
+    local _newStorage = {}
+    for k, v in pairs(map._storage) do
+        if k ~= key then
+            _newStorage[k] = v
+        end
+    end
+    map._storage = _newStorage
+    map._size = map._size - 1
+    print("_size: "..map._size..", realsize: "..#map._storage)
 end
 function PushUIAPI.Map:_contains(map, key)
 	if map._storage == nil then return false end

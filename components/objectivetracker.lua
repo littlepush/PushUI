@@ -81,7 +81,7 @@ _othook._normalQuestGetFreeBlock = function(block)
 end
 
 _othook._openNormalQuestOnMap = function(questBlock, ...)
-    QuestMapFrame_OpenToQuestDetails(questBlock.quest.questID)
+    QuestMapFrame_OpenToQuestDetails(questBlock.questID)
 end
 
 _othook._createNormalQuestBlock = function()
@@ -168,7 +168,8 @@ _othook._formatNormalQuestBlock = function(block, quest)
     local _detailLb = _detail.objectiveLabel
     local _detailText = ""
 
-	if #quest.objlist > 0 then
+	if #quest.objList > 0 then
+        block.hasDetailInfo = true
         for i = 1, quest.numObjectives do
 			local _qo = quest.objList[i]
             if _detailText ~= "" then
@@ -179,6 +180,7 @@ _othook._formatNormalQuestBlock = function(block, quest)
         end
         _titleLb.SetTextString(quest.title.."  ("..quest.objCompleteCount.."/"..quest.numObjectives..")")
     else
+        block.hasDetailInfo = false
         _titleLb.SetTextString(quest.title)
     end
     if quest.isComplete then
@@ -197,7 +199,7 @@ _othook._displayNormalQuest = function(...)
 	_othook._normalQuestDisplayingBlock.ForEach(function(questID, block)
 		block:ClearAllPoints()
 		block:SetPoint("TOPRIGHT", _nqcontainer, "TOPRIGHT", 0, -_ah)
-		_ah = _block:GetHeight() + _config.padding + _ah
+		_ah = block:GetHeight() + _config.padding + _ah
 	end)
     _nqcontainer:SetHeight(_ah)
 end
@@ -205,8 +207,9 @@ end
 _othook.OnNormalQuestListNewWatching = function(event, newQuestVector)
 	local _s = newQuestVector.Size()
 	for i = 1, _s do
-		local _block = _oth._getNormalQuestBlock()
+		local _block = _othook._getNormalQuestBlock()
 		local _newquest = newQuestVector.ObjectAtIndex(i)
+        _block.questID = _newquest.questID
 		_othook._formatNormalQuestBlock(_block, _newquest)
 		_othook._normalQuestDisplayingBlock.Set(_newquest.questID, _block)
 	end
@@ -216,9 +219,9 @@ _othook.OnNormalQuestListUnWatch = function(event, unWatchQuestVector)
 	local _s = unWatchQuestVector.Size()
 	for i = 1, _s do
 		local _quest = unWatchQuestVector.ObjectAtIndex(i)
-		local _block = _normalQuestDisplayingBlock.Object(_quest.questID)
+		local _block = _othook._normalQuestDisplayingBlock.Object(_quest.questID)
+        _othook._normalQuestDisplayingBlock.UnSet(_quest.questID)
 		_othook._normalQuestReleaseFreeBlock(_block)
-		_normalQuestDisplayingBlock.UnSet(_quest.questID)
 	end
 	_othook._displayNormalQuest()
 end
@@ -226,14 +229,14 @@ _othook.OnNormanQuestListUpdate = function(event, updateQuestVector)
 	local _s = updateQuestVector.Size()
 	for i = 1, _s do
 		local _quest = updateQuestVector.ObjectAtIndex(i)
-		local _block = _normalQuestDisplayingBlock.Object(_quest.questID)
+		local _block = _othook._normalQuestDisplayingBlock.Object(_quest.questID)
 		_othook._formatNormalQuestBlock(_block, _quest)
 	end
 	_othook._displayNormalQuest()
 end
 
 -- Initialize to display all quest
-_othook.OnNormalQuestListNewWatching(nil, PushUIAPI.NormalQuest.questList)
+_othook.OnNormalQuestListNewWatching(nil, PushUIAPI.NormalQuests.questList)
 
 -- register event
 PushUIAPI:RegisterPUIEvent(

@@ -23,7 +23,7 @@ function PushUIAPI:RegisterPUIEvent(event, key, func)
 		_dc[event] = {}
 	end
 	local _dce = _dc[event]
-	if not _dce[key] then print("PUIEvent: "..event.."has already been registered with key: "..key); return end
+	if _dce[key] then print("PUIEvent: "..event.."has already been registered with key: "..key); return end
 	_dce[key] = func
 end
 
@@ -46,7 +46,10 @@ function PushUIAPI:FirePUIEvent(event, ...)
 		print("PUIEvent: cannot fire an empty event")
 		return
 	end
-	if not _dc[event] then return end
+	if not _dc[event] then 
+		print("cannot find hook for event: "..event)
+		return 
+	end
 	local _dce = _dc[event]
 	local _dceCount = #_dce
 	for k, f in pairs(_dce) do

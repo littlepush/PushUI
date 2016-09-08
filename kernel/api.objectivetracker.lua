@@ -73,7 +73,7 @@ PushUIAPI.NormalQuests._gainQuestList = function()
 
 			local _containsInOldList = _puiqlist.Search(_1, function(obj, qid)
 				return obj.questID == qid
-			end
+			end)
 			if _containsInOldList == 0 then
 				-- This is a new accepted quest
 				_puiAcptlist.PushBack(_q)
@@ -97,15 +97,16 @@ PushUIAPI.NormalQuests._gainQuestList = function()
 		local _oq = _puiqlist.ObjectAtIndex(i)
 		local _containsInNewList = _qlist.Search(_oq, function(obj, oldquest)
 			return obj.questID == oldquest.questID
-		end
-		if _containsInNewList == false then
+		end)
+		if _containsInNewList == 0 then
 			-- Find a finished quest
 			_puiCmptlist.PushBack(_oq)
 		end
 	end
 
     -- Replace the vector with new 
-    PushUIAPI.NormalQuests.queueList = _qlist
+    PushUIAPI.NormalQuests.questList.Clear()
+    PushUIAPI.NormalQuests.questList = _qlist
 end
 
 PushUIAPI.NormalQuests._updateQuestList  = function(event, ...)
@@ -126,11 +127,11 @@ PushUIAPI.NormalQuests._initialize = function()
 	PushUIAPI.RegisterEvent("QUEST_LOG_UPDATE", PUI_NQ, PUI_NQ._updateQuestList)
 	PushUIAPI.RegisterEvent("QUEST_WATCH_LIST_CHANGED", PUI_NQ, PUI_NQ._updateQuestList)
 	PushUIAPI.RegisterEvent("QUEST_ACCEPTED", PUI_NQ, PUI_NQ._updateQuestList)
+    PushUIAPI.RegisterEvent("SUPER_TRACKED_QUEST_CHANGED", PUI_NQ, PUI_NQ._updateQuestList)
 	--PushUIAPI.RegisterEvent("QUEST_POI_UPDATE", PUI_NQ, PUI_NQ._updateQuestList)
 	--PushUIAPI.RegisterEvent("ZONE_CHANGED_NEW_AREA", PUI_NQ, PUI_NQ._updateQuestList)
 	--PushUIAPI.RegisterEvent("VARIABLES_LOADED", PUI_NQ, PUI_NQ._updateQuestList)
 	--PushUIAPI.RegisterEvent("ZONE_CHANGED", PUI_NQ, PUI_NQ._updateQuestList)
-	--PushUIAPI.RegisterEvent("SUPER_TRACKED_QUEST_CHANGED", PUI_NQ, PUI_NQ._updateQuestList)
 end
 
 -- Default to initialize the quest list
