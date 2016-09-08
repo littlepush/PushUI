@@ -223,3 +223,62 @@ PushUIAPI.Vector.New = function()
     return _vector
 end 
 PushUIAPI.Vector.Delete = function(vector) vector.Clear() end
+
+PushUIAPI.Map = {}
+function PushUIAPI.Map:_set(map, key, value)
+	if map._storage == nil then return end
+	if map._storage[key] == nil then
+		map._size = map._size + 1
+	end
+	map._storage[key] = value
+end
+function PushUIAPI.Map:_unset(map, key)
+	if map._storage == nil then return end
+	if not map._storage[key] then return end
+	local _idx = 1
+	for k, _ in pairs(map._storage) do
+		if k == key then
+			table.remove(map._storage, _idx)
+			map._size = map._size - 1
+			break
+		end
+		_idx = _idx + 1
+	end
+end
+function PushUIAPI.Map:_contains(map, key)
+	if map._storage == nil then return false end
+	return map._storage[key]
+end
+function PushUIAPI.Map:_object(map, key)
+	if map._storage == nil then return nil end
+	return map._storage[key]
+end
+function PushUIAPI.Map:_clear(map)
+	if map._storage == nil then return nil end
+	repeat
+		table.remove(map._storage)
+	until #map._storage == 0
+	map._size = 0
+end
+function PushUIAPI.Map:_foreach(map, f)
+	if map._storage == nil then return end
+	if f == nil then return end
+	for k, v in pairs(map._storage) do
+		f(k, v)
+	end
+end
+PushUIAPI.Map.New = function()
+	local _map = {}
+	_map._storage = {}
+	_map._size = 0
+	_map.Set = function(key, value) PushUIAPI.Map:_set(_map, key, value) end
+	_map.UnSet = function(key) PushUIAPI.Map:_unset(_map, key) end
+	_map.Contains = function(key) return PushUIAPI.Map:_contains(_map, key) end
+	_map.Object = function(key) return PushUIAPI.Map:_object(_map, key) end
+	_map.Clear = function() PushUIAPI.Map:_clear(_map) end
+	_map.Size = function() return _map._size end
+	_map.ForEach = function(f) PushUIAPI.Map:_foreach(_map, f) end
+
+	return _map
+end
+

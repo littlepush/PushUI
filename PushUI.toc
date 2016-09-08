@@ -6,9 +6,11 @@
 
 kernel\boot.lua
 kernel\api.lua
+kernel\api.puievent.lua
 kernel\api.target.lua
 kernel\api.player.lua
 kernel\api.auras.lua
+kernel\api.objectivetracker.lua
 kernel\preference.lua
 kernel\animations.lua
 kernel\frames.lua
