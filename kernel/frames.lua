@@ -8,6 +8,40 @@ PushUIFrames.Button = {}
 PushUIFrames.ProgressBar = {}
 PushUIFrames.Label = {}
 
+PushUIFrames.Timer = {}
+PushUIFrames.Timer.Create = function(interval)
+    interval = interval or 1
+    local _tf = CreateFrame("Frame")
+
+    _tf.__interval = 1
+    _tf.__lastFiredTime = time()
+    _tf.__handler = nil
+
+    function _tf:StartTimer()
+        _tf:SetScript("OnUpdate", function(...)
+            local _time = time()
+            if _time - _tf.__lastFiredTime >= _tf.__interval then
+                _tf.__lastFiredTime = _time
+                if _tf.__handler then _tf.__handler() end
+            end
+        end)
+    end
+
+    function _tf:StopTimer()
+        _tf:SetScript("OnUpdate", nil)
+    end
+
+    function _tf:SetInterval(int)
+        _tf.__interval = int
+    end
+
+    function _tf:SetHandler(func)
+        _tf.__handler = func
+    end
+
+    return _tf
+end
+
 PushUIFrames.Frame.Create = function(name, config)
     local _f = CreateFrame("Frame", name, UIParent)
     PushUIFrames.AllFrames[#PushUIFrames.AllFrames + 1] = _f

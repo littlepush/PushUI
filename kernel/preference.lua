@@ -52,6 +52,8 @@ PushUIColor.green = {0.49, 0.82, 0.29}
 PushUIColor.yellow = {0.82, 0.85, 0.46}
 PushUIColor.orange = {0.84, 0.55, 0.17}
 PushUIColor.gray = {0.4, 0.4, 0.4}
+PushUIColor.darkgray = {0.2, 0.2, 0.2}
+PushUIColor.silver = {0.8, 0.8, 0.8}
 PushUIColor.cyan = {0.14, 0.16, 0.19}
 PushUIColor.purple = {0.82, 0.47, 0.69}
 

@@ -139,8 +139,161 @@ PushUIAPI.NormalQuests._initialize()
 
 
 -- Scenario Quest
+PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_START = "PUSHUIEVENT_SCENARIO_QUEST_START"
+PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_UPDATE = "PUSHUIEVENT_SCENARIO_QUEST_UPDATE"
+PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_COMPLETE = "PUSHUIEVENT_SCENARIO_QUEST_COMPLETE"
+
+PushUIAPI.ScenarioQuest = {}
+PushUIAPI.ScenarioQuest.quest = nil
+PushUIAPI.ScenarioQuest._lastFireEvent = nil
+PushUIAPI.ScenarioQuest._gainQuest = function()
+    
+    local _usually_has_scenario = (PushUIAPI.ScenarioQuest.quest ~= nil)
+
+    PushUIAPI.ScenarioQuest.quest = nil
+    local _1, _2, _3, _4, _5, _6, _7, _8, _9, _10 = C_Scenario.GetInfo()
+    if not _1 or _1 == nil or 0 == _2 or 0 == _3 then
+        if _usually_has_scenario then
+            PushUIAPI.ScenarioQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_COMPLETE
+        else
+            PushUIAPI.ScenarioQuest._lastFireEvent = nil
+        end
+        return
+    end
+
+    -- Get Step Info
+    local _name, _description, _numCriteria, _, _, _, _numSpells, _spellInfo, _weightedProgress = C_Scenario.GetStepInfo()
+    local _s = {
+        scenarioName = _1,
+        currentStage = _2,
+        numStages = _3,
+        flags = _4,
+        unknow1 = _5,
+        unknow2 = _6,
+        unknow3 = _7,
+        xp = _8, 
+        money = _9,
+        scenarioType = _10,
+        showCriteria = C_Scenario.ShouldShowCriteria(),
+        stageInfo = {
+            name = _name,
+            description = _description,
+            numCriteria = _numCriteria,
+            numSpells = _numSpells,
+            spellInfo = _spellInfo,
+            weightedProgress = _weightedProgress,
+        },
+        criteriaList = {}
+    }
+    if _numCriteria ~= nil and _numCriteria > 0 then
+        for i = 1, _numCriteria do
+            -- criteriaString, criteriaType, completed, 
+            -- quantity, totalQuantity, flags, assetID, 
+            -- quantityString, criteriaID, duration, 
+            -- elapsed, _, isWeightedProgress
+            local _c1, _c2, _c3, _c4, _c5, _c6, _c7, _c8, _c9, _c10, _c11, _c12, _c13 = C_Scenario.GetCriteriaInfo(i)
+            _criteria = {
+                criteriaString = _c1,
+                criteriaType = _c2,
+                completed = _c3,
+                quantity = _c4,
+                totalQuantity = _c5,
+                flags = _c6,
+                assetID = _c7,
+                quantityString = _c8,
+                criteriaID = _c9,
+                duration = _c10,
+                elapsed = _c11,
+                unknow = _c12,
+                isWeightedProgress = _c13
+            }
+            _s.criteriaList[i] = _criteria
+        end
+    end
+
+    if _usually_has_scenario then
+        PushUIAPI.ScenarioQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_UPDATE
+    else
+        PushUIAPI.ScenarioQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_START
+    end
+
+    PushUIAPI.ScenarioQuest.quest = _s
+end
+
+PushUIAPI.ScenarioQuest._updateScenarioQuest = function(event, ...)
+    PushUIAPI.ScenarioQuest._gainQuest()
+    if not PushUIAPI.ScenarioQuest._lastFireEvent then return end
+    -- Fire the event
+    PushUIAPI:FirePUIEvent(PushUIAPI.ScenarioQuest._lastFireEvent, PushUIAPI.ScenarioQuest.quest)
+end
+
+PushUIAPI.ScenarioQuest._initialize = function()
+    PushUIAPI.ScenarioQuest._gainQuest()
+
+    PushUIAPI.RegisterEvent("CHALLENGE_MODE_START", PushUIAPI.ScenarioQuest, PushUIAPI.ScenarioQuest._updateScenarioQuest)
+    PushUIAPI.RegisterEvent("SCENARIO_UPDATE", PushUIAPI.ScenarioQuest, PushUIAPI.ScenarioQuest._updateScenarioQuest)
+    PushUIAPI.RegisterEvent("SCENARIO_CRITERIA_UPDATE", PushUIAPI.ScenarioQuest, PushUIAPI.ScenarioQuest._updateScenarioQuest)
+    PushUIAPI.RegisterEvent("SCENARIO_SPELL_UPDATE", PushUIAPI.ScenarioQuest, PushUIAPI.ScenarioQuest._updateScenarioQuest)
+    PushUIAPI.RegisterEvent("SCENARIO_COMPLETED", PushUIAPI.ScenarioQuest, PushUIAPI.ScenarioQuest._updateScenarioQuest)
+    PushUIAPI.RegisterEvent("SCENARIO_CRITERIA_SHOW_STATE_UPDATE", PushUIAPI.ScenarioQuest, PushUIAPI.ScenarioQuest._updateScenarioQuest)
+
+end
+
+PushUIAPI.ScenarioQuest._initialize()
 
 
+-- Challenge
+PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_START = "PUSHUIEVENT_CHALLENGE_MODE_START"
+PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_STOP = "PUSHUIEVENT_CHALLENGE_MODE_STOP"
+
+PushUIAPI.ChallengeMode = {}
+PushUIAPI.ChallengeMode.modeInfo = nil
+PushUIAPI.ChallengeMode._gainModeInfo = function(...)
+    PushUIAPI.ChallengeMode.modeInfo = nil
+    for i = 1, select("#", ...) do
+        local timerID = select(i, ...)
+        local _, elapsed, _type = GetWorldElapsedTime(timerID);
+        if _type == 0 then _type = LE_WORLD_ELAPSED_TIMER_TYPE_PROVING_GROUND end
+        PushUIAPI.ChallengeMode.modeInfo = {
+            elapsedTime = elapsed
+        }
+        if ( _type == LE_WORLD_ELAPSED_TIMER_TYPE_CHALLENGE_MODE) then
+            local _, _, _, _, _, _, _, mapID = GetInstanceInfo();
+            if ( mapID ) then
+                local _, _, _limit = C_ChallengeMode.GetMapInfo(mapID);
+                local _level, _affixes, _wasEnergized = C_ChallengeMode.GetActiveKeystoneInfo()
+
+                PushUIAPI.ChallengeMode.modeInfo.timeLimit = _limit
+                PushUIAPI.ChallengeMode.modeInfo.level = _level
+                PushUIAPI.ChallengeMode.modeInfo.affixes = _affixes
+                PushUIAPI.ChallengeMode.modeInfo.wasEnergized = _wasEnergized
+            end
+        elseif ( _type == LE_WORLD_ELAPSED_TIMER_TYPE_PROVING_GROUND ) then
+            local diffID, currWave, maxWave, duration = C_Scenario.GetProvingGroundsInfo()
+            PushUIAPI.ChallengeMode.modeInfo.timeLimit = duration
+            PushUIAPI.ChallengeMode.modeInfo.currentWave = currWave
+            PushUIAPI.ChallengeMode.modeInfo.maxWave = maxWave
+        end
+    end
+end
+PushUIAPI.ChallengeMode._updateChallengeMode = function(event, ...)
+    if event == "WORLD_STATE_TIMER_START" then
+        PushUIAPI.ChallengeMode._gainModeInfo(GetWorldElapsedTimers())
+        if PushUIAPI.ChallengeMode.modeInfo ~= nil then
+            PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_START, PushUIAPI.ChallengeMode.modeInfo)
+        end
+    else
+        PushUIAPI.ChallengeMode.modeInfo = nil
+        PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_STOP)
+    end
+end
+
+PushUIAPI.ChallengeMode._initialize = function()
+    PushUIAPI.RegisterEvent("WORLD_STATE_TIMER_START", PushUIAPI.ChallengeMode, PushUIAPI.ChallengeMode._updateChallengeMode)
+    PushUIAPI.RegisterEvent("WORLD_STATE_TIMER_STOP", PushUIAPI.ChallengeMode, PushUIAPI.ChallengeMode._updateChallengeMode)
+end
+
+PushUIAPI.ChallengeMode._initialize()
 
 
 -- Push Chen

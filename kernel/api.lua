@@ -248,7 +248,7 @@ function PushUIAPI.Map:_unset(map, key)
 end
 function PushUIAPI.Map:_contains(map, key)
 	if map._storage == nil then return false end
-	return map._storage[key]
+	return map._storage[key] ~= nil
 end
 function PushUIAPI.Map:_object(map, key)
 	if map._storage == nil then return nil end
