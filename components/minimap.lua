@@ -113,3 +113,17 @@ end
 
 PushUIAPI.RegisterEvent("PLAYER_ENTERING_WORLD", _minimapdock, _minimapdock.__init)
 
+
+local _trackingDock = PushUIFrames.DockFrame.CreateNewDock(
+    _name.."Tracking", PushUIColor.purple, "BOTTOM", _panelContainer, _tintContainer)
+_trackingDock.panelAvailable = false
+PushUIConfig.skinType(_trackingDock.floatPanel)
+
+local _trackingTooltipLabel = PushUIFrames.Label.Create(_name.."TrackingFloatLabel", _trackingDock.floatPanel, true)
+_trackingTooltipLabel:SetPoint("TOPLEFT", _trackingDock.floatPanel, "TOPLEFT", 0, 0)
+_trackingTooltipLabel:SetTextString("Tracking Toggle")
+_tintContainer.Push(_trackingDock.tintBar)
+
+_trackingDock.tintOnRightClick = function(...)
+    ToggleDropDownMenu(1, nil, MiniMapTrackingDropDown, _trackingDock.tintBar, 0, 0)
+end
