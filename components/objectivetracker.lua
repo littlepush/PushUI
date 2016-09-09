@@ -648,7 +648,7 @@ _othook._formatBonusQuestBlock = function(bonusQuest)
     -- Remove all old detail block
     _block.ClearAllDetailBlock()
 
-    local _ds = #bonusQuest.numObjectives
+    local _ds = bonusQuest.numObjectives
     for i = 1, _ds do
         local _objective = bonusQuest.objectives[i]
         local _detailBlock = _block.GetDetailBlock()    -- Get an empty detail block
@@ -734,7 +734,7 @@ _othook._formatWorldQuestBlock = function(worldQuest)
     -- Remove all old detail block
     _block.ClearAllDetailBlock()
 
-    local _ds = #worldQuest.numObjectives
+    local _ds = worldQuest.numObjectives
     for i = 1, _ds do
         local _objective = worldQuest.objectives[i]
         local _detailBlock = _block.GetDetailBlock()    -- Get an empty detail block

@@ -321,13 +321,14 @@ PushUIAPI.BonusQuest._gainQuest = function()
             if QuestMapFrame_IsQuestWorldQuest(_questID) then break end
 
             local _isInArea, _isOnMap, _numObjectives, _taskName, _displayAsObjective = GetTaskInfo(_questID)
+            if not _isInArea then break end
             PushUIAPI.BonusQuest.quest = {
                 questID = _questID,
                 isInArea = _isInArea,
                 isOnMap = _isOnMap,
                 numObjectives = _numObjectives,
                 taskName = _taskName,
-                displayAsObjective = _displayAsObjective
+                displayAsObjective = _displayAsObjective,
                 objectives = {}
             }
 
@@ -381,17 +382,17 @@ PushUIAPI.BonusQuest._updateBonusQuest = function(event, ...)
     end
 
     if PushUIAPI.BonusQuest._lastFireEvent == nil then return end
-    PushUIAPI:FirePUIEvent(PushUIAPI.BonusQuest._lastFireEvent)
+    PushUIAPI:FirePUIEvent(PushUIAPI.BonusQuest._lastFireEvent, PushUIAPI.BonusQuest.quest)
 end
 
 PushUIAPI.BonusQuest._initialize = function()
     PushUIAPI.BonusQuest._gainQuest()
 
-    PushUIAPI.RegisterEvent("QUEST_TURNED_IN", PushUIAPI.BonusQuest._updateBonusQuest)
-    PushUIAPI.RegisterEvent("QUEST_ACCEPTED", PushUIAPI.BonusQuest._updateBonusQuest)
-    PushUIAPI.RegisterEvent("QUEST_LOG_UPDATE", PushUIAPI.BonusQuest._updateBonusQuest)
-    PushUIAPI.RegisterEvent("ZONE_CHANGED", PushUIAPI.BonusQuest._updateBonusQuest)
-    PushUIAPI.RegisterEvent("ZONE_CHANGED_NEW_AREA", PushUIAPI.BonusQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("QUEST_TURNED_IN", PushUIAPI, PushUIAPI.BonusQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("QUEST_ACCEPTED", PushUIAPI, PushUIAPI.BonusQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("QUEST_LOG_UPDATE", PushUIAPI, PushUIAPI.BonusQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("ZONE_CHANGED", PushUIAPI, PushUIAPI.BonusQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("ZONE_CHANGED_NEW_AREA", PushUIAPI, PushUIAPI.BonusQuest._updateBonusQuest)
 end
 
 PushUIAPI.BonusQuest._initialize()
@@ -421,13 +422,14 @@ PushUIAPI.WorldQuest._gainQuest = function()
             if not QuestMapFrame_IsQuestWorldQuest(_questID) then break end
 
             local _isInArea, _isOnMap, _numObjectives, _taskName, _displayAsObjective = GetTaskInfo(_questID)
+            if not _isInArea then break end
             PushUIAPI.WorldQuest.quest = {
                 questID = _questID,
                 isInArea = _isInArea,
                 isOnMap = _isOnMap,
                 numObjectives = _numObjectives,
                 taskName = _taskName,
-                displayAsObjective = _displayAsObjective
+                displayAsObjective = _displayAsObjective,
                 objectives = {}
             }
 
@@ -464,7 +466,7 @@ PushUIAPI.WorldQuest._gainQuest = function()
     end
 end
 
-PushUIAPI.WorldQuest._updateBonusQuest = function(event, ...)
+PushUIAPI.WorldQuest._updateWorldQuest = function(event, ...)
     PushUIAPI.WorldQuest._lastFireEvent = nil
 
     if event == "QUEST_TURNED_IN" then
@@ -481,17 +483,17 @@ PushUIAPI.WorldQuest._updateBonusQuest = function(event, ...)
     end
 
     if PushUIAPI.WorldQuest._lastFireEvent == nil then return end
+    PushUIAPI:FirePUIEvent(PushUIAPI.WorldQuest._lastFireEvent, PushUIAPI.WorldQuest.quest)
 end
 
 PushUIAPI.WorldQuest._initialize = function()
     PushUIAPI.WorldQuest._gainQuest()
 
-    PushUIAPI.RegisterEvent("QUEST_TURNED_IN", PushUIAPI.WorldQuest._updateBonusQuest)
-    PushUIAPI.RegisterEvent("QUEST_ACCEPTED", PushUIAPI.WorldQuest._updateBonusQuest)
-    PushUIAPI.RegisterEvent("QUEST_LOG_UPDATE", PushUIAPI.WorldQuest._updateBonusQuest)
-    PushUIAPI.RegisterEvent("ZONE_CHANGED", PushUIAPI.WorldQuest._updateBonusQuest)
-    PushUIAPI.RegisterEvent("ZONE_CHANGED_NEW_AREA", PushUIAPI.WorldQuest._updateBonusQuest)
-    PushUIAPI:FirePUIEvent(PushUIAPI.WorldQuest._lastFireEvent)
+    PushUIAPI.RegisterEvent("QUEST_TURNED_IN", PushUIAPI, PushUIAPI.WorldQuest._updateWorldQuest)
+    PushUIAPI.RegisterEvent("QUEST_ACCEPTED", PushUIAPI, PushUIAPI.WorldQuest._updateWorldQuest)
+    PushUIAPI.RegisterEvent("QUEST_LOG_UPDATE", PushUIAPI, PushUIAPI.WorldQuest._updateWorldQuest)
+    PushUIAPI.RegisterEvent("ZONE_CHANGED", PushUIAPI, PushUIAPI.WorldQuest._updateWorldQuest)
+    PushUIAPI.RegisterEvent("ZONE_CHANGED_NEW_AREA", PushUIAPI, PushUIAPI.WorldQuest._updateWorldQuest)
 end
 
 PushUIAPI.WorldQuest._initialize()
