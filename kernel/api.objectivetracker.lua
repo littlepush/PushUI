@@ -296,6 +296,207 @@ end
 PushUIAPI.ChallengeMode._initialize()
 
 
+-- Bonus
+PushUIAPI.PUSHUIEVENT_BONUS_QUEST_STARTWATCHING = "PUSHUIEVENT_BONUS_QUEST_STARTWATCHING"
+PushUIAPI.PUSHUIEVENT_BONUS_QUEST_UPDATE = "PUSHUIEVENT_BONUS_QUEST_UPDATE"
+PushUIAPI.PUSHUIEVENT_BONUS_QUEST_STOPWATCHING = "PUSHUIEVENT_BONUS_QUEST_STOPWATCHING"
+
+PushUIAPI.BonusQuest = {}
+PushUIAPI.BonusQuest.quest = nil
+PushUIAPI.BonusQuest._lastFireEvent = nil
+PushUIAPI.BonusQuest._gainQuest = function()
+    
+    local _hasQuest = (PushUIAPI.BonusQuest.quest ~= nil)
+
+    -- Clear the old quest object
+    PushUIAPI.BonusQuest.quest = nil
+
+    local _tasks = GetTasksTable()
+    for i = 1, #_tasks do
+        local _questID = _tasks[i]
+        repeat 
+            if IsQuestBounty(_questID) then break end
+            if not IsQuestTask(_questID) then break end
+            -- This is a world quest in Legion
+            if QuestMapFrame_IsQuestWorldQuest(_questID) then break end
+
+            local _isInArea, _isOnMap, _numObjectives, _taskName, _displayAsObjective = GetTaskInfo(_questID)
+            PushUIAPI.BonusQuest.quest = {
+                questID = _questID,
+                isInArea = _isInArea,
+                isOnMap = _isOnMap,
+                numObjectives = _numObjectives,
+                taskName = _taskName,
+                displayAsObjective = _displayAsObjective
+                objectives = {}
+            }
+
+            if _numObjectives ~= nil and _numObjectives > 0 then
+                for n = 1, _numObjectives do
+                    local _title, _objType, _completed = GetQuestObjectiveInfo(_questID, n, false)
+                    local _percentage = 0
+                    if _objType == "progressbar" then
+                        _percentage = GetQuestProgressBarPercent(_questID)
+                    end
+                    PushUIAPI.BonusQuest.quest.objectives[n] = {
+                        title = _title, 
+                        objType = _objType,
+                        completed = _completed,
+                        showProgressBar = (_objType == "progressbar"),
+                        percentage = _percentage
+                    }
+                end
+            end
+
+            -- Get the first bonus quest done. so return
+            if _hasQuest then
+                PushUIAPI.BonusQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_BONUS_QUEST_UPDATE
+            else
+                PushUIAPI.BonusQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_BONUS_QUEST_STARTWATCHING
+            end
+            return
+        until true
+    end
+
+    -- We have move out the bonus area
+    if _hasQuest then
+        PushUIAPI.BonusQuest._lastFireEvent = PUSHUIEVENT_BONUS_QUEST_STOPWATCHING
+    end
+end
+
+PushUIAPI.BonusQuest._updateBonusQuest = function(event, ...)
+    PushUIAPI.BonusQuest._lastFireEvent = nil
+
+    if event == "QUEST_TURNED_IN" then
+        if PushUIAPI.BonusQuest.quest == nil then return end
+        local _questId = ...
+        if _questId ~= PushUIAPI.BonusQuest.quest.questID then return end
+        PushUIAPI.BonusQuest.quest = nil
+        PushUIAPI.BonusQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_BONUS_QUEST_STOPWATCHING
+    end
+
+    if (event == "QUEST_ACCEPTED" or event == "QUEST_LOG_UPDATE" or 
+        event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA") then
+        PushUIAPI.BonusQuest._gainQuest()
+    end
+
+    if PushUIAPI.BonusQuest._lastFireEvent == nil then return end
+    PushUIAPI:FirePUIEvent(PushUIAPI.BonusQuest._lastFireEvent)
+end
+
+PushUIAPI.BonusQuest._initialize = function()
+    PushUIAPI.BonusQuest._gainQuest()
+
+    PushUIAPI.RegisterEvent("QUEST_TURNED_IN", PushUIAPI.BonusQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("QUEST_ACCEPTED", PushUIAPI.BonusQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("QUEST_LOG_UPDATE", PushUIAPI.BonusQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("ZONE_CHANGED", PushUIAPI.BonusQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("ZONE_CHANGED_NEW_AREA", PushUIAPI.BonusQuest._updateBonusQuest)
+end
+
+PushUIAPI.BonusQuest._initialize()
+
+-- World Quest, basicly is the same with Bonus Quest
+PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STARTWATCHING = "PUSHUIEVENT_WORLD_QUEST_STARTWATCHING"
+PushUIAPI.PUSHUIEVENT_WORLD_QUEST_UPDATE = "PUSHUIEVENT_WORLD_QUEST_UPDATE"
+PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING = "PUSHUIEVENT_WORLD_QUEST_STOPWATCHING"
+
+PushUIAPI.WorldQuest = {}
+PushUIAPI.WorldQuest.quest = nil
+PushUIAPI.WorldQuest._lastFireEvent = nil
+PushUIAPI.WorldQuest._gainQuest = function()
+    
+    local _hasQuest = (PushUIAPI.WorldQuest.quest ~= nil)
+
+    -- Clear the old quest object
+    PushUIAPI.WorldQuest.quest = nil
+
+    local _tasks = GetTasksTable()
+    for i = 1, #_tasks do
+        local _questID = _tasks[i]
+        repeat 
+            if IsQuestBounty(_questID) then break end
+            if not IsQuestTask(_questID) then break end
+            -- This is a world quest in Legion
+            if not QuestMapFrame_IsQuestWorldQuest(_questID) then break end
+
+            local _isInArea, _isOnMap, _numObjectives, _taskName, _displayAsObjective = GetTaskInfo(_questID)
+            PushUIAPI.WorldQuest.quest = {
+                questID = _questID,
+                isInArea = _isInArea,
+                isOnMap = _isOnMap,
+                numObjectives = _numObjectives,
+                taskName = _taskName,
+                displayAsObjective = _displayAsObjective
+                objectives = {}
+            }
+
+            if _numObjectives ~= nil and _numObjectives > 0 then
+                for n = 1, _numObjectives do
+                    local _title, _objType, _completed = GetQuestObjectiveInfo(_questID, n, false)
+                    local _percentage = 0
+                    if _objType == "progressbar" then
+                        _percentage = GetQuestProgressBarPercent(_questID)
+                    end
+                    PushUIAPI.WorldQuest.quest.objectives[n] = {
+                        title = _title, 
+                        objType = _objType,
+                        completed = _completed,
+                        showProgressBar = (_objType == "progressbar"),
+                        percentage = _percentage
+                    }
+                end
+            end
+
+            -- Get the first bonus quest done. so return
+            if _hasQuest then
+                PushUIAPI.WorldQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_WORLD_QUEST_UPDATE
+            else
+                PushUIAPI.WorldQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STARTWATCHING
+            end
+            return
+        until true
+    end
+
+    -- We have move out the bonus area
+    if _hasQuest then
+        PushUIAPI.WorldQuest._lastFireEvent = PUSHUIEVENT_WORLD_QUEST_STOPWATCHING
+    end
+end
+
+PushUIAPI.WorldQuest._updateBonusQuest = function(event, ...)
+    PushUIAPI.WorldQuest._lastFireEvent = nil
+
+    if event == "QUEST_TURNED_IN" then
+        if PushUIAPI.WorldQuest.quest == nil then return end
+        local _questId = ...
+        if _questId ~= PushUIAPI.WorldQuest.quest.questID then return end
+        PushUIAPI.WorldQuest.quest = nil
+        PushUIAPI.WorldQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING
+    end
+
+    if (event == "QUEST_ACCEPTED" or event == "QUEST_LOG_UPDATE" or 
+        event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA") then
+        PushUIAPI.WorldQuest._gainQuest()
+    end
+
+    if PushUIAPI.WorldQuest._lastFireEvent == nil then return end
+end
+
+PushUIAPI.WorldQuest._initialize = function()
+    PushUIAPI.WorldQuest._gainQuest()
+
+    PushUIAPI.RegisterEvent("QUEST_TURNED_IN", PushUIAPI.WorldQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("QUEST_ACCEPTED", PushUIAPI.WorldQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("QUEST_LOG_UPDATE", PushUIAPI.WorldQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("ZONE_CHANGED", PushUIAPI.WorldQuest._updateBonusQuest)
+    PushUIAPI.RegisterEvent("ZONE_CHANGED_NEW_AREA", PushUIAPI.WorldQuest._updateBonusQuest)
+    PushUIAPI:FirePUIEvent(PushUIAPI.WorldQuest._lastFireEvent)
+end
+
+PushUIAPI.WorldQuest._initialize()
+
+
 -- Push Chen
 -- https://twitter.com/littlepush
 --

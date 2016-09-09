@@ -538,12 +538,10 @@ _othook.OnScenarioComplete = function(event, ...)
     _othook.LeftBlocksReDisplay()
 end
 
-local function _debugScenario()
-    if PushUIAPI.ScenarioQuest.quest ~= nil then
-        _othook.OnScenarioStart(nil, PushUIAPI.ScenarioQuest.quest)
-    end
+if PushUIAPI.ScenarioQuest.quest ~= nil then
+    _othook.OnScenarioStart(nil, PushUIAPI.ScenarioQuest.quest)
 end
-PushUIAPI.RegisterEvent("PLAYER_ENTERING_WORLD", _othook, _debugScenario)
+
 -- register event
 PushUIAPI:RegisterPUIEvent(
     PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_START, 
@@ -626,4 +624,190 @@ PushUIAPI:RegisterPUIEvent(
     PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_STOP, 
     "othook_challenge_mode_stop", 
     _othook.OnChallengeComplete)
+
+-- Bonus Quest
+_othook._initializeBonusQuestBlock = function()
+    _othook._initializeSpecialBlock(_blockKey_Bonus)
+end
+
+_othook._formatBonusQuestBlock = function(bonusQuest)
+    local _block = _othook._getSpecialBlock(_blockKey_Bonus)
+
+    -- Set Static Text Info
+    _block.titleLabel.SetTextString(bonusQuest.taskName)
+    _block.subtitleLabel:Hide()
+    _block.descriptionLabel:Hide()
+
+    local _ah = 0
+    _block.titleLabel:ClearAllPoints()
+    _block.titleLabel:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
+    local _th = _block.titleLabel:GetHeight()
+    _ah = _ah + _th
+
+    -- Set Dynamic 
+    -- Remove all old detail block
+    _block.ClearAllDetailBlock()
+
+    local _ds = #bonusQuest.numObjectives
+    for i = 1, _ds do
+        local _objective = bonusQuest.objectives[i]
+        local _detailBlock = _block.GetDetailBlock()    -- Get an empty detail block
+        -- Always show detail info
+        _detailBlock.showDetail = true
+        _detailBlock.SetText(_objective.title)
+        _detailBlock.showProgress = _objective.showProgressBar
+        if _objective.showProgressBar then
+            _detailBlock.SetProgressValue(_objective.percentage, 0, 100)
+            _detailBlock.SetProgressText(_objective.percentage.."%")
+        end
+        local _dh = _detailBlock.Resize()
+        _block.detailBlocks.PushBack(_detailBlock)
+
+        _detailBlock:ClearAllPoints()
+        _detailBlock:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
+        _ah = _ah + _dh
+    end
+
+    _block:SetHeight(_ah)
+end
+
+_othook._releaseBonusQuestBlock = function()
+    _othook._clearSpecialBlock(_blockKey_Bonus)
+end
+
+_othook.OnBonusQuestStartWatching = function(event, bonusQuest)
+    _othook._initializeBonusQuestBlock()
+    _othook._formatBonusQuestBlock(bonusQuest)
+
+    -- Redisplay all left blocks
+    _othook.LeftBlocksReDisplay()
+end
+
+_othook.OnBonusQuestStopWatching = function(event, ...)
+    _othook._releaseBonusQuestBlock()
+
+    -- Redisplay all left blocks
+    _othook.LeftBlocksReDisplay()
+end
+
+_othook.OnBonusQuestUpdate = function(event, bonusQuest)
+    _othook._formatBonusQuestBlock(bonusQuest)
+
+    -- Redisplay all left blocks
+    _othook.LeftBlocksReDisplay()
+end
+
+-- register event
+PushUIAPI:RegisterPUIEvent(
+    PushUIAPI.PUSHUIEVENT_BONUS_QUEST_STARTWATCHING, 
+    "othook_bonus_quest_start_watching",
+    _othook.OnBonusQuestStartWatching)
+PushUIAPI:RegisterPUIEvent(
+    PushUIAPI.PUSHUIEVENT_BONUS_QUEST_UPDATE, 
+    "othook_bonus_quest_update", 
+    _othook.OnBonusQuestUpdate)
+PushUIAPI:RegisterPUIEvent(
+    PushUIAPI.PUSHUIEVENT_BONUS_QUEST_STOPWATCHING,
+    "othook_bonus_quest_stop_watching",
+    _othook.OnBonusQuestStopWatching)
+
+-- Bonus Quest
+_othook._initializeWorldQuestBlock = function()
+    _othook._initializeSpecialBlock(_blockKey_World)
+end
+
+_othook._formatWorldQuestBlock = function(worldQuest)
+    local _block = _othook._getSpecialBlock(_blockKey_World)
+
+    -- Set Static Text Info
+    _block.titleLabel.SetTextString(worldQuest.taskName)
+    _block.subtitleLabel:Hide()
+    _block.descriptionLabel:Hide()
+
+    local _ah = 0
+    _block.titleLabel:ClearAllPoints()
+    _block.titleLabel:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
+    local _th = _block.titleLabel:GetHeight()
+    _ah = _ah + _th
+
+    -- Set Dynamic 
+    -- Remove all old detail block
+    _block.ClearAllDetailBlock()
+
+    local _ds = #worldQuest.numObjectives
+    for i = 1, _ds do
+        local _objective = worldQuest.objectives[i]
+        local _detailBlock = _block.GetDetailBlock()    -- Get an empty detail block
+        -- Always show detail info
+        _detailBlock.showDetail = true
+        _detailBlock.SetText(_objective.title)
+        _detailBlock.showProgress = _objective.showProgressBar
+        if _objective.showProgressBar then
+            _detailBlock.SetProgressValue(_objective.percentage, 0, 100)
+            _detailBlock.SetProgressText(_objective.percentage.."%")
+        end
+        local _dh = _detailBlock.Resize()
+        _block.detailBlocks.PushBack(_detailBlock)
+
+        _detailBlock:ClearAllPoints()
+        _detailBlock:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
+        _ah = _ah + _dh
+    end
+
+    _block:SetHeight(_ah)
+end
+
+_othook._releaseWorldQuestBlock = function()
+    _othook._clearSpecialBlock(_blockKey_World)
+end
+
+_othook.OnWorldQuestStartWatching = function(event, worldQuest)
+    _othook._initializeWorldQuestBlock()
+    _othook._formatWorldQuestBlock(worldQuest)
+
+    -- Redisplay all left blocks
+    _othook.LeftBlocksReDisplay()
+end
+
+_othook.OnWorldQuestStopWatching = function(event, ...)
+    _othook._releaseWorldQuestBlock()
+
+    -- Redisplay all left blocks
+    _othook.LeftBlocksReDisplay()
+end
+
+_othook.OnWorldQuestUpdate = function(event, worldQuest)
+    _othook._formatWorldQuestBlock(worldQuest)
+
+    -- Redisplay all left blocks
+    _othook.LeftBlocksReDisplay()
+end
+
+-- register event
+PushUIAPI:RegisterPUIEvent(
+    PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STARTWATCHING, 
+    "othook_world_quest_start_watching",
+    _othook.OnWorldQuestStartWatching)
+PushUIAPI:RegisterPUIEvent(
+    PushUIAPI.PUSHUIEVENT_WORLD_QUEST_UPDATE, 
+    "othook_world_quest_update", 
+    _othook.OnWorldQuestUpdate)
+PushUIAPI:RegisterPUIEvent(
+    PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING,
+    "othook_world_quest_stop_watching",
+    _othook.OnWorldQuestStopWatching)
+
+_othook._onPlayerFirstTimeEnteringWorld = function()
+    if PushUIAPI.BonusQuest.quest ~= nil then
+        _othook.OnBonusQuestStartWatching(nil, PushUIAPI.BonusQuest.quest)
+    end
+    if PushUIAPI.WorldQuest.quest ~= nil then
+        _othook.OnWorldQuestStartWatching(nil, PushUIAPI.WorldQuest.quest)
+    end
+end
+PushUIAPI:RegisterPUIEvent(
+    PushUIAPI.PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD,
+    "othook_objective_tracker_first_entering_world",
+    _othook._onPlayerFirstTimeEnteringWorld
+    )
 

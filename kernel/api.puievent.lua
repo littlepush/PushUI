@@ -57,6 +57,17 @@ function PushUIAPI:FirePUIEvent(event, ...)
 	end
 end
 
+-- This event will be invoke only once when the player first time to enter the world.
+PushUIAPI.PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD = "PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD"
+function PushUIAPI:DefaultPlayerEnteringWorldHandler(...)
+	PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD)
+	PushUIAPI.UnregisterEvent("PLAYER_ENTERING_WORLD", PushUIAPI)
+end
+
+-- Default player entering world event 
+PushUIAPI.RegisterEvent("PLAYER_ENTERING_WORLD", PushUIAPI, PushUIAPI:DefaultPlayerEnteringWorldHandler)
+
+
 -- Push Chen
 -- https://twitter.com/littlepush
 --
