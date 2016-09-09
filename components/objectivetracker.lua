@@ -254,10 +254,10 @@ PushUIAPI:RegisterPUIEvent(
 -- Stages
 local _leftDisplayingBlocks = PushUIAPI.Map.New()
 _othook.leftDisplayingBlocks = _leftDisplayingBlocks
-local _blockKey_Scenario = "1"
-local _blockKey_Challenge = "2"
-local _blockKey_Bonus = "3"
-local _blockKey_World = "4"
+local _blockKey_Scenario = "a"
+local _blockKey_Challenge = "b"
+local _blockKey_Bonus = "c"
+local _blockKey_World = "d"
 
 _othook.__leftBlockAllHeight = 0
 _othook.LeftBlocksReDisplay = function()
@@ -268,6 +268,25 @@ _othook.LeftBlocksReDisplay = function()
         _othook.__leftBlockAllHeight = _othook.__leftBlockAllHeight + block:GetHeight() + _config.padding
     end)
 end
+
+_othook._worldBlockKeyStack = PushUIAPI.Stack.New()
+_othook._worldBlockKeyAllCount = 0
+_othook._worldBlockKeyNew = function()
+    _othook._worldBlockKeyAllCount = _othook._worldBlockKeyAllCount + 1
+    return _blockKey_World.._othook._worldBlockKeyAllCount
+end
+_othook._worldBlockKeyFree = function(key)
+    _othook._worldBlockKeyStack.Push(key)
+end
+_othook._worldBlockKeyGet = function()
+    if _othook._worldBlockKeyStack.Size() > 0 then
+        local _key = _othook._worldBlockKeyStack.Top()
+        _othook._worldBlockKeyStack.Pop()
+        return _key
+    end
+    return _othook._worldBlockKeyNew()
+end
+_othook._worldQuestBlockKeyMap = PushUIAPI.Map.New()
 
 _othook._specialBlock = {}
 
@@ -712,12 +731,12 @@ PushUIAPI:RegisterPUIEvent(
     _othook.OnBonusQuestStopWatching)
 
 -- Bonus Quest
-_othook._initializeWorldQuestBlock = function()
-    _othook._initializeSpecialBlock(_blockKey_World)
+_othook._initializeWorldQuestBlock = function(blockKey)
+    _othook._initializeSpecialBlock(blockKey)
 end
 
-_othook._formatWorldQuestBlock = function(worldQuest)
-    local _block = _othook._getSpecialBlock(_blockKey_World)
+_othook._formatWorldQuestBlock = function(blockKey, worldQuest)
+    local _block = _othook._getSpecialBlock(blockKey)
 
     -- Set Static Text Info
     _block.titleLabel.SetTextString(worldQuest.taskName)
@@ -757,27 +776,51 @@ _othook._formatWorldQuestBlock = function(worldQuest)
     _block:SetHeight(_ah)
 end
 
-_othook._releaseWorldQuestBlock = function()
-    _othook._clearSpecialBlock(_blockKey_World)
+_othook._releaseWorldQuestBlock = function(blockKey)
+    _othook._clearSpecialBlock(blockKey)
 end
 
-_othook.OnWorldQuestStartWatching = function(event, worldQuest)
-    _othook._initializeWorldQuestBlock()
-    _othook._formatWorldQuestBlock(worldQuest)
+_othook.OnWorldQuestStartWatching = function(event, newWorldQuestList)
+    local _qs = newWorldQuestList.Size()
+    for i = 1, _qs do
+        local _blockKey = _othook._worldBlockKeyGet()
+        local _quest = newWorldQuestList.ObjectAtIndex(i)
+        _othook._worldQuestBlockKeyMap.Set(_quest.questID, _blockKey)
+        _othook._initializeWorldQuestBlock(_blockKey)
+        _othook._formatWorldQuestBlock(_blockKey, _quest)
+    end
 
     -- Redisplay all left blocks
     _othook.LeftBlocksReDisplay()
 end
 
-_othook.OnWorldQuestStopWatching = function(event, ...)
-    _othook._releaseWorldQuestBlock()
+_othook.OnWorldQuestStopWatching = function(event, stopWatchingQuestList)
+
+    local _qs = stopWatchingQuestList.Size()
+    for i = 1, _qs do
+        local _quest = stopWatchingQuestList.ObjectAtIndex(i)
+        local _blockKey = _othook._worldQuestBlockKeyMap.Object(_quest.questID)
+        if _blockKey ~= nil then
+            _othook._releaseWorldQuestBlock(_blockKey)
+            _othook._worldQuestBlockKeyMap.UnSet(_quest.questID)
+            _othook._worldBlockKeyFree(_blockKey)
+        end
+    end
 
     -- Redisplay all left blocks
     _othook.LeftBlocksReDisplay()
 end
 
-_othook.OnWorldQuestUpdate = function(event, worldQuest)
-    _othook._formatWorldQuestBlock(worldQuest)
+_othook.OnWorldQuestUpdate = function(event, updatingQuestList)
+    
+    local _qs = updatingQuestList.Size()
+    for i = 1, _qs do
+        local _quest = updatingQuestList.ObjectAtIndex(i)
+        local _blockKey = _othook._worldQuestBlockKeyMap.Object(_quest.questID)
+        if _blockKey ~= nil then 
+            _othook._formatWorldQuestBlock(_blockKey, _quest)
+        end
+    end
 
     -- Redisplay all left blocks
     _othook.LeftBlocksReDisplay()
@@ -801,8 +844,8 @@ _othook._onPlayerFirstTimeEnteringWorld = function()
     if PushUIAPI.BonusQuest.quest ~= nil then
         _othook.OnBonusQuestStartWatching(nil, PushUIAPI.BonusQuest.quest)
     end
-    if PushUIAPI.WorldQuest.quest ~= nil then
-        _othook.OnWorldQuestStartWatching(nil, PushUIAPI.WorldQuest.quest)
+    if PushUIAPI.WorldQuest.newWatchingList.Size() > 0 then
+        _othook.OnWorldQuestStartWatching(nil, PushUIAPI.WorldQuest.newWatchingList)
     end
 end
 PushUIAPI:RegisterPUIEvent(

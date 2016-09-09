@@ -244,7 +244,6 @@ function PushUIAPI.Map:_unset(map, key)
     end
     map._storage = _newStorage
     map._size = map._size - 1
-    print("_size: "..map._size..", realsize: "..#map._storage)
 end
 function PushUIAPI.Map:_contains(map, key)
 	if map._storage == nil then return false end

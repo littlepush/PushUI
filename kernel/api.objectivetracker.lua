@@ -322,6 +322,7 @@ PushUIAPI.BonusQuest._gainQuest = function()
 
             local _isInArea, _isOnMap, _numObjectives, _taskName, _displayAsObjective = GetTaskInfo(_questID)
             if not _isInArea then break end
+            if not _isOnMap then break end
             PushUIAPI.BonusQuest.quest = {
                 questID = _questID,
                 isInArea = _isInArea,
@@ -403,87 +404,103 @@ PushUIAPI.PUSHUIEVENT_WORLD_QUEST_UPDATE = "PUSHUIEVENT_WORLD_QUEST_UPDATE"
 PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING = "PUSHUIEVENT_WORLD_QUEST_STOPWATCHING"
 
 PushUIAPI.WorldQuest = {}
-PushUIAPI.WorldQuest.quest = nil
-PushUIAPI.WorldQuest._lastFireEvent = nil
+PushUIAPI.WorldQuest.quest = PushUIAPI.Map.New()
+PushUIAPI.WorldQuest.newWatchingList = PushUIAPI.Vector.New()
+PushUIAPI.WorldQuest.unWatchingList = PushUIAPI.Vector.New()
+PushUIAPI.WorldQuest.updatedList = PushUIAPI.Vector.New()
 PushUIAPI.WorldQuest._gainQuest = function()
-    
-    local _hasQuest = (PushUIAPI.WorldQuest.quest ~= nil)
 
-    -- Clear the old quest object
-    PushUIAPI.WorldQuest.quest = nil
+    PushUIAPI.WorldQuest.newWatchingList.Clear()
+    PushUIAPI.WorldQuest.unWatchingList.Clear()
+    PushUIAPI.WorldQuest.updatedList.Clear()
 
+    local _tempQuestMap = PushUIAPI.Map.New()
     local _tasks = GetTasksTable()
     for i = 1, #_tasks do
-        local _questID = _tasks[i]
-        repeat 
-            if IsQuestBounty(_questID) then break end
-            if not IsQuestTask(_questID) then break end
-            -- This is a world quest in Legion
-            if not QuestMapFrame_IsQuestWorldQuest(_questID) then break end
+        local _wquestId = _tasks[i]
+        if (not IsQuestBounty(_wquestId)) and (IsQuestTask(_wquestId)) and (QuestMapFrame_IsQuestWorldQuest(_wquestId)) then
+        -- if ( _wquestId ) and IsWorldQuestWatched(_wquestId) and (not _tempQuestMap.Contains(_wquestId)) then
+            repeat
+                local _isInArea, _isOnMap, _numObjectives, _taskName, _displayAsObjective = GetTaskInfo(_wquestId)
+                if (not _isInArea) or (not _isOnMap) then break end
+                local _quest = {
+                    questID = _wquestId,
+                    isInArea = _isInArea,
+                    isOnMap = _isOnMap,
+                    numObjectives = _numObjectives,
+                    taskName = _taskName,
+                    displayAsObjective = _displayAsObjective,
+                    objectives = {}
+                }
 
-            local _isInArea, _isOnMap, _numObjectives, _taskName, _displayAsObjective = GetTaskInfo(_questID)
-            if not _isInArea then break end
-            PushUIAPI.WorldQuest.quest = {
-                questID = _questID,
-                isInArea = _isInArea,
-                isOnMap = _isOnMap,
-                numObjectives = _numObjectives,
-                taskName = _taskName,
-                displayAsObjective = _displayAsObjective,
-                objectives = {}
-            }
-
-            if _numObjectives ~= nil and _numObjectives > 0 then
-                for n = 1, _numObjectives do
-                    local _title, _objType, _completed = GetQuestObjectiveInfo(_questID, n, false)
-                    local _percentage = 0
-                    if _objType == "progressbar" then
-                        _percentage = GetQuestProgressBarPercent(_questID)
+                if _numObjectives ~= nil and _numObjectives > 0 then
+                    for n = 1, _numObjectives do
+                        local _title, _objType, _completed = GetQuestObjectiveInfo(_wquestId, n, false)
+                        local _percentage = 0
+                        if _objType == "progressbar" then
+                            _percentage = GetQuestProgressBarPercent(_wquestId)
+                        end
+                        _quest.objectives[n] = {
+                            title = _title, 
+                            objType = _objType,
+                            completed = _completed,
+                            showProgressBar = (_objType == "progressbar"),
+                            percentage = _percentage
+                        }
                     end
-                    PushUIAPI.WorldQuest.quest.objectives[n] = {
-                        title = _title, 
-                        objType = _objType,
-                        completed = _completed,
-                        showProgressBar = (_objType == "progressbar"),
-                        percentage = _percentage
-                    }
                 end
-            end
 
-            -- Get the first bonus quest done. so return
-            if _hasQuest then
-                PushUIAPI.WorldQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_WORLD_QUEST_UPDATE
-            else
-                PushUIAPI.WorldQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STARTWATCHING
-            end
-            return
-        until true
-    end
+                if PushUIAPI.WorldQuest.quest.Contains(_wquestId) then
+                    PushUIAPI.WorldQuest.updatedList.PushBack(_quest)
+                else
+                    PushUIAPI.WorldQuest.newWatchingList.PushBack(_quest)
+                end
 
-    -- We have move out the bonus area
-    if _hasQuest then
-        PushUIAPI.WorldQuest._lastFireEvent = PUSHUIEVENT_WORLD_QUEST_STOPWATCHING
+                _tempQuestMap.Set(_wquestId, _quest)
+            until true
+        end
     end
+    PushUIAPI.WorldQuest.quest.ForEach(function(qid, quest)
+        if _tempQuestMap.Contains(qid) == false then
+            PushUIAPI.WorldQuest.unWatchingList.PushBack(quest)
+        end
+    end)
+
+    PushUIAPI.WorldQuest.quest = _tempQuestMap
 end
 
 PushUIAPI.WorldQuest._updateWorldQuest = function(event, ...)
-    PushUIAPI.WorldQuest._lastFireEvent = nil
+    -- print("WorldQuest on Event: "..event)
+    -- PushUIAPI.WorldQuest._lastFireEvent = nil
 
-    if event == "QUEST_TURNED_IN" then
-        if PushUIAPI.WorldQuest.quest == nil then return end
-        local _questId = ...
-        if _questId ~= PushUIAPI.WorldQuest.quest.questID then return end
-        PushUIAPI.WorldQuest.quest = nil
-        PushUIAPI.WorldQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING
+    -- if event == "QUEST_TURNED_IN" then
+    --     if PushUIAPI.WorldQuest.quest == nil then return end
+    --     local _questId = ...
+    --     if _questId ~= PushUIAPI.WorldQuest.quest.questID then return end
+    --     PushUIAPI.WorldQuest.quest = nil
+    --     PushUIAPI.WorldQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING
+    -- end
+
+    -- if (event == "QUEST_ACCEPTED" or event == "QUEST_LOG_UPDATE" or 
+    --     event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA") then
+    --     PushUIAPI.WorldQuest._gainQuest()
+    -- end
+
+    -- if PushUIAPI.WorldQuest._lastFireEvent == nil then return end
+    -- PushUIAPI:FirePUIEvent(PushUIAPI.WorldQuest._lastFireEvent, PushUIAPI.WorldQuest.quest)
+
+    PushUIAPI.WorldQuest._gainQuest()
+    if PushUIAPI.WorldQuest.newWatchingList.Size() > 0 then
+        PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STARTWATCHING, PushUIAPI.WorldQuest.newWatchingList)
     end
 
-    if (event == "QUEST_ACCEPTED" or event == "QUEST_LOG_UPDATE" or 
-        event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA") then
-        PushUIAPI.WorldQuest._gainQuest()
+    if PushUIAPI.WorldQuest.updatedList.Size() > 0 then
+        PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_WORLD_QUEST_UPDATE, PushUIAPI.WorldQuest.updatedList)
     end
 
-    if PushUIAPI.WorldQuest._lastFireEvent == nil then return end
-    PushUIAPI:FirePUIEvent(PushUIAPI.WorldQuest._lastFireEvent, PushUIAPI.WorldQuest.quest)
+    if PushUIAPI.WorldQuest.unWatchingList.Size() > 0 then
+        PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING, PushUIAPI.WorldQuest.unWatchingList)
+    end
 end
 
 PushUIAPI.WorldQuest._initialize = function()
