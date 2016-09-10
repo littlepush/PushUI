@@ -108,22 +108,33 @@ _minimapdock.__init = function(...)
     end
     _minimapdock.__resize()
 
+    local _timeDock = PushUIFrames.DockFrame.CreateNewDock(
+        _name.."Time", PushUIColor.silver, "BOTTOM", _panelContainer, _tintContainer)
+    _timeDock.panelAvailable = false
+    PushUIConfig.skinTooltipType(_timeDock.floatPanel)
+    local _timeLabel = PushUIFrames.Label.Create(_name.."TimeFloatLabel", _timeDock.floatPanel, true)
+    _timeDock.floatPanel.WillAppear = function(...)
+        _timeLabel.SetTextString("Current Time: "..date())
+    end
+    _timeLabel:SetPoint("TOPLEFT", _timeDock.floatPanel, "TOPLEFT")
+    _tintContainer.Push(_timeDock.tintBar)
+
+    local _trackingDock = PushUIFrames.DockFrame.CreateNewDock(
+        _name.."Tracking", PushUIColor.purple, "BOTTOM", _panelContainer, _tintContainer)
+    _trackingDock.panelAvailable = false
+    PushUIConfig.skinTooltipType(_trackingDock.floatPanel)
+
+    local _trackingTooltipLabel = PushUIFrames.Label.Create(_name.."TrackingFloatLabel", _trackingDock.floatPanel, true)
+    _trackingTooltipLabel.SetTextString("Tracking Toggle")
+    _trackingTooltipLabel:SetPoint("TOPLEFT", _trackingDock.floatPanel, "TOPLEFT", 0, 0)
+    _tintContainer.Push(_trackingDock.tintBar)
+
+    _trackingDock.tintOnRightClick = function(...)
+        ToggleDropDownMenu(1, nil, MiniMapTrackingDropDown, _trackingDock.tintBar, 0, 0)
+    end
+
     PushUIAPI.UnregisterEvent("PLAYER_ENTERING_WORLD", _minimapdock)
 end
 
 PushUIAPI.RegisterEvent("PLAYER_ENTERING_WORLD", _minimapdock, _minimapdock.__init)
 
-
-local _trackingDock = PushUIFrames.DockFrame.CreateNewDock(
-    _name.."Tracking", PushUIColor.purple, "BOTTOM", _panelContainer, _tintContainer)
-_trackingDock.panelAvailable = false
-PushUIConfig.skinType(_trackingDock.floatPanel)
-
-local _trackingTooltipLabel = PushUIFrames.Label.Create(_name.."TrackingFloatLabel", _trackingDock.floatPanel, true)
-_trackingTooltipLabel:SetPoint("TOPLEFT", _trackingDock.floatPanel, "TOPLEFT", 0, 0)
-_trackingTooltipLabel:SetTextString("Tracking Toggle")
-_tintContainer.Push(_trackingDock.tintBar)
-
-_trackingDock.tintOnRightClick = function(...)
-    ToggleDropDownMenu(1, nil, MiniMapTrackingDropDown, _trackingDock.tintBar, 0, 0)
-end
