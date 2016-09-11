@@ -692,12 +692,14 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
             _frameStack._allPanelWidth * _frameStack.__abs, 0)
 
         if animationStage then
+            panel:Show()
             panel.PlayAnimationStage(animationStage, function(...)
                 _frameStack._allPanelWidth = _frameStack._allPanelWidth + panel:GetWidth() + _frameStack._padding
                 if onFinished then onFinished() end
             end)
         else
             panel:SetAlpha(1)
+            panel:Show()
             _frameStack._allPanelWidth = _frameStack._allPanelWidth + panel:GetWidth() + _frameStack._padding
         end
     end
@@ -718,9 +720,13 @@ PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
         _frameStack._allPanelWidth = _frameStack._allPanelWidth - panel:GetWidth() - _frameStack._padding
 
         if animationStage then
-            panel.PlayAnimationStage(animationStage, onFinished)
+            panel.PlayAnimationStage(animationStage, function(...)
+                panel:Hide()
+                if onFinished then onFinished() end
+            end)
         else
             panel:SetAlpha(0)
+            panel:Hide()
         end
 
         local _skipSize = _frameStack._padding

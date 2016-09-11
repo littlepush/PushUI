@@ -133,7 +133,76 @@ _minimapdock.__init = function(...)
         ToggleDropDownMenu(1, nil, MiniMapTrackingDropDown, _trackingDock.tintBar, 0, 0)
     end
 
+    -- QueueStatus MinimapButton
+    -- QueueStatus Frame
+    local _qstatus = QueueStatusMinimapButton
+    local _qframe = QueueStatusFrame
+
+    local _qsdock = PushUIFrames.DockFrame.CreateNewDock(
+        _name.."QueueStatus", PushUIColor.green, "BOTTOM", _panelContainer, _tintContainer)
+    _qsdock.panelAvailable = false;
+    PushUIConfig.skinTooltipType(_qsdock.floatPanel)
+
+    PushUIConfig.skinType(_qframe)
+    _qframe:SetParent(_qsdock.floatPanel)
+    _qframe:ClearAllPoints()
+    _qframe:SetPoint("TOPLEFT", _qsdock.floatPanel, "TOPLEFT")
+
+    _qsdock.floatPanel.WillAppear = function(...)
+        _qframe:Show()
+        _qsdock.floatPanel:SetWidth(_qframe:GetWidth())
+        _qsdock.floatPanel:SetHeight(_qframe:GetHeight())
+    end
+    _qsdock.floatPanel.WillDisappear = function(...)
+        _qframe:Hide()
+    end
+    _qsdock._lfgUpdate = function(event, ...)
+        local _hasLFGQueue = false
+        for i = 1, NUM_LE_LFG_CATEGORYS do
+            repeat
+                local _mode = GetLFGMode(i)
+                if _mode == nil then break end
+                _hasLFGQueue = true
+            until true
+        end
+        if _hasLFGQueue then
+            _tintContainer.Push(_qsdock.tintBar)
+        else
+            _tintContainer.Erase(_qsdock.tintBar)
+        end
+    end
+    _qsdock.tintOnRightClick = function(...)
+        ToggleDropDownMenu(1, nil, QueueStatusMinimapButton.DropDown, _qsdock.tintBar, 0, 20 )
+    end
+    _qsdock.tintOnLeftClick = function(...)
+        local inBattlefield, showScoreboard = QueueStatus_InActiveBattlefield();
+        local lfgListActiveEntry = C_LFGList.GetActiveEntryInfo();
+        if ( inBattlefield ) then
+            if ( showScoreboard ) then
+                ToggleWorldStateScoreFrame();
+            end
+        elseif ( lfgListActiveEntry ) then
+            LFGListUtil_OpenBestWindow(true);
+        else
+            --See if we have any active LFGList applications
+            local apps = C_LFGList.GetApplications();
+            for i=1, #apps do
+                local _, appStatus = C_LFGList.GetApplicationInfo(apps[i]);
+                if ( appStatus == "applied" or appStatus == "invited" ) then
+                    --We want to open to the LFGList screen
+                    LFGListUtil_OpenBestWindow(true);
+                    return;
+                end
+            end
+
+            --Just show the dropdown
+            ToggleDropDownMenu(1, nil, QueueStatusMinimapButton.DropDown, _qsdock.tintBar, 0, 20)
+        end
+    end
+    PushUIAPI.RegisterEvent("LFG_UPDATE", _qsdock, _qsdock._lfgUpdate)
+
     PushUIAPI.UnregisterEvent("PLAYER_ENTERING_WORLD", _minimapdock)
+
 end
 
 PushUIAPI.RegisterEvent("PLAYER_ENTERING_WORLD", _minimapdock, _minimapdock.__init)
