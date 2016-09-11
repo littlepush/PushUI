@@ -96,9 +96,9 @@ local function __onTooltipSetUnit(tip_data)
         local class = UnitClass(unit) or ""
         _G["GameTooltipTextLeft"..n]:SetFormattedText("%s %s "..color.."%s", level, race, class)
 
-        if UnitIsPVP(unit) then
-            _G["GameTooltipTextLeft"..n + 1]:SetFormattedText("%s (%s)", UnitFactionGroup(unit), PVP)
-        end
+        -- if UnitIsPVP(unit) then
+        --     _G["GameTooltipTextLeft"..n + 1]:SetFormattedText("%s (%s)", UnitFactionGroup(unit), PVP)
+        -- end
     elseif UnitIsBattlePet(unit) then
         for i = 2, lines do
             local line = _G["GameTooltipTextLeft"..i]
