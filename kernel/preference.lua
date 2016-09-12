@@ -109,8 +109,8 @@ PushUIColor.__gradientDeltaRed = PushUIColor.red[1] - PushUIColor.green[1]
 PushUIColor.__gradientNormalBlue = 0.25
 PushUIColor.lifeColorGradient = function(v, max, min)
 	local _p = v / (max - min)
-	local _r = PushUIColor.green[1] + PushUIColor.__gradientDeltaRed * _p
-	local _g = PushUIColor.red[1] + PushUIColor.__gradientDeltaGreen * _p
+	local _r = PushUIColor.green[1] + PushUIColor.__gradientDeltaRed * (1 - _p)
+	local _g = PushUIColor.red[2] + PushUIColor.__gradientDeltaGreen * _p
 	return {_r, _g, PushUIColor.__gradientNormalBlue, 1}
 end
 
