@@ -82,11 +82,11 @@ _chatdock.__init = function()
         PushUIStyle.SetFontColor(_tab:GetFontString(), unpack(PushUIColor.orange))
     end)
 
-    GeneralDockManager:HookScript("OnShow", function(self, ...)
-        if _chatdock.panel:GetAlpha() == 0 then
-            self:Hide()
-        end
-    end)
+    -- GeneralDockManager:HookScript("OnShow", function(self, ...)
+    --     if _chatdock.panel:GetAlpha() == 0 then
+    --         self:Hide()
+    --     end
+    -- end)
 
     GeneralDockManager:SetParent(_chatdock.panel)
 
@@ -98,11 +98,11 @@ _chatdock.__init = function()
         local _chatF = _G["ChatFrame"..i]
         local _chatFTab = _G["ChatFrame"..i.."Tab"]
 
-        _chatF:HookScript("OnShow", function(self, ...)
-            if _chatdock.panel:GetAlpha() == 0 then
-                self:Hide()
-            end
-        end)
+        -- _chatF:HookScript("OnShow", function(self, ...)
+        --     if _chatdock.panel:GetAlpha() == 0 then
+        --         self:Hide()
+        --     end
+        -- end)
 
         -- No more loaded chat frame
         if _chatF == nil then

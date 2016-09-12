@@ -102,19 +102,6 @@ local function _skadaDockInit()
         end
     end)
 
-    for k,v in pairs(Skada:GetWindows()) do
-        v.bargroup:HookScript("OnShow", function(self, ...)
-            if v.bargroup:GetParent():GetAlpha() == 0 then
-                self:Hide()
-            end
-        end)
-        v.bargroup:HookScript("OnHide", function(self, ...)
-            if v.bargroup:GetParent():GetAlpha() ~= 0 then
-                self:Show()
-            end
-        end)
-    end
-
     PushUIAPI.UnregisterEvent("PLAYER_ENTERING_WORLD", _config._skadadockGroup)
 end
 
