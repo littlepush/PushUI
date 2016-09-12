@@ -29,7 +29,7 @@ _addonUsageDock.addonListLabel:SetPoint("TOPLEFT", _addonUsageDock.floatPanel, "
 _addonUsageDock.memUsageLabel:SetPoint("TOPRIGHT", _addonUsageDock.floatPanel, "TOPRIGHT")
 _addonUsageDock.addonListLabel.SetFont(nil, 14)
 _addonUsageDock.memUsageLabel.SetFont(nil, 14)
-_addonUsageDock.addonListLabel.SetForceWidth(200)
+-- _addonUsageDock.addonListLabel.SetForceWidth(200)
 _addonUsageDock.memUsageLabel.SetForceWidth(100)
 _addonUsageDock.addonListLabel.SetJustifyH("LEFT")
 _addonUsageDock.memUsageLabel.SetJustifyH("RIGHT")
@@ -37,37 +37,47 @@ _addonUsageDock.addonListLabel.SetMaxLines(999)
 _addonUsageDock.memUsageLabel.SetMaxLines(999)
 _addonUsageDock.floatPanel:SetWidth(300)
 
+_addonUsageDock.allAddonList = {}
+local _c_addonCount = GetNumAddOns()
+local _addonNameString = ""
+for i = 1, _c_addonCount do
+    repeat 
+        local _name, _, _, _loadable = GetAddOnInfo(i)
+        if not _loadable then break end
+        _addonUsageDock.allAddonList[#_addonUsageDock.allAddonList + 1] = _name
+
+        if _addonNameString == "" then _addonNameString = _name
+        else _addonNameString = _addonNameString.."\n".._name
+        end
+    until true
+end
+_addonUsageDock.addonListLabel.SetTextString(_addonNameString)
+local _addonHeight = _addonUsageDock.addonListLabel:GetHeight()
+local _addonWidth = _addonUsageDock.addonListLabel:GetWidth()
+_addonUsageDock.floatPanel:SetWidth(_addonWidth + 100)
+_addonUsageDock.floatPanel:SetHeight(_addonHeight)
+
+
 _addonUsageDock.__gatherAddonInfo = function()
-    local _addonNames = ""
     local _addonMems = ""
-    local _c_loadedAddons = GetNumAddOns()
+    local _c_loadedAddons = #_addonUsageDock.allAddonList
     for i = 1, _c_loadedAddons do 
-        repeat
-            local _name, _, _, _loadable = GetAddOnInfo(i)
-            if not _loadable then break end
-            local _mem = GetAddOnMemoryUsage(_name)
+        local _name = _addonUsageDock.allAddonList[i]
+        local _mem = GetAddOnMemoryUsage(_name)
 
-            if _mem >= 1024 then 
-                _mem = _mem / 1024
-                _mem = ("%.2f"):format(_mem).."MB"
-            else
-                _mem = ("%.2f"):format(_mem).."KB"
-            end
+        if _mem >= 1024 then 
+            _mem = _mem / 1024
+            _mem = ("%.2f"):format(_mem).."MB"
+        else
+            _mem = ("%.2f"):format(_mem).."KB"
+        end
 
-            if _addonNames == "" then _addonNames = _name
-            else _addonNames = _addonNames.."\n".._name
-            end
-
-            if _addonMems == "" then _addonMems = _mem
-            else _addonMems = _addonMems.."\n".._mem
-            end
-        until true
+        if _addonMems == "" then _addonMems = _mem
+        else _addonMems = _addonMems.."\n".._mem
+        end
     end
 
-    _addonUsageDock.addonListLabel.SetTextString(_addonNames)
     _addonUsageDock.memUsageLabel.SetTextString(_addonMems)
-
-    _addonUsageDock.floatPanel:SetHeight(_addonUsageDock.addonListLabel:GetHeight())
 end
 
 _addonUsageDock.__refreshTimer = PushUIFrames.Timer.Create(1, _addonUsageDock.__gatherAddonInfo)
