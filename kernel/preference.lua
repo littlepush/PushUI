@@ -104,6 +104,16 @@ PushUIColor.lifeColorDynamic = function(v, max, min)
     return {_r, _g, _b, 1}
 end
 
+PushUIColor.__gradientDeltaGreen = PushUIColor.green[2] - PushUIColor.red[2]
+PushUIColor.__gradientDeltaRed = PushUIColor.red[1] - PushUIColor.green[1]
+PushUIColor.__gradientNormalBlue = 0.25
+PushUIColor.lifeColorGradient = function(v, max, min)
+	local _p = v / (max - min)
+	local _r = PushUIColor.green[1] + PushUIColor.__gradientDeltaRed * _p
+	local _g = PushUIColor.red[1] + PushUIColor.__gradientDeltaGreen * _p
+	return {_r, _g, PushUIColor.__gradientNormalBlue, 1}
+end
+
 PushUIColor.expColorDynamic = function(v, max, min)
     local restXP = GetXPExhaustion()
     if restXP then

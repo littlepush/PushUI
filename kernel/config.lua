@@ -130,7 +130,7 @@ PushUIConfig.PlayerFrameHook = {
         size = { w = 200, h = 5 },
         anchorPoint = "TOPLEFT",
         reverse = false,
-        fillColor = { PushUIColor.lifeColorDynamic },
+        fillColor = { PushUIColor.lifeColorGradient },
         background = function(frame)
             PushUIStyle.BackgroundFormat(frame, PushUIStyle.BackdropOutline, 0, 0, 0, 1, 0, 0, 0, 0.2)
         end
@@ -147,7 +147,7 @@ PushUIConfig.PlayerFrameHook = {
     },
     percentage = {
         size = 30,
-        color = PushUIColor.lifeColorDynamic,
+        color = PushUIColor.lifeColorGradient,
         outline = "OUTLINE",
         fontName = "Interface\\AddOns\\PushUI\\media\\fontn.ttf",
         align = "LEFT",
