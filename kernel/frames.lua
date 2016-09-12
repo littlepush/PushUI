@@ -9,13 +9,13 @@ PushUIFrames.ProgressBar = {}
 PushUIFrames.Label = {}
 
 PushUIFrames.Timer = {}
-PushUIFrames.Timer.Create = function(interval)
+PushUIFrames.Timer.Create = function(interval, handler)
     interval = interval or 1
     local _tf = CreateFrame("Frame")
 
     _tf.__interval = 1
     _tf.__lastFiredTime = time()
-    _tf.__handler = nil
+    _tf.__handler = handler
 
     function _tf:StartTimer()
         _tf:SetScript("OnUpdate", function(...)
@@ -790,15 +790,17 @@ PushUIFrames.DockFrame.CreateNewDock = function(name, color, tintSide, panelStac
     _dockPanelTint:SetHeight(8)
     _dockTintFrame:SetWidth(32)
     _dockTintFrame:SetHeight(20)
-    local _r,_g,_b = unpack(color)
+    local _r,_g,_b,_a = unpack(color)
+    if _a == nil then _a = 1 end
+
     PushUIStyle.BackgroundSolidFormat(
         _dockTintFrame, 
-        _r,_g,_b,1,
+        _r,_g,_b,_a,
         0, 0, 0, 1      -- Black border
         )
     PushUIStyle.BackgroundSolidFormat(
         _dockPanelTint,
-        _r,_g,_b,1,
+        _r,_g,_b,_a,
         0, 0, 0, 0.3
         )
 

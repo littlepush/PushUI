@@ -36,3 +36,5 @@ components\targetframe.lua
 components\targettargetframe.lua
 components\focusframe.lua
 components\petframe.lua
+
+components\systemdock.lua
