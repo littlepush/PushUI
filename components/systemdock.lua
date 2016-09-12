@@ -4,7 +4,7 @@ local
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
 local _sysdockPrefixName = "PushUIFramesSystemDock"
-local _colorUsage = {0.11, 0.11, 0.13}
+local _colorUsage = {0.22, 0.56, 0.66}
 local _colorSysStat = {0.81, 0.71, 0.5}
 
 local lcontainer = "PushUIFramesLeftDockContainer"
