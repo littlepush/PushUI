@@ -3,6 +3,12 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
+PushUIFrames.__allTempFrameCount = 0
+function PushUIFrames:GetNewFrameName()
+    PushUIFrames.__allTempFrameCount = PushUIFrames.__allTempFrameCount + 1
+    return "PushUIFrame_TempFrame_"..PushUIFrames.__allTempFrameCount
+end
+
 PushUIFrames.Frame = {}
 PushUIFrames.Button = {}
 PushUIFrames.ProgressBar = {}
@@ -332,604 +338,126 @@ PushUIFrames.Label.Create = function(name, parent, autoResizeParent)
     return _lb
 end
 
--- Create and config for the bottom frame
-PushUIFrames.BottomFrame = {}
-PushUIFrames.BottomFrame.IsDisplayLeftSwitcher = function(frame)
-    local _displayingLeftSwitcher = false
-    for _, sw in pairs(frame.LeftSwitchers) do
-        repeat
-            if _displayingLeftSwitcher then break end
-            if nil ~= sw.Config.displayed then
-                _displayingLeftSwitcher = sw.Config.displayed
-                break
-            end
-            if nil ~= sw.Config.alwaysDisplay then
-                _displayingLeftSwitcher = sw.Config.alwaysDisplay
-                break
-            end
-        until true
+PushUIFrames.UIView = {}
+PushUIFrames.UIView.Create = function(name, parent)
+    if not name then 
+        name = PushUIFrames:GetNewFrameName()
     end
-    return _displayingLeftSwitcher
-end
-PushUIFrames.BottomFrame.IsDisplayRightSwitcher = function(frame)
-    local _displayingRightSwitcher = false
-    for _, sw in pairs(frame.RightSwitchers) do
-        repeat
-            if _displayingRightSwitcher then break end
-            if nil ~= sw.Config.displayed then
-                _displayingRightSwitcher = sw.Config.displayed
-                break
-            end
-            if nil ~= sw.Config.alwaysDisplay then
-                _displayingRightSwitcher = sw.Config.alwaysDisplay
-                break
-            end
-        until true
-    end
-    return _displayingRightSwitcher
-end
+    parent = parent or UIParent
+    local _frame = CreateFrame("Frame", name, parent)
+    _frame.__type = "UIFrame"
 
-PushUIFrames.BottomFrame.GetDisplayRect = function(frame)
-    local _swsize = 0
-    local _lswsize = 0
-    if frame.Config.switchers then
-        local _lsw = PushUIFrames.BottomFrame.IsDisplayLeftSwitcher(frame)
-        if _lsw then _swsize = _swsize + PushUISize.tinyButtonWidth + PushUISize.padding end
-        _lswsize = _swsize
-        local _rsw = PushUIFrames.BottomFrame.IsDisplayRightSwitcher(frame)
-        if _rsw then _swsize = _swsize + PushUISize.tinyButtonWidth + PushUISize.padding end
-    end
+    _frame.__backgroundColor = {0, 0, 0, 0}
+    _frame.__borderColor = {0, 0, 0, 0}
+    _frame.__borderWidth = 1
 
-    local _w = frame:GetWidth()
-    _w = _w - _swsize - PushUISize.padding * 2
-    local _h = frame:GetHeight() - (PushUISize.padding * 2)
-    local _x = PushUISize.padding + _lswsize
-    local _y = -PushUISize.padding
-
-    _w = _w * frame.Config.scale
-    _h = _h * frame.Config.scale
-    _x = _x * frame.Config.scale
-    _y = _y * frame.Config.scale
-
-    return _w, _h, _x, _y
-end
-
-PushUIFrames.BottomFrame.GetBlockRect = function(frame, index, count, align, be_square)
-    local _bc = frame.Config.blockCount or 2
-    local _w, _h, _x, _y = PushUIFrames.BottomFrame.GetDisplayRect(frame)
-    local _scale = frame.Config.scale or 1
-    local _p = PushUISize.padding * _scale
-    local _square = false
-    if nil ~= be_square then _square = be_square end
-    local _align_left = true
-    if nil ~= align then
-        if align == "right" then
-            _align_left = false
-        end
-    end
-
-    local _dw = _w
-    -- Block Width
-    _w = (_w - ((count - 1) * _p)) / count
-    if _square then
-        if _h < _w then
-            _w = _h
-        else
-            _h = _w
-        end
-    end
-
-    -- X Position to TOP LEFT
-    if _align_left == false then
-        _x = _x + (_dw - (_w + _p) * index + _p)    -- last block has no padding
-    else
-        _x = _x + ((_w + _p) * (index - 1))
-    end
-
-    return _w, _h, _x, _y
-end
-
-PushUIFrames.BottomFrame.OnSwitcherClick = function(frame, switcher)
-    local _c = frame.Config
-    local _sc = switcher.Config
-
-    -- No action defined
-    if _sc.action == nil then
-        return
-    end
-
-    local _sel = _sc.selected
-    local _aa = not _sc.alwaysAction
-    if _aa and _sel then return end
-
-    local _myAlpha = PushUIColor.alphaAvailable
-    local _otherAlpha = PushUIColor.alphaDim
-    if _sel then
-        _myAlpha = PushUIColor.alphaDim
-        _otherAlpha = PushUIColor.alphaAvailable
-    end
-
-    local _sg = nil     -- switchers group
-    local _sgc = false  -- switchers group config
-
-    for _, sw in pairs(frame.LeftSwitchers) do
-        if sw == switcher then 
-            _sg = frame.LeftSwitchers
-            if nil ~= _c.switchers.groupleft then
-                _sgc = _c.switchers.groupleft
-            end
-        end
-    end
-    if not _sg then
-        for _, sw in pairs(frame.RightSwitchers) do
-            if sw == switcher then 
-                _sg = frame.RightSwitchers 
-                if nil ~= _c.switchers.groupright then
-                    _sgc = _c.switchers.groupright
-                end
-            end
-        end
-    end
-
-    -- the switcher is not in any group
-    if not _sg then
-        return
-    end
-
-    _sc.selected = not _sc.selected
-    for _, tar in pairs(_sc.targets) do
-        if tar.HookFrame then
-            local _act = _sc.action
-            if tar.HookFrame[_act] then
-                tar.HookFrame[_act](_sc.selected)
-            end
-        end
-    end
-    switcher:SetAlpha(_myAlpha)
-
-    -- Not grouped switcher
-    if not _sgc then return end
-
-    for _, sw in pairs(_sg) do
-        if sw ~= switcher then
-            sw.Config.selected = not _sc.selected
-            for __, tar in pairs(sw.Config.targets) do
-                if tar.HookFrame then
-                    local _act = sw.Config.action
-                    if tar.HookFrame[_act] then
-                        tar.HookFrame[_act](sw.Config.selected)
-                    end
-                end
-            end
-            sw:SetAlpha(_otherAlpha)
-        end
-    end
-end
-
-PushUIFrames.BottomFrame.CreateSwitcher = function(frame)
-    local _cfg = frame.Config
-    if _cfg.switchers then
-        if frame.Config.switchers.left then
-            for _, scfg in pairs(frame.Config.switchers.left) do
-                local _n = frame:GetName().."LeftSwitcher".._
-                local _s = scfg.mode.Create(_n, frame, scfg)
-                frame.LeftSwitchers[#frame.LeftSwitchers + 1] = _s
-            end
-        end
-        if frame.Config.switchers.right then
-            for _, scfg in pairs(frame.Config.switchers.right) do
-                local _n = frame:GetName().."RightSwitcher".._
-                local _s = scfg.mode.Create(_n, frame, scfg)
-                frame.RightSwitchers[#frame.RightSwitchers + 1] = _s
-            end
-        end
-    end
-end
-
-PushUIFrames.BottomFrame.ReSize = function(frame, is_left)
-    local c = frame.Config
-    local w = PushUISize.FormatWithPadding(
-        c.blockCount,
-        PushUISize.blockNormalWidth,
-        PushUISize.padding
-        )
-    local h = PushUISize.FormatWithPadding(
-        1,
-        PushUISize.blockNormalHeight,
-        PushUISize.padding
-        )
-
-    -- Calculate the switcher's position
-    local _displayingLeftSwitcher = PushUIFrames.BottomFrame.IsDisplayLeftSwitcher(frame)
-    if _displayingLeftSwitcher then
-        w = w + PushUISize.tinyButtonWidth + PushUISize.padding
-    end
-    local _displayingRightSwitcher = PushUIFrames.BottomFrame.IsDisplayRightSwitcher(frame)
-    if _displayingRightSwitcher then
-        w = w + PushUISize.tinyButtonWidth + PushUISize.padding
-    end
-
-    frame:SetWidth(w * c.scale * PushUISize.Resolution.scale)
-    frame:SetHeight(h * c.scale * PushUISize.Resolution.scale)
-
-    local _points = {
-        {"BOTTOMRIGHT", _G["PushUIFrameActionBarFrame"], "BOTTOMLEFT", -c.stickPadding, 0},
-        {"BOTTOMLEFT", UIParent, "BOTTOMLEFT", c.stickPadding, PushUISize.screenBottomPadding},
-        {"BOTTOMLEFT", _G["PushUIFrameActionBarFrame"], "BOTTOMRIGHT", c.stickPadding, 0},
-        {"BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -c.stickPadding, PushUISize.screenBottomPadding}
+    _frame.__backdrop = {
+        bgFile = PushUIStyle.TextureClean,
+        edgeFile = PushUIStyle.TextureClean,
+        tile = true,
+        tileSize = 10,
+        edgeSize = 1,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
     }
-    local _anchor, _object, _objectAnchor, _xoffset, _yoffset
 
-    if is_left then
-        if not c.stickToActionBar then
-            _anchor, _object, _objectAnchor, _xoffset, _yoffset = unpack(_points[2])
-        else
-            _anchor, _object, _objectAnchor, _xoffset, _yoffset = unpack(_points[1])
-        end
-    else
-        if not c.stickToActionBar then
-            _anchor, _object, _objectAnchor, _xoffset, _yoffset = unpack(_points[4])
-        else
-            _anchor, _object, _objectAnchor, _xoffset, _yoffset = unpack(_points[3])
-        end
+    -- Timer
+    _frame.__delayTimerPool = PushUIAPI.Pool.New()
+    _frame.__delayTimerPool.SetCreateDelegate(function()
+        return PushUIFrames.Timer.Create()
+    end)
+
+    -- Animation Stage
+    _frame.__currentAnimationStage = nil
+    _frame.__currentAnimationDuration = 0
+    _frame.__allTempAnimationCount = 0
+    _frame.__animationStageNamePool = PushUIAPI.Pool.New()
+    _frame.__animationStageNamePool.SetCreateDelegate(function()
+        _frame.__allTempAnimationCount = _frame.__allTempAnimationCount + 1
+        return name.."TempAnimation".._frame.__allTempAnimationCount
+    end)
+
+    _frame.SetBackgroundColor = function(colorPack)
+        local _r, _g, _b, _a = unpack(colorPack)
+        if _a == nil then _a = 1 end
+        frame:SetBackdropColor(_r, _g, _b, _a)
     end
-    frame:ClearAllPoints()
-    frame:SetPoint(_anchor, _object, _objectAnchor, _xoffset, _yoffset)
+    function _frame:SetBackgroundColor(...) _frame.SetBackgroundColor(...) end
 
-    local _p = PushUISize.padding * PushUISize.Resolution.scale * c.scale
-    -- Resize the left switcher
-    if _displayingLeftSwitcher then
-        local _scount = #frame.LeftSwitchers
-        local _sh = (h - PushUISize.padding) / _scount - PushUISize.padding
-        local _sw = PushUISize.tinyButtonWidth
-        _sw = _sw * c.scale * PushUISize.Resolution.scale
-        _sh = _sh * c.scale * PushUISize.Resolution.scale
-        local _sx = PushUISize.padding * c.scale * PushUISize.Resolution.scale
-        local _sy = _sx
-
-        for i = 1, _scount do
-            local _s = frame.LeftSwitchers[i]
-            if _s.Config.mode == PushUIFrames.ProgressBar then
-                _s:SetWidth(_sw - 2)
-                _s:SetHeight(_sh - 2)
-                _s:SetPoint("TOPLEFT", frame, "TOPLEFT", _sx + 1, -(_sy + (_sh + _p) * (i - 1)) - 1)
-            else
-                _s:SetWidth(_sw)
-                _s:SetHeight(_sh)
-                _s:SetPoint("TOPLEFT", frame, "TOPLEFT", _sx, -(_sy + (_sh + _p) * (i - 1)))
-            end
-        end
+    _frame.SetBorderColor = function(colorPack)
+        local _r, _g, _b, _a = unpack(colorPack)
+        if _a == nil then _a = 1 end
+        _frame:SetBackdropBorderColor(_r, _g, _b, _a)
     end
+    function _frame:SetBorderColor(...) _frame.SetBorderColor(...) end
 
-    if _displayingRightSwitcher then
-        local _scount = #frame.RightSwitchers
-        local _sh = (h - PushUISize.padding) / _scount - PushUISize.padding
-        local _sw = PushUISize.tinyButtonWidth
-        _sw = _sw * c.scale * PushUISize.Resolution.scale
-        _sh = _sh * c.scale * PushUISize.Resolution.scale
-        local _sx = PushUISize.padding * c.scale * PushUISize.Resolution.scale
-        local _sy = _sx
-
-        for i = 1, _scount do
-            local _s = frame.RightSwitchers[i]
-            if _s.Config.mode == PushUIFrames.ProgressBar then
-                _s:SetWidth(_sw - 2)
-                _s:SetHeight(_sh - 2)
-                _s:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -_sx - 1, -(_sy + (_sh + _p) * (i - 1)) - 1)
-            else
-                _s:SetWidth(_sw)
-                _s:SetHeight(_sh)
-                _s:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -_sx, -(_sy + (_sh + _p) * (i - 1)))
-            end
-        end
+    _frame.SetBorderWidth = function(width)
+        if width < 0 then width = 0 end
+        _frame.__backdrop.edgeSize = width
+        _frame.__backdrop.insets = { left = -width, right = -width, top = -width, bottom = -width }
+        _frame:SetBackdrop(_frame.__backdrop)
     end
+    function _frame:SetBorderWidth(...) _frame.SetBorderWidth(...) end
+
+    _frame.DelayToDo = function(sec, action)
+        local _timer = _frame.__delayTimerPool.Get()
+        _timer:SetInterval(sec)
+        _timer:SetHandler(function()
+            if action then action() end
+            _timer:StopTimer()
+            _frame.__delayTimerPool.Release(_timer)
+        end)
+        _timer:StartTimer()
+    end
+    function _frame:DelayToDo(...) _frame.DelayToDo(...) end
+
+    _frame.UIType = function() return _frame.__type end
+    function _frame:UIType() return _frame.__type end
+
+    -- Animation
+    _frame.animationFade = function(toAlpah)
+        if not _frame.__currentAnimationStage then return end
+        _frame.AnimationStage(_frame.__currentAnimationStage).EnableFade(_frame.__currentAnimationDuration, toAlpah)
+    end
+    function _frame:animationFade(...) _frame.animationFade(...) end
+
+    _frame.animationScale = function(scale, origin)
+        if not _frame.__currentAnimationStage then return end
+        _frame.AnimationStage(_frame.__currentAnimationStage).EnableScale(_frame.__currentAnimationDuration, scale, origin)
+    end
+    function _frame:animationScale(...) _frame.animationScale(...) end
+
+    _frame.animationTranslation = function(toX, toY)
+        if not _frame.__currentAnimationStage then return end
+        _frame.AnimationStage(_frame.__currentAnimationStage).EnableTranslation(_frame.__currentAnimationDuration, toX, toY)
+    end
+    function _frame:animationTranslation(...) _frame.animationTranslation(...) end
+
+    _frame.AnimationWithDuration = function(duration, animation, completed)
+        if not animation then return end
+
+        -- Enable animation and add temp stage
+        PushUIFrames.Animations.EnableAnimationForFrame(_frame)
+        local _stageName = _frame.__animationStageNamePool.Get()
+        PushUIFrames.Animations.AddStage(_frame, _stageName)
+
+        _frame.__currentAnimationStage = _stageName
+        _frame.__currentAnimationDuration = duration
+        -- Do the animation
+        animation()
+
+        _frame.PlayAnimationStage(_stageName, function(_, _, isCompleted)
+            _frame.__currentAnimationStage = nil
+            _frame.AnimationStage(_stageName).DisableAllAnimations()
+            if completed then completed(isCompleted) end
+            _frame.__animationStageNamePool.Release(_stageName)
+        end)
+    end
+    function _frame:AnimationWithDuration(...) _frame.AnimationWithDuration(...) end
+
+    return _frame
 end
 
-PushUIFrames.BottomFrame.Create = function(name, is_left, config)
-    local _bf = PushUIFrames.Frame.Create(name, config)
-
-    _bf:SetFrameStrata("BACKGROUND")
-    _bf.LeftSwitchers = {}
-    _bf.RightSwitchers = {}
-    _bf.ChildHookFrames = {}
-
-    _bf.GetBlockRect = function(...)
-        return PushUIFrames.BottomFrame.GetBlockRect(_bf, ...)
-    end
-
-    _bf.InitializeSwitcher = function()
-        PushUIFrames.BottomFrame.CreateSwitcher(_bf)
-    end
-
-    _bf.OnButtonClick = function(btn)
-        PushUIFrames.BottomFrame.OnSwitcherClick(_bf, btn)
-    end
-
-    _bf.ReSize = function(...)
-        PushUIFrames.BottomFrame.ReSize(_bf, is_left)
-        for _, c in pairs(_bf.ChildHookFrames) do
-            if c.ReSize then
-                c.ReSize()
-            end
-        end
-    end
-
-    return _bf
-end
-
--- Dock Frame
-
-PushUIFrames.DockFrame = {}
-
-PushUIFrames.DockFrame.CreateDockContainer = function(name, side)
-    local _frameStack = CreateFrame("Frame", name, UIParent)
-    _frameStack:ClearAllPoints()
-    _frameStack.panelStack = PushUIAPI.Vector.New()
-    _frameStack._pushSide = side
-    _frameStack._padding = 5
-    _frameStack._allPanelWidth = _frameStack._padding
-    --_frameStack:SetFrameStrata("BACKGROUND")
-
-    if side == "LEFT" then
-        _frameStack.__anchor = "TOPLEFT"
-        _frameStack.__relativeAnchor = "TOPLEFT"
-        _frameStack.__abs = 1
-    else
-        _frameStack.__anchor = "TOPRIGHT"
-        _frameStack.__relativeAnchor = "TOPRIGHT"
-        _frameStack.__abs = -1
-    end
-
-    _frameStack.Push = function(panel, animationStage, onFinished)
-        if not panel or not panel.dock then return end
-        if _frameStack.panelStack.Contains(panel) then return end
-        _frameStack.panelStack.PushBack(panel)
-
-        panel:SetPoint(
-            _frameStack.__anchor, 
-            _frameStack, 
-            _frameStack.__relativeAnchor, 
-            _frameStack._allPanelWidth * _frameStack.__abs, 0)
-
-        if animationStage then
-            panel:Show()
-            panel.PlayAnimationStage(animationStage, function(...)
-                _frameStack._allPanelWidth = _frameStack._allPanelWidth + panel:GetWidth() + _frameStack._padding
-                if onFinished then onFinished() end
-            end)
-        else
-            panel:SetAlpha(1)
-            panel:Show()
-            _frameStack._allPanelWidth = _frameStack._allPanelWidth + panel:GetWidth() + _frameStack._padding
-        end
-    end
-
-    _frameStack.Erase = function(panel, animationStage, onFinished)
-        if not panel or not panel.dock then return end
-
-        if not _frameStack.panelStack.Contains(panel) then return end
-
-        local _resizeFromIndex = 1
-        for i = 1, _frameStack.panelStack.Size() do
-            if _frameStack.panelStack.ObjectAtIndex(i):GetName() == panel:GetName() then
-                _frameStack.panelStack.Erase(i)
-                _resizeFromIndex = i
-                break
-            end
-        end
-        _frameStack._allPanelWidth = _frameStack._allPanelWidth - panel:GetWidth() - _frameStack._padding
-
-        if animationStage then
-            panel.PlayAnimationStage(animationStage, function(...)
-                panel:Hide()
-                if onFinished then onFinished() end
-            end)
-        else
-            panel:SetAlpha(0)
-            panel:Hide()
-        end
-
-        local _skipSize = _frameStack._padding
-        local _eraseAnimationName = _frameStack:GetName().."EraseAnimation"
-        for i = 1, _resizeFromIndex - 1 do
-            _skipSize = _skipSize + _frameStack.panelStack.ObjectAtIndex(i):GetWidth() + _frameStack._padding
-        end
-        for i = _resizeFromIndex, _frameStack.panelStack.Size() do
-            local _p = _frameStack.panelStack.ObjectAtIndex(i)
-            PushUIFrames.Animations.EnableAnimationForFrame(_p)
-            PushUIFrames.Animations.AddStage(_p, _eraseAnimationName)
-            _p.AnimationStage(_eraseAnimationName).EnableTranslation(0.35, 
-                _skipSize * _frameStack.__abs, 0)
-            _skipSize = _skipSize + _p:GetWidth() + _frameStack._padding
-            _p.PlayAnimationStage(_eraseAnimationName)
-        end
-    end
-
-    return _frameStack
-end
-
-PushUIFrames.DockFrame.CreateNewDock = function(name, color, tintSide, panelStack, tintStack)
-    local _dock = {}
-    local _dockTintFrame = CreateFrame("Button", name.."Tint", tintStack)
-    local _dockNormalPanel = CreateFrame("Frame", name.."Panel", panelStack)
-    local _dockPanelTint = CreateFrame("Button", name.."PanelTint", _dockNormalPanel)
-    local _dockFloatPanel = CreateFrame("Frame", name.."FloatPanel", tintStack)
-    _dockNormalPanel:SetFrameStrata("BACKGROUND")
-    _dockPanelTint:SetFrameStrata("TOOLTIP")
-    _dockTintFrame:SetFrameStrata("TOOLTIP")
-    _dockFloatPanel:SetFrameStrata("TOOLTIP")
-
-    _dock.panelAvailable = true
-    _dock.floatAvailable = true
-    _dock.tintOnLeftClick = nil
-    _dock.tintOnRightClick = nil
-
-    _dock.tintBar = _dockTintFrame
-    _dock.panel = _dockNormalPanel
-    _dock.panel.tintBar = _dockPanelTint
-    _dock.floatPanel = _dockFloatPanel
-    
-    _dockTintFrame.dock = _dock
-    _dockNormalPanel.dock = _dock
-    _dockPanelTint.dock = _dock
-    _dockFloatPanel.dock = _dock
-
-    -- Init Style
-    _dockFloatPanel:SetPoint("BOTTOM", _dockTintFrame, "TOP", 0, 5)
-
-    if tintSide == "TOP" then
-        _dockPanelTint:SetPoint("BOTTOM", _dockNormalPanel, "TOP", 0, 2)
-        _dockPanelTint:SetPoint("BOTTOMLEFT", _dockNormalPanel, "TOPLEFT", 0, 0)
-        _dockPanelTint:SetPoint("BOTTOMRIGHT", _dockNormalPanel, "TOPRIGHT", 0, 0)
-    else
-        _dockPanelTint:SetPoint("TOP", _dockNormalPanel, "BOTTOM", 0, -2)
-        _dockPanelTint:SetPoint("TOPLEFT", _dockNormalPanel, "BOTTOMLEFT", 0, 0)
-        _dockPanelTint:SetPoint("TOPRIGHT", _dockNormalPanel, "BOTTOMRIGHT", 0, 0)
-    end
-
-    _dockPanelTint:SetHeight(8)
-    _dockTintFrame:SetWidth(32)
-    _dockTintFrame:SetHeight(20)
-    local _r,_g,_b,_a = unpack(color)
-    if _a == nil then _a = 1 end
-
-    PushUIStyle.BackgroundSolidFormat(
-        _dockTintFrame, 
-        _r,_g,_b,_a,
-        0, 0, 0, 1      -- Black border
-        )
-    PushUIStyle.BackgroundSolidFormat(
-        _dockPanelTint,
-        _r,_g,_b,_a,
-        0, 0, 0, 0.3
-        )
-
-    _dockNormalPanel:SetAlpha(0)
-    _dockFloatPanel:SetAlpha(0)
-    _dockPanelTint:SetAlpha(0)
-    _dockNormalPanel:SetHeight(panelStack:GetHeight())
-
-    _dock.panelStack = panelStack
-    _dock.tintStack = tintStack
-
-    -- Set Animation For Float Panel
-    PushUIFrames.Animations.EnableAnimationForFrame(_dockFloatPanel)
-    PushUIFrames.Animations.AddStage(_dockFloatPanel, "OnTintEnterToDisplay")
-    _dockFloatPanel.AnimationStage("OnTintEnterToDisplay").EnableFade(0.3, 1)
-
-    PushUIFrames.Animations.AddStage(_dockFloatPanel, "OnTintLeaveToHide")
-    _dockFloatPanel.AnimationStage("OnTintLeaveToHide").EnableFade(0.3, 0)
-
-    _dockTintFrame:EnableMouse(true)
-    _dockPanelTint:EnableMouse(true)
-
-    _dockTintFrame:SetScript("OnEnter", function(tint, ...)
-        if _dock.floatAvailable == false then return end
-        local _d = tint.dock
-        local _f = _d.floatPanel
-        if _f.WillAppear then _f.WillAppear(_f) end
-        -- Do animate to display the float
-        _f.CancelAnimationStage("OnTintLeaveToHide")
-        _f.PlayAnimationStage("OnTintEnterToDisplay", function(self, ...)
-            if _f.DidAppear then _f.DidAppear(_f) end
-        end)
-    end)
-
-    _dockTintFrame:SetScript("OnLeave", function(tint, ...)
-        if _dock.floatAvailable == false then return end
-        local _d = tint.dock
-        local _f = _d.floatPanel
-        --_f:SetPoint("BOTTOM", tint, "TOP", 0, -5)
-        if _f.WillDisappear then _f.WillDisappear(_f) end
-
-        _f.CancelAnimationStage("OnTintEnterToDisplay")
-        _f.PlayAnimationStage("OnTintLeaveToHide", function(self, ...)
-            if _f.DidDisappear then _f.DidDisappear(_f) end
-            _f:Hide()
-        end)
-    end)
-
-    -- Enable Animation for panel
-    PushUIFrames.Animations.EnableAnimationForFrame(_dockNormalPanel)
-    PushUIFrames.Animations.AddStage(_dockNormalPanel, "OnClickToShow")
-    _dockNormalPanel.AnimationStage("OnClickToShow").EnableFade(0.3, 1)
-
-    PushUIFrames.Animations.AddStage(_dockNormalPanel, "OnClickToHide")
-    _dockNormalPanel.AnimationStage("OnClickToHide").EnableFade(0.3, 0)
-
-    PushUIFrames.Animations.EnableAnimationForFrame(_dockTintFrame)
-    PushUIFrames.Animations.AddStage(_dockTintFrame, "AfterPanelShow")
-    _dockTintFrame.AnimationStage("AfterPanelShow").EnableFade(0.3, 0)
-
-    PushUIFrames.Animations.AddStage(_dockTintFrame, "WhilePanelHiding")
-    _dockTintFrame.AnimationStage("WhilePanelHiding").EnableFade(0.3, 1)
-
-    -- Click the tint icon
-    _dockTintFrame:SetScript("OnMouseDown", function(tint, ...)
-        local _d = tint.dock
-        local _p = _d.panel
-
-        if _d.panelAvailable then
-
-            if _p.WillAppear then _p.WillAppear(_p) end
-
-            local _f = _d.floatPanel
-            --_f:SetPoint("BOTTOM", tint, "TOP", 0, -5)
-            if _f.WillDisappear then _f.WillDisappear(_f) end
-            _f.CancelAnimationStage("OnTintEnterToDisplay")
-            _f.CancelAnimationStage("OnTintLeaveToHide")
-            _f:SetAlpha(0)
-            if _f.DidDisappear then _f.DidDisappear(_f) end
-
-            -- Do Animate
-            _d.panelStack.Push(_p, "OnClickToShow", function(self, ...)
-                if _p.DidAppear then _p.DidAppear() end
-                tint.PlayAnimationStage("AfterPanelShow", function(...)
-                    _d.tintStack.Erase(tint)
-                end)
-            end)
-        end
-
-        local _button = ...
-        if _button == "LeftButton" and _d.tintOnLeftClick then
-            _d.tintOnLeftClick(_d)
-        end
-        if _button == "RightButton" and _d.tintOnRightClick then
-            _d.tintOnRightClick(_d)
-        end
-    end)
-
-    PushUIFrames.Animations.EnableAnimationForFrame(_dockPanelTint)
-    PushUIFrames.Animations.AddStage(_dockPanelTint, "OnMouseEnter")
-    _dockPanelTint.AnimationStage("OnMouseEnter").EnableFade(0.3, 1)
-    PushUIFrames.Animations.AddStage(_dockPanelTint, "OnMouseLeave")
-    _dockPanelTint.AnimationStage("OnMouseLeave").EnableFade(0.3, 0)
-
-    _dockPanelTint:SetScript("OnClick", function(paneltint, ...)
-        local _p = paneltint.dock.panel
-        local _d = _p.dock
-        local _t = _d.tintBar
-
-        if _p.AnimationStage("OnClickToHide"):IsPlaying() then return end
-
-        if _p.WillDisappear then _p.WillDisappear(_p) end
-
-        _d.panelStack.Erase(_p, "OnClickToHide", function(...)
-            if _p.DidDisappear then _p.DidDisappear(_p) end
-            _d.tintStack.Push(_t, "WhilePanelHiding", function(...)
-                -- log
-            end)
-        end)
-    end)
-
-    _dockPanelTint:SetScript("OnEnter", function(pt, ...)
-        pt.CancelAnimationStage("OnMouseLeave")
-        pt.PlayAnimationStage("OnMouseEnter")
-    end)
-    _dockPanelTint:SetScript("OnLeave", function(pt, ...)
-        pt.CancelAnimationStage("OnMouseEnter")
-        pt.PlayAnimationStage("OnMouseLeave")
-    end)
-
-    return _dock
+PushUIFrames.UIButton = {}
+PushUIFrames.UIButton.Create = function(name, parent)
+    local _button = PushUIFrames.UIView.Create(name, parent)
 end

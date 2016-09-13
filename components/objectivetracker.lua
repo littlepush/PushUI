@@ -61,17 +61,17 @@ if _config.hideInCombat then
 end
 
 -- Freed Block Stack
-_othook._normalQuestBlockStack = PushUIAPI.Stack.New()
-_othook._normalQuestDisplayingBlock = PushUIAPI.Map.New()
+_othook._normalQuestBlockStack = PushUIAPI.Stack()
+_othook._normalQuestDisplayingBlock = PushUIAPI.Map()
 
 _othook._normalQuestReleaseFreeBlock = function(block)
     block:Hide()
-    _othook._normalQuestBlockStack.Push(block)
+    _othook._normalQuestBlockStack:push(block)
 end
 _othook._normalQuestGetFreeBlock = function(block)
-    if _othook._normalQuestBlockStack.Size() > 0 then
-        local _b = _othook._normalQuestBlockStack.Top()
-        _othook._normalQuestBlockStack.Pop()
+    if _othook._normalQuestBlockStack:size() > 0 then
+        local _b = _othook._normalQuestBlockStack:top()
+        _othook._normalQuestBlockStack:pop()
         _b:Show()
         return _b
     end
@@ -194,7 +194,7 @@ end
 
 _othook._displayNormalQuest = function(...)
 	local _ah = 0
-	_othook._normalQuestDisplayingBlock.ForEach(function(questID, block)
+	_othook._normalQuestDisplayingBlock:for_each(function(questID, block)
 		block:ClearAllPoints()
 		block:SetPoint("TOPRIGHT", _nqcontainer, "TOPRIGHT", 0, -_ah)
 		_ah = block:GetHeight() + _config.padding + _ah
@@ -203,31 +203,31 @@ _othook._displayNormalQuest = function(...)
 end
 
 _othook.OnNormalQuestListNewWatching = function(event, newQuestVector)
-	local _s = newQuestVector.Size()
+	local _s = newQuestVector:size()
 	for i = 1, _s do
 		local _block = _othook._getNormalQuestBlock()
-		local _newquest = newQuestVector.ObjectAtIndex(i)
+		local _newquest = newQuestVector:objectAtIndex(i)
         _block.questID = _newquest.questID
 		_othook._formatNormalQuestBlock(_block, _newquest)
-		_othook._normalQuestDisplayingBlock.Set(_newquest.questID, _block)
+		_othook._normalQuestDisplayingBlock:set(_newquest.questID, _block)
 	end
 	_othook._displayNormalQuest()
 end
 _othook.OnNormalQuestListUnWatch = function(event, unWatchQuestVector)
-	local _s = unWatchQuestVector.Size()
+	local _s = unWatchQuestVector:size()
 	for i = 1, _s do
-		local _quest = unWatchQuestVector.ObjectAtIndex(i)
-		local _block = _othook._normalQuestDisplayingBlock.Object(_quest.questID)
-        _othook._normalQuestDisplayingBlock.UnSet(_quest.questID)
+		local _quest = unWatchQuestVector:objectAtIndex(i)
+		local _block = _othook._normalQuestDisplayingBlock:object(_quest.questID)
+        _othook._normalQuestDisplayingBlock:unset(_quest.questID)
 		_othook._normalQuestReleaseFreeBlock(_block)
 	end
 	_othook._displayNormalQuest()
 end
 _othook.OnNormanQuestListUpdate = function(event, updateQuestVector)
-	local _s = updateQuestVector.Size()
+	local _s = updateQuestVector:size()
 	for i = 1, _s do
-		local _quest = updateQuestVector.ObjectAtIndex(i)
-		local _block = _othook._normalQuestDisplayingBlock.Object(_quest.questID)
+		local _quest = updateQuestVector:objectAtIndex(i)
+		local _block = _othook._normalQuestDisplayingBlock:object(_quest.questID)
 		_othook._formatNormalQuestBlock(_block, _quest)
 	end
 	_othook._displayNormalQuest()
@@ -252,7 +252,7 @@ PushUIAPI:RegisterPUIEvent(
 
 
 -- Stages
-local _leftDisplayingBlocks = PushUIAPI.Map.New()
+local _leftDisplayingBlocks = PushUIAPI.Map()
 _othook.leftDisplayingBlocks = _leftDisplayingBlocks
 local _blockKey_Scenario = "a"
 local _blockKey_Challenge = "b"
@@ -262,31 +262,26 @@ local _blockKey_World = "d"
 _othook.__leftBlockAllHeight = 0
 _othook.LeftBlocksReDisplay = function()
     _othook.__leftBlockAllHeight = 30
-    _othook.leftDisplayingBlocks.ForEach(function(_, block)
+    _othook.leftDisplayingBlocks:for_each(function(_, block)
         block:ClearAllPoints()
         block:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 30, -_othook.__leftBlockAllHeight)
         _othook.__leftBlockAllHeight = _othook.__leftBlockAllHeight + block:GetHeight() + _config.padding
     end)
 end
 
-_othook._worldBlockKeyStack = PushUIAPI.Stack.New()
 _othook._worldBlockKeyAllCount = 0
-_othook._worldBlockKeyNew = function()
+_othook._worldBlockKeyPool = PushUIAPI.Pool(function()
     _othook._worldBlockKeyAllCount = _othook._worldBlockKeyAllCount + 1
     return _blockKey_World.._othook._worldBlockKeyAllCount
-end
+end)
+
 _othook._worldBlockKeyFree = function(key)
-    _othook._worldBlockKeyStack.Push(key)
+    _othook._worldBlockKeyPool:release(key)
 end
 _othook._worldBlockKeyGet = function()
-    if _othook._worldBlockKeyStack.Size() > 0 then
-        local _key = _othook._worldBlockKeyStack.Top()
-        _othook._worldBlockKeyStack.Pop()
-        return _key
-    end
-    return _othook._worldBlockKeyNew()
+    return _othook._worldBlockKeyPool:get()
 end
-_othook._worldQuestBlockKeyMap = PushUIAPI.Map.New()
+_othook._worldQuestBlockKeyMap = PushUIAPI.Map()
 
 _othook._specialBlock = {}
 
@@ -305,15 +300,15 @@ _othook._clearSpecialBlock = function(key)
     _block:Hide()
     _block.ClearAllDetailBlock()
 
-    _leftDisplayingBlocks.UnSet(key)
+    _leftDisplayingBlocks:unset(key)
 end
 
 _othook._initializeSpecialBlock = function(key)
     local _block = _othook._getSpecialBlock(key)
     if _block ~= nil then 
         _block:Show()
-        if _leftDisplayingBlocks.Contains(key) == false then
-            _leftDisplayingBlocks.Set(key, _block)
+        if _leftDisplayingBlocks:contains(key) == false then
+            _leftDisplayingBlocks:set(key, _block)
         end
         return 
     end
@@ -349,11 +344,9 @@ _othook._initializeSpecialBlock = function(key)
     _block.descriptionLabel = _desplb
 
     -- Detail Blocks
-    _block.detailBlocks = PushUIAPI.Vector.New()
+    _block.detailBlocks = PushUIAPI.Array()
 
     -- Detail Block Cache
-    _block._cachedDetailBlockStack = PushUIAPI.Stack.New()
-
     _block.CreateDetailBlock = function()
         local _detailBlock = CreateFrame("Frame", nil, _block)
         _detailBlock:SetWidth(_config.width)
@@ -440,32 +433,28 @@ _othook._initializeSpecialBlock = function(key)
         return _detailBlock
     end
 
+    _block._detailBlockPool = PushUIAPI.Pool(_block.CreateDetailBlock)
+
     _block.FreeDetailBlock = function(detailBlock)
         detailBlock:Hide()
         detailBlock.progressBar.timer:StopTimer()
-        _block._cachedDetailBlockStack.Push(detailBlock)
-    end
+        _block._detailBlockPool:release(detailBlock)
+   end
 
     _block.GetDetailBlock = function()
-        if _block._cachedDetailBlockStack.Size() > 0 then
-            local _db = _block._cachedDetailBlockStack.Top()
-            _block._cachedDetailBlockStack.Pop()
-            _db:Show()
-            return _db
-        end
-        return _block.CreateDetailBlock()
+        return _block._detailBlockPool:get()
     end
 
     _block.ClearAllDetailBlock = function()
-        local _ds = _block.detailBlocks.Size()
+        local _ds = _block.detailBlocks:size()
         for i = 1, _ds do
-            _block.FreeDetailBlock(_block.detailBlocks.ObjectAtIndex(i))
+            _block.FreeDetailBlock(_block.detailBlocks:objectAtIndex(i))
         end
-        _block.detailBlocks.Clear()
+        _block.detailBlocks:clear()
     end
 
     _othook._setSpecialBlock(key, _block)
-    _leftDisplayingBlocks.Set(key, _block)
+    _leftDisplayingBlocks:set(key, _block)
 end
 
 -- Scenario
@@ -521,7 +510,7 @@ _othook._formatScenarioBlock = function(scenarioQuest)
             _detailBlock.SetText("-- ".._criteria.criteriaString.." ".._criteria.quantity.."/".._criteria.totalQuantity)
         end
         local _dh = _detailBlock.Resize()
-        _block.detailBlocks.PushBack(_detailBlock)
+        _block.detailBlocks:push_back(_detailBlock)
 
         _detailBlock:ClearAllPoints()
         _detailBlock:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
@@ -606,7 +595,7 @@ _othook._formatChallengeBlock = function(modeInfo)
     _detailBlock.SetProgressValue(GetTime() - modeInfo.elapsedTime, 0, modeInfo.timeLimit)
     _detailBlock.progressBar.timer:StartTimer()
 
-    _block.detailBlocks.PushBack(_detailBlock)
+    _block.detailBlocks:push_back(_detailBlock)
     local _dh = _detailBlock.Resize()
     _detailBlock:ClearAllPoints()
     _detailBlock:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
@@ -680,7 +669,7 @@ _othook._formatBonusQuestBlock = function(bonusQuest)
             _detailBlock.SetProgressText(_objective.percentage.."%")
         end
         local _dh = _detailBlock.Resize()
-        _block.detailBlocks.PushBack(_detailBlock)
+        _block.detailBlocks:push_back(_detailBlock)
 
         _detailBlock:ClearAllPoints()
         _detailBlock:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
@@ -766,7 +755,7 @@ _othook._formatWorldQuestBlock = function(blockKey, worldQuest)
             _detailBlock.SetProgressText(_objective.percentage.."%")
         end
         local _dh = _detailBlock.Resize()
-        _block.detailBlocks.PushBack(_detailBlock)
+        _block.detailBlocks:push_back(_detailBlock)
 
         _detailBlock:ClearAllPoints()
         _detailBlock:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
@@ -781,11 +770,11 @@ _othook._releaseWorldQuestBlock = function(blockKey)
 end
 
 _othook.OnWorldQuestStartWatching = function(event, newWorldQuestList)
-    local _qs = newWorldQuestList.Size()
+    local _qs = newWorldQuestList:size()
     for i = 1, _qs do
         local _blockKey = _othook._worldBlockKeyGet()
-        local _quest = newWorldQuestList.ObjectAtIndex(i)
-        _othook._worldQuestBlockKeyMap.Set(_quest.questID, _blockKey)
+        local _quest = newWorldQuestList:objectAtIndex(i)
+        _othook._worldQuestBlockKeyMap:set(_quest.questID, _blockKey)
         _othook._initializeWorldQuestBlock(_blockKey)
         _othook._formatWorldQuestBlock(_blockKey, _quest)
     end
@@ -796,13 +785,13 @@ end
 
 _othook.OnWorldQuestStopWatching = function(event, stopWatchingQuestList)
 
-    local _qs = stopWatchingQuestList.Size()
+    local _qs = stopWatchingQuestList:size()
     for i = 1, _qs do
-        local _quest = stopWatchingQuestList.ObjectAtIndex(i)
-        local _blockKey = _othook._worldQuestBlockKeyMap.Object(_quest.questID)
+        local _quest = stopWatchingQuestList:objectAtIndex(i)
+        local _blockKey = _othook._worldQuestBlockKeyMap:object(_quest.questID)
         if _blockKey ~= nil then
             _othook._releaseWorldQuestBlock(_blockKey)
-            _othook._worldQuestBlockKeyMap.UnSet(_quest.questID)
+            _othook._worldQuestBlockKeyMap:unset(_quest.questID)
             _othook._worldBlockKeyFree(_blockKey)
         end
     end
@@ -813,10 +802,10 @@ end
 
 _othook.OnWorldQuestUpdate = function(event, updatingQuestList)
     
-    local _qs = updatingQuestList.Size()
+    local _qs = updatingQuestList:size()
     for i = 1, _qs do
-        local _quest = updatingQuestList.ObjectAtIndex(i)
-        local _blockKey = _othook._worldQuestBlockKeyMap.Object(_quest.questID)
+        local _quest = updatingQuestList:objectAtIndex(i)
+        local _blockKey = _othook._worldQuestBlockKeyMap:object(_quest.questID)
         if _blockKey ~= nil then 
             _othook._formatWorldQuestBlock(_blockKey, _quest)
         end
@@ -844,7 +833,7 @@ _othook._onPlayerFirstTimeEnteringWorld = function()
     if PushUIAPI.BonusQuest.quest ~= nil then
         _othook.OnBonusQuestStartWatching(nil, PushUIAPI.BonusQuest.quest)
     end
-    if PushUIAPI.WorldQuest.newWatchingList.Size() > 0 then
+    if PushUIAPI.WorldQuest.newWatchingList:size() > 0 then
         _othook.OnWorldQuestStartWatching(nil, PushUIAPI.WorldQuest.newWatchingList)
     end
 end

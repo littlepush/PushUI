@@ -244,7 +244,7 @@ PushUIFrames.Animations.AddStage = function(frame, stage_name)
     frame._animations[stage_name]:SetScript("OnFinished", function(self)
         local _f = self.affectFrame
         if _f._animations[stage_name]._this_time_finished then
-            _f._animations[stage_name]._this_time_finished(_f, self.stageName)
+            _f._animations[stage_name]._this_time_finished(_f, self.stageName, true)
         end
         _f._animations[stage_name]._this_time_finished = nil
 
@@ -255,7 +255,9 @@ PushUIFrames.Animations.AddStage = function(frame, stage_name)
     end)
     frame._animations[stage_name]:SetScript("OnStop", function(self)
         local _f = self.affectFrame
-        _f._animations[stage_name]._this_time_finished = nil
+        if _f._animations[stage_name]._this_time_finished then
+            _f._animations[stage_name]._this_time_finished(_f, self.stageName, false)
+        end
 
         local _stage = _f._animations[stage_name]
         for i, a in ipairs(_stage.__theAnimations) do
@@ -305,6 +307,27 @@ PushUIFrames.Animations.AddStage = function(frame, stage_name)
             _stage.__theAnimations[#_stage.__theAnimations + 1] = _a
         end
     end
+
+    _stage.DisableAllAnimations = function()
+        if _stage.__theFade then
+            _stage.__theFade:SetDuration(0)
+            _stage.__theFade:SetToAlpha(_stage.affectFrame:GetAlpha())
+        end
+
+        if _stage.__theScale then
+            _stage.__theScale:SetDuration(0)
+            local _s = _stage.affectFrame:GetScale()
+            _stage.__theScale:SetToScale(_s, _s)
+        end
+
+        if _stage.__theTranslationAnimation then
+            _stage.__theTranslationAnimation:SetDuration(0)
+            local _, _, _, _x, _y = _stage.affectFrame:GetPoint()
+            _stage.__theTranslationAnimation.__toX = _x
+            _stage.__theTranslationAnimation.__toY = _y
+            _stage.__theTranslationAnimation:SetOffset(_x, _y)
+        end
+    end
 end
 
 PushUIFrames.Animations.AddOrderedStage = function(frame, stage_name)
@@ -317,7 +340,7 @@ PushUIFrames.Animations.AddOrderedStage = function(frame, stage_name)
     frame._animations[stage_name]:SetScript("OnFinished", function(self)
         local _f = self.affectFrame
         if _f._animations[stage_name]._this_time_finished then
-            _f._animations[stage_name]._this_time_finished(_f, self.stageName)
+            _f._animations[stage_name]._this_time_finished(_f, self.stageName, true)
         end
         _f._animations[stage_name]._this_time_finished = nil
 
@@ -328,7 +351,9 @@ PushUIFrames.Animations.AddOrderedStage = function(frame, stage_name)
     end)
     frame._animations[stage_name]:SetScript("OnStop", function(self)
         local _f = self.affectFrame
-        _f._animations[stage_name]._this_time_finished = nil
+        if _f._animations[stage_name]._this_time_finished then
+            _f._animations[stage_name]._this_time_finished(_f, self.stageName, false)
+        end
 
         local _stage = self
         for i, a in ipairs(_stage.__theOrderedAnimations) do

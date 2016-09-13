@@ -12,25 +12,25 @@ PushUIAPI.NormalQuests = {}
 PushUIAPI.NQ = PushUIAPI.NormalQuests		-- alias
 PUI_NQ = PushUIAPI.NQ						-- alias
 
-PushUIAPI.NormalQuests.questList = PushUIAPI.Vector.New()
-PushUIAPI.NormalQuests.unWatchList = PushUIAPI.Vector.New()
-PushUIAPI.NormalQuests.newWatchList = PushUIAPI.Vector.New()
-PushUIAPI.NormalQuests.updatedList = PushUIAPI.Vector.New()
+PushUIAPI.NormalQuests.questList = PushUIAPI.Array()
+PushUIAPI.NormalQuests.unWatchList = PushUIAPI.Array()
+PushUIAPI.NormalQuests.newWatchList = PushUIAPI.Array()
+PushUIAPI.NormalQuests.updatedList = PushUIAPI.Array()
 
 PushUIAPI.NormalQuests._gainQuestList = function()
 	local _puiqlist = PushUIAPI.NormalQuests.questList
 	local _puiCmptlist = PushUIAPI.NormalQuests.unWatchList
 	local _puiAcptlist = PushUIAPI.NormalQuests.newWatchList
 	local _puiupdtlist = PushUIAPI.NormalQuests.updatedList
-	_puiCmptlist.Clear()
-	_puiAcptlist.Clear()
-	_puiupdtlist.Clear()
+	_puiCmptlist:clear()
+	_puiAcptlist:clear()
+	_puiupdtlist:clear()
     -- 1: questID, 2: title, 3: questLogIndex, 4: numObjectives, 
     -- 5: requiredMoney, 6: isComplete, 7: startEvent, 8: isAutoComplete, 
     -- 9: failureTime, 10: timeElapsed, 11: questType, 12: isTask, 
     -- 13: isBounty, 14: isStory, 15: isOnMap, 16: hasLocalPOI
     local _nq = GetNumQuestWatches()
-    local _qlist = PushUIAPI.Vector.New()
+    local _qlist = PushUIAPI.Array()
     for i = 1, _nq do
         repeat 
             local _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16 = GetQuestWatchInfo(i)
@@ -55,7 +55,7 @@ PushUIAPI.NormalQuests._gainQuestList = function()
 				objList = {},
 				objCompleteCount = 0
             }
-            _qlist.PushBack(_q)
+            _qlist:push_back(_q)
 
 			-- the quest has objective list
 			if nil ~= _4 and _4 > 0 then
@@ -71,53 +71,53 @@ PushUIAPI.NormalQuests._gainQuestList = function()
 				end
 			end
 
-			local _containsInOldList = _puiqlist.Search(_1, function(obj, qid)
+			local _containsInOldList = _puiqlist:find_by(_1, function(obj, qid)
 				return obj.questID == qid
 			end)
 			if _containsInOldList == 0 then
 				-- This is a new accepted quest
-				_puiAcptlist.PushBack(_q)
+				_puiAcptlist:push_back(_q)
 			else
 				-- Still in old list, check if has something different things
 				-- We only care about the completed objectives count
-				local _oldq = _puiqlist.ObjectAtIndex(_containsInOldList)
+				local _oldq = _puiqlist:objectAtIndex(_containsInOldList)
 				if _oldq.isComplete ~= _q.isComplete then
 					-- New quest has completed
-					_puiupdtlist.PushBack(_q)
+					_puiupdtlist:push_back(_q)
 				elseif _oldq.objCompleteCount ~= _q.objCompleteCount then
 					-- Finish some new objectcive
-					_puiupdtlist.PushBack(_q)
+					_puiupdtlist:push_back(_q)
+                elseif _oldq.isOnMap ~= _q.isOnMap then
+                    -- Check if is on map
+                    _puiupdtlist:push_back(_q)
 				end
 			end
         until true
     end
 
-	local _oldQc = _puiqlist.Size()
-	for i = 1, _oldQc do
-		local _oq = _puiqlist.ObjectAtIndex(i)
-		local _containsInNewList = _qlist.Search(_oq, function(obj, oldquest)
-			return obj.questID == oldquest.questID
-		end)
-		if _containsInNewList == 0 then
-			-- Find a finished quest
-			_puiCmptlist.PushBack(_oq)
-		end
-	end
+    _puiqlist:for_each(function(_, oldq)
+        local _containsInNewList = _qlist:find_by(_oldq.questID, function(newq, qid)
+            return newq.questID == qid
+        end)
+        if 0 == _containsInNewList then
+            _puiCmptlist:push_back(_oldq)
+        end
+    end)
 
     -- Replace the vector with new 
-    PushUIAPI.NormalQuests.questList.Clear()
+    PushUIAPI.NormalQuests.questList:clear()
     PushUIAPI.NormalQuests.questList = _qlist
 end
 
 PushUIAPI.NormalQuests._updateQuestList  = function(event, ...)
 	PUI_NQ._gainQuestList()
-	if PUI_NQ.updatedList.Size() > 0 then
+	if PUI_NQ.updatedList:size() > 0 then
 		PushUIAPI:FirePUIEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_UPDATE, PUI_NQ.updatedList)
 	end
-	if PUI_NQ.newWatchList.Size() > 0 then
+	if PUI_NQ.newWatchList:size() > 0 then
 		PushUIAPI:FirePUIEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_NEWWATCH, PUI_NQ.newWatchList)
 	end
-	if PUI_NQ.unWatchList.Size() > 0 then
+	if PUI_NQ.unWatchList:size() > 0 then
 		PushUIAPI:FirePUIEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_UNWATCH, PUI_NQ.unWatchList)
 	end
 end
@@ -404,17 +404,17 @@ PushUIAPI.PUSHUIEVENT_WORLD_QUEST_UPDATE = "PUSHUIEVENT_WORLD_QUEST_UPDATE"
 PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING = "PUSHUIEVENT_WORLD_QUEST_STOPWATCHING"
 
 PushUIAPI.WorldQuest = {}
-PushUIAPI.WorldQuest.quest = PushUIAPI.Map.New()
-PushUIAPI.WorldQuest.newWatchingList = PushUIAPI.Vector.New()
-PushUIAPI.WorldQuest.unWatchingList = PushUIAPI.Vector.New()
-PushUIAPI.WorldQuest.updatedList = PushUIAPI.Vector.New()
+PushUIAPI.WorldQuest.quest = PushUIAPI.Map()
+PushUIAPI.WorldQuest.newWatchingList = PushUIAPI.Array()
+PushUIAPI.WorldQuest.unWatchingList = PushUIAPI.Array()
+PushUIAPI.WorldQuest.updatedList = PushUIAPI.Array()
 PushUIAPI.WorldQuest._gainQuest = function()
 
-    PushUIAPI.WorldQuest.newWatchingList.Clear()
-    PushUIAPI.WorldQuest.unWatchingList.Clear()
-    PushUIAPI.WorldQuest.updatedList.Clear()
+    PushUIAPI.WorldQuest.newWatchingList:clear()
+    PushUIAPI.WorldQuest.unWatchingList:clear()
+    PushUIAPI.WorldQuest.updatedList:clear()
 
-    local _tempQuestMap = PushUIAPI.Map.New()
+    local _tempQuestMap = PushUIAPI.Map()
     local _tasks = GetTasksTable()
     for i = 1, #_tasks do
         local _wquestId = _tasks[i]
@@ -450,19 +450,19 @@ PushUIAPI.WorldQuest._gainQuest = function()
                     end
                 end
 
-                if PushUIAPI.WorldQuest.quest.Contains(_wquestId) then
-                    PushUIAPI.WorldQuest.updatedList.PushBack(_quest)
+                if PushUIAPI.WorldQuest.quest:contains(_wquestId) then
+                    PushUIAPI.WorldQuest.updatedList:push_back(_quest)
                 else
-                    PushUIAPI.WorldQuest.newWatchingList.PushBack(_quest)
+                    PushUIAPI.WorldQuest.newWatchingList:push_back(_quest)
                 end
 
-                _tempQuestMap.Set(_wquestId, _quest)
+                _tempQuestMap:set(_wquestId, _quest)
             until true
         end
     end
-    PushUIAPI.WorldQuest.quest.ForEach(function(qid, quest)
-        if _tempQuestMap.Contains(qid) == false then
-            PushUIAPI.WorldQuest.unWatchingList.PushBack(quest)
+    PushUIAPI.WorldQuest.quest:for_each(function(qid, quest)
+        if _tempQuestMap:contains(qid) == false then
+            PushUIAPI.WorldQuest.unWatchingList:push_back(quest)
         end
     end)
 
@@ -470,35 +470,16 @@ PushUIAPI.WorldQuest._gainQuest = function()
 end
 
 PushUIAPI.WorldQuest._updateWorldQuest = function(event, ...)
-    -- print("WorldQuest on Event: "..event)
-    -- PushUIAPI.WorldQuest._lastFireEvent = nil
-
-    -- if event == "QUEST_TURNED_IN" then
-    --     if PushUIAPI.WorldQuest.quest == nil then return end
-    --     local _questId = ...
-    --     if _questId ~= PushUIAPI.WorldQuest.quest.questID then return end
-    --     PushUIAPI.WorldQuest.quest = nil
-    --     PushUIAPI.WorldQuest._lastFireEvent = PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING
-    -- end
-
-    -- if (event == "QUEST_ACCEPTED" or event == "QUEST_LOG_UPDATE" or 
-    --     event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA") then
-    --     PushUIAPI.WorldQuest._gainQuest()
-    -- end
-
-    -- if PushUIAPI.WorldQuest._lastFireEvent == nil then return end
-    -- PushUIAPI:FirePUIEvent(PushUIAPI.WorldQuest._lastFireEvent, PushUIAPI.WorldQuest.quest)
-
     PushUIAPI.WorldQuest._gainQuest()
-    if PushUIAPI.WorldQuest.newWatchingList.Size() > 0 then
+    if PushUIAPI.WorldQuest.newWatchingList:size() > 0 then
         PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STARTWATCHING, PushUIAPI.WorldQuest.newWatchingList)
     end
 
-    if PushUIAPI.WorldQuest.updatedList.Size() > 0 then
+    if PushUIAPI.WorldQuest.updatedList:size() > 0 then
         PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_WORLD_QUEST_UPDATE, PushUIAPI.WorldQuest.updatedList)
     end
 
-    if PushUIAPI.WorldQuest.unWatchingList.Size() > 0 then
+    if PushUIAPI.WorldQuest.unWatchingList:size() > 0 then
         PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING, PushUIAPI.WorldQuest.unWatchingList)
     end
 end

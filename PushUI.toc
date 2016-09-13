@@ -14,6 +14,7 @@ kernel\api.objectivetracker.lua
 kernel\preference.lua
 kernel\animations.lua
 kernel\frames.lua
+kernel\frames.dockframe.lua
 kernel\unitframe.lua
 kernel\config.lua
 
