@@ -28,7 +28,7 @@ function PushUIAPI.Aura.new(target, is_buff, index)
         PushUIAPI.Aura)
 end
 setmetatable(PushUIAPI.Aura, {
-    __call = function(_, ...) { return PushUIAPI.Aura.new(...) }
+    __call = function(_, ...) return PushUIAPI.Aura.new(...) end
     })
 
 local function __pui_gainAuras(target, assets)

@@ -45,7 +45,7 @@ function PushUIAPI.TargetTargetHP:UNIT_TARGET(unit_id)
     end
 end
 function PushUIAPI.TargetTargetHP:UNIT_HEALTH(unit_id)
-    if not self:can_display() and unit_id ~= "targettarget" then return end
+    if not self:can_display() or unit_id ~= "targettarget" then return end
     self:set_current_value({hp = UnitHealth("targettarget"), max_hp = UnitHealthMax("targettarget")})
 end
 
@@ -61,7 +61,7 @@ function PushUIAPI.FocusHP:PLAYER_FOCUS_CHANGED()
     end
 end
 function PushUIAPI.FocusHP:UNIT_HEALTH(unit_id)
-    if not self:can_display() and unit_id ~= "focus" then return end
+    if not self:can_display() or unit_id ~= "focus" then return end
     self:set_current_value({hp = UnitHealth("focus"), max_hp = UnitHealthMax("focus")})
 end
 

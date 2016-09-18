@@ -3,13 +3,16 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-PushUIFrames.UIView = {}
-PushUIFrames.UIView.__index = self
+PushUIFrames.UIView = PushUIFrames.UIObject("Frame")
+PushUIFrames.UIView:destroy()
+
 function PushUIFrames.UIView:set_backgroundColor(color_pack)
     self.layer:SetBackdropColor(PushUIColor.unpackColor(color_pack))
+    self._backgroundColor = color_pack
 end
 function PushUIFrames.UIView:set_borderColor(color_pack)
     self.layer:SetBackdropBorderColor(PushUIColor.unpackColor(color_pack))
+    self._borderColor = color_pack
 end
 function PushUIFrames.UIView:set_borderWidth(width)
     if width < 0 then width = 0 end
@@ -18,10 +21,13 @@ function PushUIFrames.UIView:set_borderWidth(width)
         edgeFile = PushUIStyle.TextureClean,
         tile = true,
         tileSize = 10,
-        edgeSize = 1,
-        insets = { left = -width, right = -width, top = -width, bottom = -width }
+        edgeSize = width,
+        insets = { left = 0, right = 0, top = 0, bottom = 0 }
     }
     self.layer:SetBackdrop(_tempBackdrop)
+    self._borderWidth = width
+    self.layer:SetBackdropColor(PushUIColor.unpackColor(self._backgroundColor))
+    self.layer:SetBackdropBorderColor(PushUIColor.unpackColor(self._borderColor))
 end
 function PushUIFrames.UIView:set_gradientColor(from_color, to_color, v_or_h)
     if nil == v_or_h then v_or_h = "v" end
@@ -111,27 +117,28 @@ function PushUIFrames.UIView:animation_with_duration(duration, animation, comple
     if self._doing_animation then
         self.CancelAnimationStage(self._current_animation_stage)
     end
+    PushUIFrames.Animations.AddStage(self.layer, self._current_animation_stage)
 
     self._doing_animation = true
     self._animation_duration = duration
-    animation()
+    animation(self)
 
-    self.layer.PlayAnimation(self._current_animation_stage, function(layer, stage_name, completed)
+    self.layer.PlayAnimationStage(self._current_animation_stage, function(layer, stage_name, completed)
         if not completed then return end
         self._doing_animation = false
         self._animation_duration = 0
         layer.AnimationStage(stage_name).DisableAllAnimations()
-        if complete then complete() end
+        if complete then complete(self) end
     end)
 end
 
-function PushUIFrames.UIView.new(parent)
-    local _mt = PushUIFrames.UIObject("Frame", parent)
-    return setmetatable(_mt, PushUIFrames.UIView)
-end
-
 setmetatable(PushUIFrames.UIView, {
-    __call = function(_, ...) return PushUIFrames.UIView.new(...) end
+    __call = function(self, ...) 
+        if PushUIFrames.UIView.destroy then 
+            print("PushUIFrames has destroy from UIObject")
+        end
+        return self:new("Frame", ...) 
+    end
     })
 
 -- by Push Chen

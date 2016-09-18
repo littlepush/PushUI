@@ -54,7 +54,7 @@ function PushUIAPI.Array:pop_front()
 end
 function PushUIAPI.Array:pop_back()
     if #self.__storage == 0 then return nil end
-    lcoal _obj = self.__storage[#self.__storage]
+    local _obj = self.__storage[#self.__storage]
     table.remove(self.__storage)
     return _obj
 end
@@ -63,13 +63,13 @@ function PushUIAPI.Array:erase(index)
     table.remove(self.__storage, index)
 end
 function PushUIAPI.Array:insert(index, obj)
-    if obj == nil then return
+    if obj == nil then return end
     if #self.__storage < index then index = #self.__storage + 1 end
     if index <= 0 then index = 1 end
     table.insert(self.__storage, index, obj)
 end
 function PushUIAPI.Array:size()
-    return #self.__storage end
+    return #self.__storage
 end
 function PushUIAPI.Array:clear()
     repeat
@@ -101,11 +101,11 @@ function PushUIAPI.Array:replace(index, obj)
     if index <= 0 then return nil end
     self.__storage[index] = obj
 end
-function PushUIAPI.Array:for_each(enumfunc)
-    if not enumfunc return end
+function PushUIAPI.Array:for_each(enumfunc, ...)
+    if not enumfunc then return end
     local _s = #self.__storage
     for i = 1, _s do
-        enumfunc(i, self.__storage[i])
+        enumfunc(i, self.__storage[i], ...)
     end
 end
 function PushUIAPI.Array.new()
@@ -146,10 +146,10 @@ function PushUIAPI.Map:clear()
     self.__storage = {}
     self.__size = 0
 end
-function PushUIAPI.Map:for_each(enumfunc)
+function PushUIAPI.Map:for_each(enumfunc, ...)
     if not enumfunc then return end
 	for k, v in pairs(self.__storage) do
-		enumfunc(k, v)
+		enumfunc(k, v, ...)
 	end
 end
 function PushUIAPI.Map.new(...)
@@ -175,7 +175,7 @@ function PushUIAPI.Pool:get(...)
         return _obj
     end
     local _onNew = ...
-    if not _onNew then return _onNew() end
+    if _onNew then return _onNew() end
     return self:create()
 end
 function PushUIAPI.Pool:set_new_object(newfunc)
@@ -215,10 +215,18 @@ end
 function PushUIAPI.Dispatcher:fire_event(event, ...)
     if not event then return end
     if not self.__events:contains(event) then return end
-    self.__events:object(event):for_each(function(_, act)
+    self.__events:object(event):for_each(function(_, act, ...)
         act(event, ...)
-    end)
+    end, ...)
 end
+function PushUIAPI.Dispatcher.new()
+    return setmetatable({__events = PushUIAPI.Map()}, PushUIAPI.Dispatcher)
+end
+setmetatable(PushUIAPI.Dispatcher, {
+    __call = function(_, ...)
+        return PushUIAPI.Dispatcher.new(...)
+    end
+    })
 
 -- Timer
 PushUIAPI.Timer = {}

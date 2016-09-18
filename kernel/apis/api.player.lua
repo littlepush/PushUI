@@ -111,7 +111,7 @@ function PushUIAPI.PlayerPetHP:UNIT_PET(unit_id)
     end
 end
 function PushUIAPI.PlayerPetHP:UNIT_HEALTH(unit_id)
-    if not self:can_display and unit_id ~= "pet" then return end
+    if not self:can_display() or unit_id ~= "pet" then return end
     PushUIAPI.PlayerPetHP:set_current_value({hp = UnitHealth("pet"), max_hp = UnitHealthMax("pet")})
 end
 

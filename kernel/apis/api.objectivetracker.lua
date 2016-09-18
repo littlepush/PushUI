@@ -96,11 +96,11 @@ PushUIAPI.NormalQuests._gainQuestList = function()
     end
 
     _puiqlist:for_each(function(_, oldq)
-        local _containsInNewList = _qlist:find_by(_oldq.questID, function(newq, qid)
+        local _containsInNewList = _qlist:find_by(oldq.questID, function(newq, qid)
             return newq.questID == qid
         end)
         if 0 == _containsInNewList then
-            _puiCmptlist:push_back(_oldq)
+            _puiCmptlist:push_back(oldq)
         end
     end)
 
@@ -112,13 +112,13 @@ end
 PushUIAPI.NormalQuests._updateQuestList  = function(event, ...)
 	PUI_NQ._gainQuestList()
 	if PUI_NQ.updatedList:size() > 0 then
-		PushUIAPI:FirePUIEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_UPDATE, PUI_NQ.updatedList)
+		PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_UPDATE, PUI_NQ.updatedList)
 	end
 	if PUI_NQ.newWatchList:size() > 0 then
-		PushUIAPI:FirePUIEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_NEWWATCH, PUI_NQ.newWatchList)
+		PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_NEWWATCH, PUI_NQ.newWatchList)
 	end
 	if PUI_NQ.unWatchList:size() > 0 then
-		PushUIAPI:FirePUIEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_UNWATCH, PUI_NQ.unWatchList)
+		PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_UNWATCH, PUI_NQ.unWatchList)
 	end
 end
 
@@ -224,7 +224,7 @@ PushUIAPI.ScenarioQuest._updateScenarioQuest = function(event, ...)
     PushUIAPI.ScenarioQuest._gainQuest()
     if not PushUIAPI.ScenarioQuest._lastFireEvent then return end
     -- Fire the event
-    PushUIAPI:FirePUIEvent(PushUIAPI.ScenarioQuest._lastFireEvent, PushUIAPI.ScenarioQuest.quest)
+    PushUIAPI.EventCenter:FireEvent(PushUIAPI.ScenarioQuest._lastFireEvent, PushUIAPI.ScenarioQuest.quest)
 end
 
 PushUIAPI.ScenarioQuest._initialize = function()
@@ -280,11 +280,11 @@ PushUIAPI.ChallengeMode._updateChallengeMode = function(event, ...)
     if event == "WORLD_STATE_TIMER_START" then
         PushUIAPI.ChallengeMode._gainModeInfo(GetWorldElapsedTimers())
         if PushUIAPI.ChallengeMode.modeInfo ~= nil then
-            PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_START, PushUIAPI.ChallengeMode.modeInfo)
+            PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_START, PushUIAPI.ChallengeMode.modeInfo)
         end
     else
         PushUIAPI.ChallengeMode.modeInfo = nil
-        PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_STOP)
+        PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_STOP)
     end
 end
 
@@ -383,7 +383,7 @@ PushUIAPI.BonusQuest._updateBonusQuest = function(event, ...)
     end
 
     if PushUIAPI.BonusQuest._lastFireEvent == nil then return end
-    PushUIAPI:FirePUIEvent(PushUIAPI.BonusQuest._lastFireEvent, PushUIAPI.BonusQuest.quest)
+    PushUIAPI.EventCenter:FireEvent(PushUIAPI.BonusQuest._lastFireEvent, PushUIAPI.BonusQuest.quest)
 end
 
 PushUIAPI.BonusQuest._initialize = function()
@@ -472,15 +472,15 @@ end
 PushUIAPI.WorldQuest._updateWorldQuest = function(event, ...)
     PushUIAPI.WorldQuest._gainQuest()
     if PushUIAPI.WorldQuest.newWatchingList:size() > 0 then
-        PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STARTWATCHING, PushUIAPI.WorldQuest.newWatchingList)
+        PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STARTWATCHING, PushUIAPI.WorldQuest.newWatchingList)
     end
 
     if PushUIAPI.WorldQuest.updatedList:size() > 0 then
-        PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_WORLD_QUEST_UPDATE, PushUIAPI.WorldQuest.updatedList)
+        PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_WORLD_QUEST_UPDATE, PushUIAPI.WorldQuest.updatedList)
     end
 
     if PushUIAPI.WorldQuest.unWatchingList:size() > 0 then
-        PushUIAPI:FirePUIEvent(PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING, PushUIAPI.WorldQuest.unWatchingList)
+        PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING, PushUIAPI.WorldQuest.unWatchingList)
     end
 end
 

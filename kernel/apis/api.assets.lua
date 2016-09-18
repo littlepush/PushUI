@@ -25,7 +25,7 @@ function PushUIAPI.Assets:set_candisplay(can)
     self:displayStatusChanged()
 end
 function PushUIAPI.Assets:valueChanged()
-    self.__dispatcher:fire_event("value_status", self:current_value(), self:min_value(), self:max_value())
+    self.__dispatcher:fire_event("value_status", self:current_value())
 end
 function PushUIAPI.Assets:add_valueChanged(key, func)
     self.__dispatcher:add_action("value_status", key, func)
@@ -53,6 +53,7 @@ function PushUIAPI.Assets.new(...)
     for i = 1, _event_count do
         PushUIRegisterEvent(select(i, ...), PushUIAPI.Assets, _obj.update_on_event)
     end
+    return _obj
 end
 
 setmetatable(PushUIAPI.Assets, {
