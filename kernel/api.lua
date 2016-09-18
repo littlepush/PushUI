@@ -3,101 +3,6 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-local frame_metatable = {
-   __index = CreateFrame('Frame')
-}
-
-function frame_metatable.__index:tostring()
-   return tostring(self)
-end
- 
--- lib = setmetatable(lib, frame_metatable)
--- print(lib:tostring()) -- works
-
-PushUIAPI.getObjName = function(self)
-    if self.name then
-        return self.name
-    elseif self.GetName then
-        return self:GetName()
-    end
-
-    return '<unnamed>'
-end
-
-PushUIAPI.isTable = function(obj)
-    return type(obj) == 'table'
-end
-PushUIAPI.isUserdata = function(obj)
-    return type(obj) == 'userdata'
-end
-
-PushUIAPI.dumpLevel = function(lv)
-    local _ = ':'
-    for i=1,lv do
-        _ = _..'-'
-    end
-    return _
-end
-
-PushUIAPI.dumpObject = function(key, obj, lv)
-    if not key then
-        key = '<undefined>'
-    end
-    if nil == obj then
-        print(key.." is nil")
-        return
-    end
-    lv = lv or 1
-    local _slv = PushUIAPI.dumpLevel(lv)
-    if PushUIAPI.isTable(obj) then
-        --print(_slv..key..':'..PushUIAPI.getObjName(obj)..'(table)')
-        for k,v in pairs(obj) do
-            PushUIAPI.dumpObject(k, v, lv + 1)
-        end
-    elseif PushUIAPI.isUserdata(obj) then
-        print(_slv..key..':'..tostring(obj)..'('..type(obj)..')')
-        print(getmetatable(obj))
-    else
-        print(_slv..key..':'..obj..'('..type(obj)..')')
-    end
-end
-
--- Unit Events
-PushUIAPI._UnitEventList = {}
-PushUIAPI._UnitEventsMap = {}
-PushUIAPI._UnitFireEvent = function(e, ...)
-    local _EM = PushUIAPI._UnitEventsMap
-    for i = 1, #_EM[e] do
-        local _f = unpack(_EM[e][i])
-        _f(...)
-    end
-end
-PushUIAPI._UnitRegisterEvent = function(e, obj, func)
-    local _EM = PushUIAPI._UnitEventsMap
-    if not _EM[e] then
-        _EM[e] = {}
-        for _, sys in pairs(PushUIAPI._UnitEventList[e]) do
-            PushUIAPI.RegisterEvent(
-                sys.sysevent,
-                sys.target,
-                sys.callback
-            )
-        end
-    end
-    _EM[e][#_EM[e] + 1] = {func, obj}
-end
-PushUIAPI._UnitUnRegisterEvent = function(e, obj)
-    local _EM = PushUIAPI._UnitEventsMap
-    if not _EM[e] then return end
-    for i = 1, #_EM[e] do
-        local _f, _o = unpack(_EM[e][i])
-        if _o == obj then
-            table.remove(_EM[e], i)
-            break
-        end
-    end
-end
-
 -- Structures and Events
 
 -- Stack
@@ -247,8 +152,9 @@ function PushUIAPI.Map:for_each(enumfunc)
 		enumfunc(k, v)
 	end
 end
-function PushUIAPI.Map.new()
-    return setmetatable({__storage = {}, __size = 0}, PushUIAPI.Map)
+function PushUIAPI.Map.new(...)
+    local _initMap = ... or {}
+    return setmetatable({__storage = _initMap, __size = 0}, PushUIAPI.Map)
 end
 setmetatable(PushUIAPI.Map, {__call = function(_, ...) return PushUIAPI.Map.new(...) end})
 
@@ -313,3 +219,121 @@ function PushUIAPI.Dispatcher:fire_event(event, ...)
         act(event, ...)
     end)
 end
+
+-- Timer
+PushUIAPI.Timer = {}
+PushUIAPI_Timer_FireFrame = CreateFrame("Frame", "PushUIAPI_Timer_FireFrame", UIParent)
+PushUIAPI_Timer_FireFrame.__timerMap = PushUIAPI.Map()
+PushUIAPI_Timer_FireFrame.__updateFunc = function(...)
+    local _nowtime = time()
+    self.__timerMap:for_each(function(_, timer)
+        if (_nowtime - timer:last_fire_time()) >= timer:interval() then
+            timer:fire()
+        end
+    end)
+end
+PushUIAPI_Timer_FireFrame.__timerCount = 0
+PushUIAPI_Timer_FireFrame.__timerNamePool = PushUIAPI.Pool(function()
+    PushUIAPI_Timer_FireFrame.__timerCount = PushUIAPI_Timer_FireFrame.__timerCount + 1
+    return "PushUIAPI_Timer_FireFrame_Timer"..PushUIAPI_Timer_FireFrame.__timerCount
+end)
+PushUIAPI_Timer_FireFrame.__registerTimer = function(name, timer)
+    PushUIAPI_Timer_FireFrame.__timerMap:set(name, timer)
+    -- For the first registered timer, start the update function
+    if PushUIAPI_Timer_FireFrame.__timerMap.size() == 1 then 
+        PushUIAPI_Timer_FireFrame:SetScript("OnUpdate", PushUIAPI_Timer_FireFrame.__updateFunc)
+    end
+end
+PushUIAPI_Timer_FireFrame.__unregisterTimer = function(name)
+    PushUIAPI_Timer_FireFrame.__timerMap:unset(name)
+
+    -- For the last removed timer, stop the update function
+    if PushUIAPI_Timer_FireFrame.__timerMap:size() == 0 then
+        PushUIAPI_Timer_FireFrame:SetScript("OnUpdate", nil)
+    end
+end
+PushUIAPI.Timer.__index = PushUIAPI.Timer
+function PushUIAPI.Timer:start(...)
+    local _interval, _handler = ...
+
+    -- Update interval
+    _interval = _interval or self.__savedinterval
+    if not _interval then return end
+    self.__savedinterval = _interval
+
+    -- Update handler
+    if _handler then self.__handler = _handler end
+    if not self.__handler then return end
+
+    self.__last_fire_time = time()
+
+    -- Get temp name
+    self.__tmp_name = PushUIAPI_Timer_FireFrame.__timerNamePool:get()
+    PushUIAPI_Timer_FireFrame.__registerTimer(self.__tmp_name, self)
+    self.__running = true
+end
+function PushUIAPI.Timer:stop()
+    if not self.__running then return end
+
+    PushUIAPI_Timer_FireFrame.__unregisterTimer(self.__tmp_name)
+    PushUIAPI_Timer_FireFrame.__timerNamePool:release(self.__tmp_name)
+    self.__tmp_name = ""
+    self.__running = false
+end
+function PushUIAPI.Timer:last_fire_time()
+    return self.__last_fire_time
+end
+function PushUIAPI.Timer:interval()
+    return self.__savedinterval
+end
+function PushUIAPI.Timer:fire()
+    if not self.__handler then return end
+    self.__handler()
+end
+function PushUIAPI.Timer:set_handler(handler)
+    self.__handler = handler
+    if not self.__handler then self:stop() end
+end
+function PushUIAPI.Timer:set_interval(interval)
+    self.__savedinterval = interval
+    if self.__savedinterval <= 0 then self:stop() end
+end
+function PushUIAPI.Timer.new(interval, handler)
+    return setmetatable({
+        __last_fire_time = 0,
+        __savedinterval = interval,
+        __handler = handler,
+        __running = false,
+        __tmp_name = ""
+        }, PushUIAPI.Timer)
+end
+setmetatable(PushUIAPI.Timer, {
+    __call = function(_, ...) return PushUIAPI.Timer.new(...) end
+    })
+
+-- Event Center
+PushUIAPI.EventCenter = {}
+PushUIAPI.EventCenter.__index = PushUIAPI.EventCenter
+PushUIAPI.EventCenter.__eventDispatcher = PushUIAPI.Dispatcher()
+function PushUIAPI.EventCenter:RegisterEvent(event, key, func)
+    self.__eventDispatcher:add_action(event, key, func)
+end
+function PushUIAPI.EventCenter:UnRegisterEvent(event, key)
+    self.__eventDispatcher:del_action(event, key)
+end
+function PushUIAPI.EventCenter:FireEvent(event, ...)
+    self.__eventDispatcher:fire_event(event, ...)
+end
+
+-- This event will be invoke only once when the player first time to enter the world.
+PushUIAPI.PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD = "PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD"
+local function __firsttime_default_handler(...)
+    PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD)
+    PushUIUnRegisterEvent("PLAYER_ENTERING_WORLD", "PushUIEventCenterDefaultFirstTime")
+end
+-- Default player entering world event 
+PushUIRegisterEvent("PLAYER_ENTERING_WORLD", "PushUIEventCenterDefaultFirstTime", __firsttime_default_handler)
+
+-- by Push Chen
+-- twitter: @littlepush
+

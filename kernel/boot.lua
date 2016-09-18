@@ -70,12 +70,18 @@ PushUIAPI.RegisterEvent = function(event, obj, func)
     _eventsMap[event][#_eventsMap[event] + 1] = {func, obj}
     -- table.insert(_eventsMap[event], func)
 end
+function PushUIRegisterEvent(event, obj, func)
+    PushUIAPI.RegisterEvent(event, obj, func)
+end
 
 PushUIAPI.UnregisterEvent = function(event, obj)
     if _eventsMaskToUnregister[event] == nil then
         _eventsMaskToUnregister[event] = {}
     end
     _eventsMaskToUnregister[event][#_eventsMaskToUnregister[event] + 1] = obj
+end
+function PushUIUnRegisterEvent(event, obj)
+    PushUIAPI.UnregisterEvent(event, obj)
 end
 
 PushUISize.Resolution = {}
@@ -117,16 +123,4 @@ end
 
 -- PushUIAPI.RegisterEvent("VARIABLES_LOADED", PushUISize.Resolution.Change)
 -- PushUIAPI.RegisterEvent("UI_SCALE_CHANGED", PushUISize.Resolution.Change)
-
--- Create the main frame and hide
-local PushUIMainFrame = CreateFrame("Frame", "PushUIMainFrame", UIParent)
-PushUIMainFrame:Hide()
-PushUIMainFrame.OnBoot = function()
-    SELECTED_CHAT_FRAME:AddMessage("PushUI Version 1.0.alpha")
-    SELECTED_CHAT_FRAME:AddMessage("Visit the project on Github https://github.com/littlepush/PushUI")
-    SELECTED_CHAT_FRAME:AddMessage("Connect the author on Twitter: @littlepush")
-    SELECTED_CHAT_FRAME:AddMessage("You are welcomed to join our guild: [TW][Lambda]!")
-    PushUIAPI.UnregisterEvent("PLAYER_ENTERING_WORLD", PushUIMainFrame)
-end
-PushUIAPI.RegisterEvent("PLAYER_ENTERING_WORLD", PushUIMainFrame, PushUIMainFrame.OnBoot)
 

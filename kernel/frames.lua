@@ -3,6 +3,157 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
+PushUIFrames._hiddenMainFrame = CreateFrame("Frame", "PushUIHiddenMainFrame")
+PushUIFrames._hiddenMainFrame:SetScript("OnUpdate", function(...)
+    local x, y = GetCursorPosition();
+
+end)
+
+PushUIFrames.__countByType = PushUIAPI.Map()
+PushUIFrames.__objectPoolByType = PushUIAPI.Map()
+
+local function __generateNewObjectNameByType(type)
+    if PushUIFrames.__countByType:contains(type) == false then
+        PushUIFrames.__countByType:set(type, 0)
+    end
+    local _count = PushUIFrames.__countByType:object(type)
+    _count = _count + 1
+    local _name = "PushUI_"..type.."_Name_".._count
+    PushUIFrames.__countByType:set(type, _count)
+    return _name
+end
+
+local function __generateNewObjectByType(type)
+    if PushUIFrames.__objectPoolByType:contains(type) == false then
+        local _objPool = PushUIAPI.Pool(function()
+            local _objectName = __generateNewObjectNameByType(type)
+            local _obj = CreateFrame(type, _objectName)
+            _obj:SetScript("OnEnter", function(self)
+                self.container._event_dispatcher:fire_event("PushUIEventMouseIn", self.container) 
+            end)
+            _obj:SetScript("OnLeave", function(self)
+                self.container._event_dispatcher:fire_event("PushUIEventMouseOut", self.container)
+            end)
+            _obj:SetScript("OnMouseDown", function(self, button, ...)
+                if button == "LeftButton" then
+                    self.container._event_dispatcher:fire_event("PushUIEventLeftMouseDown", self.container)
+                elseif button == "RightButton"
+                    self.container._event_dispatcher:fire_event("PushUIEventRightMouseDown", self.container)
+                end
+            end)
+            _obj:SetScript("OnMouseUp", function(self, button, ...)
+                if button == "LeftButton" then
+                    self.container._event_dispatcher:fire_event("PushUIEventLeftMouseUp", self.container)
+                elseif button == "RightButton"
+                    self.container._event_dispatcher:fire_event("PushUIEventRightMouseUp", self.container)
+                end
+            end)
+
+            _obj.uiname = _objectName
+            return _obj
+        end)
+        PushUIFrames.__objectPoolByType:set(type, _objPool)
+    end
+    return PushUIFrames.__objectPoolByType:object(type):get()
+end
+
+local function __destroyObjectOfType(type, obj)
+    PushUIFrames.__objectPoolByType:object(type):release(obj)
+end
+
+-- Basic Object
+PushUIFrames.UIObject = {}
+PushUIFrames.UIObject.__index = PushUIFrames.UIObject
+function PushUIFrames.UIObject.new(type, parent)
+    local _frame = __generateNewObjectByType(type)
+    local _uiname = _frame.uiname
+
+    -- Default is set to UIParent
+    parent = parent or UIParent
+    _frame:SetParent(parent)
+
+    local _obj = setmetatable({
+        layer = _frame,
+        id = _uiname,
+        type = type,
+        -- flags
+        _save_archor = "TOPLEFT",
+        _save_target_archor_obj = parent,
+        _save_target_archor = "TOPLEFT",
+        _save_x = 0,
+        _save_y = 0,
+        _doing_animation = false,
+        _animation_duration = 0,
+        _current_animation_stage = _uiname.."_animationStage",
+        _enable_drag = false,
+        _event_dispatcher = PushUIAPI.Dispatcher()
+        }, PushUIFrames.UIObject)
+    _frame.container = _obj
+    return _obj
+end
+function PushUIFrames.UIObject:destroy()
+    __destroyObjectOfType(self.type, self.layer)
+    self.type = nil
+    self.layer = nil
+    self.id = nil
+end
+function PushUIFrames.UIObject:delay(delay, action)
+    if not action then return end
+    if delay <= 0 then action(); return end
+    if not self._delay_timer then
+        self._delay_timer = PushUIAPI.Timer()
+    end
+    self._delay_timer:start(delay, function()
+        action()
+        self._delay_timer:stop()
+    )
+end
+function PushUIFrames.UIObject:add_action_for_mouse_in(key, func)
+    self._event_dispatcher:add_action("PushUIEventMouseIn", key, func)
+end
+function PushUIFrames.UIObject:del_action_for_mouse_in(key)
+    self._event_dispatcher:del_action("PushUIEventMouseIn", key)
+end
+function PushUIFrames.UIObject:add_action_for_mouse_out(key, func)
+    self._event_dispatcher:add_action("PushUIEventMouseOut", key, func)
+end
+function PushUIFrames.UIObject:del_action_for_mouse_out(key)
+    self._event_dispatcher:del_action("PushUIEventMouseOut")
+end
+function PushUIFrames.UIObject:add_action_for_left_mouse_down(key, func)
+    self._event_dispatcher:add_action("PushUIEventLeftMouseDown", key, func)
+end
+function PushUIFrames.UIObject:del_action_for_left_mouse_down(key)
+    self._event_dispatcher:del_action("PushUIEventLeftMouseDown")
+end
+function PushUIFrames.UIObject:add_action_for_left_mouse_up(key, func)
+    self._event_dispatcher:add_action("PushUIEventLeftMouseUp", key, func)
+end
+function PushUIFrames.UIObject:del_action_for_left_mouse_up(key)
+    self._event_dispatcher:del_action("PushUIEventLeftMouseUp")
+end
+function PushUIFrames.UIObject:add_action_for_right_mouse_down(key, func)
+    self._event_dispatcher:add_action("PushUIEventRightMouseDown", key, func)
+end
+function PushUIFrames.UIObject:del_action_for_right_mouse_down(key)
+    self._event_dispatcher:del_action("PushUIEventRightMouseDown")
+end
+function PushUIFrames.UIObject:add_action_for_right_mouse_up(key, func)
+    self._event_dispatcher:add_action("PushUIEventRightMouseUp", key, func)
+end
+function PushUIFrames.UIObject:del_action_for_right_mouse_up(key)
+    self._event_dispatcher:del_action("PushUIEventRightMouseUp")
+end
+
+
+setmetatable(PushUIFrames.UIObject, {
+    __call = function(_, ...)
+        return PushUIFrames.UIObject.new(...)
+    end
+    })
+
+
+
 PushUIFrames.__allTempFrameCount = 0
 function PushUIFrames:GetNewFrameName()
     PushUIFrames.__allTempFrameCount = PushUIFrames.__allTempFrameCount + 1
@@ -338,126 +489,3 @@ PushUIFrames.Label.Create = function(name, parent, autoResizeParent)
     return _lb
 end
 
-PushUIFrames.UIView = {}
-PushUIFrames.UIView.Create = function(name, parent)
-    if not name then 
-        name = PushUIFrames:GetNewFrameName()
-    end
-    parent = parent or UIParent
-    local _frame = CreateFrame("Frame", name, parent)
-    _frame.__type = "UIFrame"
-
-    _frame.__backgroundColor = {0, 0, 0, 0}
-    _frame.__borderColor = {0, 0, 0, 0}
-    _frame.__borderWidth = 1
-
-    _frame.__backdrop = {
-        bgFile = PushUIStyle.TextureClean,
-        edgeFile = PushUIStyle.TextureClean,
-        tile = true,
-        tileSize = 10,
-        edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    }
-
-    -- Timer
-    _frame.__delayTimerPool = PushUIAPI.Pool.New()
-    _frame.__delayTimerPool.SetCreateDelegate(function()
-        return PushUIFrames.Timer.Create()
-    end)
-
-    -- Animation Stage
-    _frame.__currentAnimationStage = nil
-    _frame.__currentAnimationDuration = 0
-    _frame.__allTempAnimationCount = 0
-    _frame.__animationStageNamePool = PushUIAPI.Pool.New()
-    _frame.__animationStageNamePool.SetCreateDelegate(function()
-        _frame.__allTempAnimationCount = _frame.__allTempAnimationCount + 1
-        return name.."TempAnimation".._frame.__allTempAnimationCount
-    end)
-
-    _frame.SetBackgroundColor = function(colorPack)
-        local _r, _g, _b, _a = unpack(colorPack)
-        if _a == nil then _a = 1 end
-        frame:SetBackdropColor(_r, _g, _b, _a)
-    end
-    function _frame:SetBackgroundColor(...) _frame.SetBackgroundColor(...) end
-
-    _frame.SetBorderColor = function(colorPack)
-        local _r, _g, _b, _a = unpack(colorPack)
-        if _a == nil then _a = 1 end
-        _frame:SetBackdropBorderColor(_r, _g, _b, _a)
-    end
-    function _frame:SetBorderColor(...) _frame.SetBorderColor(...) end
-
-    _frame.SetBorderWidth = function(width)
-        if width < 0 then width = 0 end
-        _frame.__backdrop.edgeSize = width
-        _frame.__backdrop.insets = { left = -width, right = -width, top = -width, bottom = -width }
-        _frame:SetBackdrop(_frame.__backdrop)
-    end
-    function _frame:SetBorderWidth(...) _frame.SetBorderWidth(...) end
-
-    _frame.DelayToDo = function(sec, action)
-        local _timer = _frame.__delayTimerPool.Get()
-        _timer:SetInterval(sec)
-        _timer:SetHandler(function()
-            if action then action() end
-            _timer:StopTimer()
-            _frame.__delayTimerPool.Release(_timer)
-        end)
-        _timer:StartTimer()
-    end
-    function _frame:DelayToDo(...) _frame.DelayToDo(...) end
-
-    _frame.UIType = function() return _frame.__type end
-    function _frame:UIType() return _frame.__type end
-
-    -- Animation
-    _frame.animationFade = function(toAlpah)
-        if not _frame.__currentAnimationStage then return end
-        _frame.AnimationStage(_frame.__currentAnimationStage).EnableFade(_frame.__currentAnimationDuration, toAlpah)
-    end
-    function _frame:animationFade(...) _frame.animationFade(...) end
-
-    _frame.animationScale = function(scale, origin)
-        if not _frame.__currentAnimationStage then return end
-        _frame.AnimationStage(_frame.__currentAnimationStage).EnableScale(_frame.__currentAnimationDuration, scale, origin)
-    end
-    function _frame:animationScale(...) _frame.animationScale(...) end
-
-    _frame.animationTranslation = function(toX, toY)
-        if not _frame.__currentAnimationStage then return end
-        _frame.AnimationStage(_frame.__currentAnimationStage).EnableTranslation(_frame.__currentAnimationDuration, toX, toY)
-    end
-    function _frame:animationTranslation(...) _frame.animationTranslation(...) end
-
-    _frame.AnimationWithDuration = function(duration, animation, completed)
-        if not animation then return end
-
-        -- Enable animation and add temp stage
-        PushUIFrames.Animations.EnableAnimationForFrame(_frame)
-        local _stageName = _frame.__animationStageNamePool.Get()
-        PushUIFrames.Animations.AddStage(_frame, _stageName)
-
-        _frame.__currentAnimationStage = _stageName
-        _frame.__currentAnimationDuration = duration
-        -- Do the animation
-        animation()
-
-        _frame.PlayAnimationStage(_stageName, function(_, _, isCompleted)
-            _frame.__currentAnimationStage = nil
-            _frame.AnimationStage(_stageName).DisableAllAnimations()
-            if completed then completed(isCompleted) end
-            _frame.__animationStageNamePool.Release(_stageName)
-        end)
-    end
-    function _frame:AnimationWithDuration(...) _frame.AnimationWithDuration(...) end
-
-    return _frame
-end
-
-PushUIFrames.UIButton = {}
-PushUIFrames.UIButton.Create = function(name, parent)
-    local _button = PushUIFrames.UIView.Create(name, parent)
-end
