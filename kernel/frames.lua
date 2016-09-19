@@ -133,9 +133,11 @@ function PushUIFrames.UIObject:new(type, parent)
     local _uiname = ""
     if _frame then _uiname = _frame.uiname end
 
-    -- Default is set to UIParent
-    parent = parent or UIParent
-    _frame:SetParent(parent)
+    if _frame then
+        -- Default is set to UIParent
+        parent = parent or UIParent
+        _frame:SetParent(parent)
+    end
 
     local _obj = setmetatable({
         layer = _frame,
@@ -156,8 +158,11 @@ function PushUIFrames.UIObject:new(type, parent)
         _borderWidth = 1,
         _borderColor = PushUIColor.white
         }, self)
-    _frame.container = _obj
     _obj.__index = self
+
+    if _frame then
+        _frame.container = _obj
+    end
     return _obj
 end
 
