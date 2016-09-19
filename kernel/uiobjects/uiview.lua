@@ -3,8 +3,7 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-PushUIFrames.UIView = PushUIFrames.UIObject("Frame")
-PushUIFrames.UIView:destroy()
+PushUIFrames.UIView = PushUIFrames.UIObject()
 
 function PushUIFrames.UIView:set_backgroundColor(color_pack)
     self.layer:SetBackdropColor(PushUIColor.unpackColor(color_pack))

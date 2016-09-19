@@ -24,6 +24,7 @@ local function __generateNewObjectNameByType(type)
 end
 
 local function __generateNewObjectByType(type)
+    if not type then return nil end
     if PushUIFrames.__objectPoolByType:contains(type) == false then
         local _objPool = PushUIAPI.Pool(function()
             local _objectName = __generateNewObjectNameByType(type)
@@ -72,7 +73,7 @@ end
 
 -- Basic Object
 PushUIFrames.UIObject = {}
-PushUIFrames.UIObject.__index = PushUIFrames.UIObject
+-- PushUIFrames.UIObject.__index = PushUIFrames.UIObject
 function PushUIFrames.UIObject:destroy()
     __destroyObjectOfType(self.type, self.layer)
     self.type = nil
@@ -129,7 +130,8 @@ end
 
 function PushUIFrames.UIObject:new(type, parent)
     local _frame = __generateNewObjectByType(type)
-    local _uiname = _frame.uiname
+    local _uiname = ""
+    if _frame then _uiname = _frame.uiname end
 
     -- Default is set to UIParent
     parent = parent or UIParent
@@ -155,6 +157,7 @@ function PushUIFrames.UIObject:new(type, parent)
         _borderColor = PushUIColor.white
         }, self)
     _frame.container = _obj
+    _obj.__index = self
     return _obj
 end
 
