@@ -5,21 +5,24 @@ local
 
 PushUIFrames.Animations = {}
 PushUIFrames.Animations._fade = function(ag, duration, to_alpha)
+    print("will fade from: "..ag.affectFrame:GetAlpha()..", to: "..to_alpha)
+
     local _a = ag:CreateAnimation("Alpha")
     _a:SetOrder(1)
+    _a:SetFromAlpha(ag.affectFrame:GetAlpha())
     _a:SetToAlpha(to_alpha)
-    _a:SetOrder(1)
     _a:SetDuration(duration)
     _a:SetSmoothing("IN_OUT")
+    _a.__finalAlpha = to_alpha
 
     _a.__uiInit = function()
         _a.__savedFromAlpha = ag.affectFrame:GetAlpha()
     end
     _a.__uiFinished = function()
-        ag.affectFrame:SetAlpha(_a:GetToAlpha())
+        ag.affectFrame:SetAlpha(_a.__finalAlpha)
     end
     _a.__uiWillCancel = function()
-        _a.__savedAlpha = (_a:GetToAlpha() - _a.__savedFromAlpha) * _a:GetProgress()
+        _a.__savedAlpha = (_a.__finalAlpha - _a.__savedFromAlpha) * _a:GetProgress()
     end
     _a.__uiDidCancel = function()
         ag.affectFrame:SetAlpha(_a.__savedAlpha)
@@ -243,25 +246,27 @@ PushUIFrames.Animations.AddStage = function(frame, stage_name)
     frame._animations[stage_name].stageName = stage_name
     frame._animations[stage_name]:SetScript("OnFinished", function(self)
         local _f = self.affectFrame
-        if _f._animations[stage_name]._this_time_finished then
-            _f._animations[stage_name]._this_time_finished(_f, self.stageName, true)
-        end
-        _f._animations[stage_name]._this_time_finished = nil
 
         local _stage = _f._animations[stage_name]
         for i, a in ipairs(_stage.__theAnimations) do
             a.__uiFinished()
         end
+
+        if _f._animations[stage_name]._this_time_finished then
+            _f._animations[stage_name]._this_time_finished(_f, self.stageName, true)
+        end
+        _f._animations[stage_name]._this_time_finished = nil
     end)
     frame._animations[stage_name]:SetScript("OnStop", function(self)
         local _f = self.affectFrame
-        if _f._animations[stage_name]._this_time_finished then
-            _f._animations[stage_name]._this_time_finished(_f, self.stageName, false)
-        end
 
         local _stage = _f._animations[stage_name]
         for i, a in ipairs(_stage.__theAnimations) do
             a.__uiDidCancel()
+        end
+
+        if _f._animations[stage_name]._this_time_finished then
+            _f._animations[stage_name]._this_time_finished(_f, self.stageName, false)
         end
     end)
 
@@ -274,6 +279,7 @@ PushUIFrames.Animations.AddStage = function(frame, stage_name)
         if _stage.__theFade then 
             _stage.__theFade:SetDuration(duration)
             _stage.__theFade:SetToAlpha(toAlpha)
+            _stage.__theFade.__finalAlpha = toAlpha
         else
             local _a = PushUIFrames.Animations._fade(_stage, duration, toAlpha)
             _stage.__theFade = _a
@@ -309,24 +315,9 @@ PushUIFrames.Animations.AddStage = function(frame, stage_name)
     end
 
     _stage.DisableAllAnimations = function()
-        if _stage.__theFade then
-            _stage.__theFade:SetDuration(0)
-            _stage.__theFade:SetToAlpha(_stage.affectFrame:GetAlpha())
-        end
-
-        if _stage.__theScale then
-            _stage.__theScale:SetDuration(0)
-            local _s = _stage.affectFrame:GetScale()
-            _stage.__theScale:SetToScale(_s, _s)
-        end
-
-        if _stage.__theTranslationAnimation then
-            _stage.__theTranslationAnimation:SetDuration(0)
-            local _, _, _, _x, _y = _stage.affectFrame:GetPoint()
-            _stage.__theTranslationAnimation.__toX = _x
-            _stage.__theTranslationAnimation.__toY = _y
-            _stage.__theTranslationAnimation:SetOffset(_x, _y)
-        end
+        _stage.__theFade = nil
+        _stage.__theScale = nil
+        _stage.__theTranslationAnimation = nil
     end
 end
 
@@ -339,25 +330,27 @@ PushUIFrames.Animations.AddOrderedStage = function(frame, stage_name)
     frame._animations[stage_name].stageName = stage_name
     frame._animations[stage_name]:SetScript("OnFinished", function(self)
         local _f = self.affectFrame
-        if _f._animations[stage_name]._this_time_finished then
-            _f._animations[stage_name]._this_time_finished(_f, self.stageName, true)
-        end
-        _f._animations[stage_name]._this_time_finished = nil
 
         local _stage = self
         for i, a in ipairs(_stage.__theOrderedAnimations) do
             a.__uiFinished()
         end
+
+        if _f._animations[stage_name]._this_time_finished then
+            _f._animations[stage_name]._this_time_finished(_f, self.stageName, true)
+        end
+        _f._animations[stage_name]._this_time_finished = nil
     end)
     frame._animations[stage_name]:SetScript("OnStop", function(self)
         local _f = self.affectFrame
-        if _f._animations[stage_name]._this_time_finished then
-            _f._animations[stage_name]._this_time_finished(_f, self.stageName, false)
-        end
 
         local _stage = self
         for i, a in ipairs(_stage.__theOrderedAnimations) do
             a.__uiDidCancel()
+        end
+
+        if _f._animations[stage_name]._this_time_finished then
+            _f._animations[stage_name]._this_time_finished(_f, self.stageName, false)
         end
     end)
 

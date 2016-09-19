@@ -3,6 +3,50 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
+
+-- Class
+PushUIAPI._all_vtbl = {}
+function PushUIAPI.__classCreate(cls_type, obj, ...)
+    if cls_type.super then
+        obj = PushUIAPI.__classCreate(cls_type.super, obj, ...)
+    end
+    if cls_type.c_str then
+        cls_type.c_str(obj)
+    end
+    return obj
+end
+
+function PushUIAPI.inhiert(super_class)
+    local _inhiertCls = {}
+    _inhiertCls.c_str = false
+    _inhiertCls.super = super_class
+    _inhiertCls.new = function(...)
+        local _obj = {}
+        _obj = PushUIAPI.__classCreate(_inhiertCls, _obj, ...)
+        setmetatable(_obj, { __index = PushUIAPI._all_vtbl[_inhiertCls]} )
+        return _obj
+    end
+
+    local _vtbl = {}
+    PushUIAPI._all_vtbl[_inhiertCls] = _vtbl
+
+    setmetatable(_inhiertCls, {
+        __newindex = function(t, k, v) _vtbl[k] = v end,
+        __call = function(cls, ...) return cls.new(...) end
+        })
+    if super_class then
+        setmetatable(_vtbl, {
+            __index = function(t, k)
+                local _ret = PushUIAPI._all_vtbl[super_class][k]
+                _vtbl[k] = _ret
+                return _ret
+            end
+            })
+    end
+
+    return _inhiertCls
+end
+
 -- Structures and Events
 
 -- Stack
@@ -139,6 +183,9 @@ end
 function PushUIAPI.Map:object(key)
 	return self.__storage[key]
 end
+function PushUIAPI.Map:size()
+    return self.__size
+end
 function PushUIAPI.Map:clear()
 	repeat
 		table.remove(self.__storage)
@@ -234,7 +281,7 @@ PushUIAPI_Timer_FireFrame = CreateFrame("Frame", "PushUIAPI_Timer_FireFrame", UI
 PushUIAPI_Timer_FireFrame.__timerMap = PushUIAPI.Map()
 PushUIAPI_Timer_FireFrame.__updateFunc = function(...)
     local _nowtime = time()
-    self.__timerMap:for_each(function(_, timer)
+    PushUIAPI_Timer_FireFrame.__timerMap:for_each(function(_, timer)
         if (_nowtime - timer:last_fire_time()) >= timer:interval() then
             timer:fire()
         end
@@ -248,7 +295,7 @@ end)
 PushUIAPI_Timer_FireFrame.__registerTimer = function(name, timer)
     PushUIAPI_Timer_FireFrame.__timerMap:set(name, timer)
     -- For the first registered timer, start the update function
-    if PushUIAPI_Timer_FireFrame.__timerMap.size() == 1 then 
+    if PushUIAPI_Timer_FireFrame.__timerMap:size() == 1 then 
         PushUIAPI_Timer_FireFrame:SetScript("OnUpdate", PushUIAPI_Timer_FireFrame.__updateFunc)
     end
 end

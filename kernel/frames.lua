@@ -3,16 +3,16 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-PushUIFrames._hiddenMainFrame = CreateFrame("Frame", "PushUIHiddenMainFrame")
-PushUIFrames._hiddenMainFrame:SetScript("OnUpdate", function(...)
-    local x, y = GetCursorPosition();
+-- PushUIFrames._hiddenMainFrame = CreateFrame("Frame", "PushUIHiddenMainFrame")
+-- PushUIFrames._hiddenMainFrame:SetScript("OnUpdate", function(...)
+--     local x, y = GetCursorPosition();
 
-end)
+-- end)
 
 PushUIFrames.__countByType = PushUIAPI.Map()
 PushUIFrames.__objectPoolByType = PushUIAPI.Map()
 
-local function __generateNewObjectNameByType(type)
+function __generateNewObjectNameByType(type)
     if PushUIFrames.__countByType:contains(type) == false then
         PushUIFrames.__countByType:set(type, 0)
     end
@@ -23,7 +23,7 @@ local function __generateNewObjectNameByType(type)
     return _name
 end
 
-local function __generateNewObjectByType(type)
+function __generateNewObjectByType(type)
     if not type then return nil end
     if PushUIFrames.__objectPoolByType:contains(type) == false then
         local _objPool = PushUIAPI.Pool(function()
@@ -72,8 +72,7 @@ local function __destroyObjectOfType(type, obj)
 end
 
 -- Basic Object
-PushUIFrames.UIObject = {}
--- PushUIFrames.UIObject.__index = PushUIFrames.UIObject
+PushUIFrames.UIObject = PushUIAPI.inhiert()
 function PushUIFrames.UIObject:destroy()
     __destroyObjectOfType(self.type, self.layer)
     self.type = nil
@@ -127,50 +126,10 @@ end
 function PushUIFrames.UIObject:del_action_for_right_mouse_up(key)
     self._event_dispatcher:del_action("PushUIEventRightMouseUp")
 end
-
-function PushUIFrames.UIObject:new(type, parent)
-    local _frame = __generateNewObjectByType(type)
-    local _uiname = ""
-    if _frame then _uiname = _frame.uiname end
-
-    if _frame then
-        -- Default is set to UIParent
-        parent = parent or UIParent
-        _frame:SetParent(parent)
-    end
-
-    local _obj = setmetatable({
-        layer = _frame,
-        id = _uiname,
-        type = type,
-        -- flags
-        _save_archor = "TOPLEFT",
-        _save_target_archor_obj = parent,
-        _save_target_archor = "TOPLEFT",
-        _save_x = 0,
-        _save_y = 0,
-        _doing_animation = false,
-        _animation_duration = 0,
-        _current_animation_stage = _uiname.."_animationStage",
-        _enable_drag = false,
-        _event_dispatcher = PushUIAPI.Dispatcher(),
-        _backgroundColor = PushUIColor.white,
-        _borderWidth = 1,
-        _borderColor = PushUIColor.white
-        }, self)
-    _obj.__index = self
-
-    if _frame then
-        _frame.container = _obj
-    end
-    return _obj
-end
-
-setmetatable(PushUIFrames.UIObject, {
-    __call = function(self, ...)
-        return self:new(...)
-    end
-    })
+function PushUIFrames.UIObject:c_str(parent)
+    self._event_dispatcher = PushUIAPI.Dispatcher()
+    self._enable_drag = false
+end    
 
 -- by Push Chen
 -- twitter: @littlepush

@@ -3,7 +3,7 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-PushUIFrames.UIView = PushUIFrames.UIObject()
+PushUIFrames.UIView = PushUIAPI.inhiert(PushUIFrames.UIObject)
 
 function PushUIFrames.UIView:set_backgroundColor(color_pack)
     self.layer:SetBackdropColor(PushUIColor.unpackColor(color_pack))
@@ -112,33 +112,53 @@ function PushUIFrames.UIView:animation_with_duration(duration, animation, comple
     if not animation then return end
     if nil == duration or duration <= 0 then return end
 
+    print("in animation with duration")
     PushUIFrames.Animations.EnableAnimationForFrame(self.layer)
     if self._doing_animation then
+        print("will cancel last animation")
         self.CancelAnimationStage(self._current_animation_stage)
     end
     PushUIFrames.Animations.AddStage(self.layer, self._current_animation_stage)
 
     self._doing_animation = true
     self._animation_duration = duration
+
+    print("allow to do the animation")
     animation(self)
+    print("after set the animation")
 
     self.layer.PlayAnimationStage(self._current_animation_stage, function(layer, stage_name, completed)
+        print("in completed callback")
         if not completed then return end
         self._doing_animation = false
         self._animation_duration = 0
         layer.AnimationStage(stage_name).DisableAllAnimations()
+        print("all animation has been disabled")
         if complete then complete(self) end
     end)
 end
 
-setmetatable(PushUIFrames.UIView, {
-    __call = function(self, ...) 
-        if PushUIFrames.UIView.destroy then 
-            print("PushUIFrames has destroy from UIObject")
-        end
-        return self:new("Frame", ...) 
-    end
-    })
+function PushUIFrames.UIView:c_str(parent, ...)
+    local _frame = __generateNewObjectByType("Frame")
+    self.layer = _frame
+    self.id = _frame.uiname
+    self.type = type
+    _frame.container = self
+    parent = parent or UIParent
+    _frame:SetParent(parent)
+
+    self._save_archor = "TOPLEFT"
+    self._save_target_archor_obj = parent
+    self._save_target_archor = "TOPLEFT"
+    self._save_x = 0
+    self._save_y = 0
+    self._doing_animation = false
+    self._animation_duration = 0
+    self._current_animation_stage = self.id.."_animationStage"
+    self._backgroundColor = PushUIColor.white
+    self._borderWidth = 1
+    self._borderColor = PushUIColor.white
+end
 
 -- by Push Chen
 -- twitter: @littlepush
