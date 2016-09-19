@@ -9,9 +9,15 @@ function PushUIFrames.UIView:set_backgroundColor(color_pack)
     self.layer:SetBackdropColor(PushUIColor.unpackColor(color_pack))
     self._backgroundColor = color_pack
 end
+function PushUIFrames.UIView:backgroundColor()
+    return self._backgroundColor
+end
 function PushUIFrames.UIView:set_borderColor(color_pack)
     self.layer:SetBackdropBorderColor(PushUIColor.unpackColor(color_pack))
     self._borderColor = color_pack
+end
+function PushUIFrames.UIView:borderColor()
+    return self._borderColor
 end
 function PushUIFrames.UIView:set_borderWidth(width)
     if width < 0 then width = 0 end
@@ -27,6 +33,9 @@ function PushUIFrames.UIView:set_borderWidth(width)
     self._borderWidth = width
     self.layer:SetBackdropColor(PushUIColor.unpackColor(self._backgroundColor))
     self.layer:SetBackdropBorderColor(PushUIColor.unpackColor(self._borderColor))
+end
+function PushUIFrames.UIView:borderWidth()
+    return self._borderWidth
 end
 function PushUIFrames.UIView:set_gradientColor(from_color, to_color, v_or_h)
     if nil == v_or_h then v_or_h = "v" end
@@ -49,8 +58,14 @@ end
 function PushUIFrames.UIView:set_width(w)
     self.layer:SetWidth(w)
 end
+function PushUIFrames.UIView:width()
+    return self.layer:GetWidth()
+end
 function PushUIFrames.UIView:set_height(h)
     self.layer:SetHeight(h)
+end
+function PushUIFrames.UIView:height()
+    return self.layer:GetHeight()
 end
 function PushUIFrames.UIView:set_size(w, h)
     self.layer:SetSize(w, h)
@@ -90,6 +105,9 @@ function PushUIFrames.UIView:set_position(x, y)
             self._save_y)
     end
 end
+function PushUIFrames.UIView:position()
+    return self._save_x, self._save_y
+end
 function PushUIFrames.UIView:set_alpha(alpha)
     if self._doing_animation then
         self.layer.AnimationStage(self._current_animation_stage).EnableFade(
@@ -99,6 +117,9 @@ function PushUIFrames.UIView:set_alpha(alpha)
         self.layer:SetAlhpa(alpha)
     end
 end
+function PushUIFrames.UIView:alpha()
+    return self.layer:GetAlpha()
+end
 function PushUIFrames.UIView:set_scale(scale)
     if self._doing_animation then
         self.layer.AnimationStage(self._current_animation_stage).EnableScale(
@@ -106,6 +127,18 @@ function PushUIFrames.UIView:set_scale(scale)
     else
         self.layer:SetScale(scale)
     end
+end
+function PushUIFrames.UIView:scale()
+    return self.layer:GetScale()
+end
+
+function PushUIFrames.UIView:set_hidden(hidden)
+    if hidden then self.layer:Hide() 
+    else self.layer:Show() end
+end
+
+function PushUIFrames.UIView:is_hidden()
+    return not self.layer:IsShown()
 end
 
 function PushUIFrames.UIView:animation_with_duration(duration, animation, complete)
@@ -144,7 +177,7 @@ function PushUIFrames.UIView:c_str(parent, ...)
     self.id = _frame.uiname
     self.type = type
     _frame.container = self
-    parent = parent or UIParent
+    parent = parent.layer or parent or UIParent
     _frame:SetParent(parent)
 
     self._save_archor = "TOPLEFT"
