@@ -7,19 +7,25 @@ PushUIFrames.UILabel = PushUIAPI.inhiert(PushUIFrames.UIView)
 
 function PushUIFrames.UILabel:_resize()
     local _w = self._bounds.w
-    if _w == 0 then _w = _w - self._padding.l - self._padding.r end
+    if _w > 0 then _w = _w - self._padding.l - self._padding.r end
     local _h = self._bounds.h
-    if _h == 0 then _h = _h - self._padding.t - self._padding.b end
+    if _h > 0 then _h = _h - self._padding.t - self._padding.b end
+    if _w < 0 then _w = 0 end
+    if _h < 0 then _h = 0 end
     self._textfs:SetWidth(_w)
     self._textfs:SetHeight(_h)
 
-    local _tw = self._textfs:GetWidth() + self._padding.l + self._padding.r
-    local _th = self._textfs:GetHeight() + self._padding.t + self._padding.b
-    self:set_size(_tw, _th)
+    local _tw = self._textfs:GetWidth()
+    local _th = self._textfs:GetHeight()
+    print("label w/h: ".._tw.."/".._th)
+    self._textfs:SetWidth(_tw)
+    self._textfs:SetHeight(_th)
+    self.layer:SetWidth(_tw + self._padding.l + self._padding.r)
+    self.layer:SetHeight(_th + self._padding.t + self._padding.b)
 
     self._textfs:ClearAllPoints()
     self._textfs:SetPoint("TOPLEFT", self.layer, "TOPLEFT", 
-        self._padding.l, self._padding.t)
+        self._padding.l, -self._padding.t)
 end
 
 -- Text
@@ -32,7 +38,20 @@ function PushUIFrames.UILabel:text()
 end
 
 -- Padding
-function PushUIFrames.UILabel:set_padding(l, r, t, b)
+function PushUIFrames.UILabel:set_padding(...)
+    local l, r, t, b
+    if select("#", ...) == 1 then
+        -- Only one, set all to this
+        local _p = select(1, ...)
+        l, r, t, b = _p, _p, _p, _p
+    elseif select("#", ...) == 2 then
+        local _h = select(1, ...)
+        local _v = select(2, ...)
+        l, r = _h, _h
+        t, b = _v, _v
+    elseif select("#", ...) == 4 then
+        l, r, t, b = ...
+    end    
     self._padding.l = l
     self._padding.r = r
     self._padding.t = t
@@ -145,7 +164,10 @@ function PushUIFrames.UILabel:c_str(parent)
     self._fontColor = PushUIColor.white
     self._maxLine = 1
     self._align = "LEFT"
-    self:_resize()
+
+    self._textfs:SetFont(self._fontName, self._fontSize, self._fontFlags)
+    self._textfs:SetJustifyH(self._align)
+    self._textfs:SetTextColor(PushUIColor.unpackColor(self._fontColor))
 end
 
 -- by Push Chen

@@ -177,7 +177,8 @@ function PushUIFrames.UIView:c_str(parent, ...)
     self.id = _frame.uiname
     self.type = type
     _frame.container = self
-    parent = parent.layer or parent or UIParent
+    if parent == nil then parent = UIParent end
+    if parent.layer then parent = parent.layer end
     _frame:SetParent(parent)
 
     self._save_archor = "TOPLEFT"
