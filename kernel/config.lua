@@ -325,9 +325,9 @@ PushUIConfig.PetFrameHook = {
     enable = true,
     hookbar = {
         anchorTarget = nil,
-        anchorPoint = "TOPLEFT",
+        anchorPoint = "TOPRIGHT",
         displaySide = "BOTTOMLEFT",
-        position = { x = 0, y = -60 },
+        position = { x = -20, y = -60 },
         size = { w = 100, h = 20 }
     },
     lifebar = {
