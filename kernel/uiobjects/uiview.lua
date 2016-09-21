@@ -86,16 +86,15 @@ function PushUIFrames.UIView:set_archor(archor)
     self:set_position()
 end
 function PushUIFrames.UIView:set_position(x, y)
+    if nil ~= x then
+        self._save_x = x
+    end
+    if nil ~= y then
+        self._save_y = y
+    end
     if self._doing_animation then
-        self.layer.AnimationStage(self._current_animation_stage).EnableTranslation(
-            self._animation_duration, x, y)
+        self._animationStage:set_translation(x, y)
     else
-        if nil ~= x then
-            self._save_x = x
-        end
-        if nil ~= y then
-            self._save_y = y
-        end
         self.layer:ClearAllPoints()
         self.layer:SetPoint(
             self._save_archor, 
@@ -110,9 +109,7 @@ function PushUIFrames.UIView:position()
 end
 function PushUIFrames.UIView:set_alpha(alpha)
     if self._doing_animation then
-        self.layer.AnimationStage(self._current_animation_stage).EnableFade(
-            self._animation_duration, 
-            alpha)
+        self._animationStage:set_fade(alpha)
     else
         self.layer:SetAlhpa(alpha)
     end
@@ -120,12 +117,11 @@ end
 function PushUIFrames.UIView:alpha()
     return self.layer:GetAlpha()
 end
-function PushUIFrames.UIView:set_scale(scale)
+function PushUIFrames.UIView:set_scale(scale_x, scale_y, origin, x, y)
     if self._doing_animation then
-        self.layer.AnimationStage(self._current_animation_stage).EnableScale(
-            self._animation_duration, scale)
+        self._animationStage:set_scale(scale_x, scale_y, origin, x, y)
     else
-        self.layer:SetScale(scale)
+        self.layer:SetScale(scale_x, scale_y)
     end
 end
 function PushUIFrames.UIView:scale()
@@ -146,27 +142,20 @@ function PushUIFrames.UIView:animation_with_duration(duration, animation, comple
     if nil == duration or duration <= 0 then return end
 
     print("in animation with duration")
-    PushUIFrames.Animations.EnableAnimationForFrame(self.layer)
     if self._doing_animation then
         print("will cancel last animation")
-        self.CancelAnimationStage(self._current_animation_stage)
+        self._animationStage:stop()
     end
-    PushUIFrames.Animations.AddStage(self.layer, self._current_animation_stage)
 
     self._doing_animation = true
-    self._animation_duration = duration
 
     print("allow to do the animation")
     animation(self)
     print("after set the animation")
 
-    self.layer.PlayAnimationStage(self._current_animation_stage, function(layer, stage_name, completed)
-        print("in completed callback")
-        if not completed then return end
+    self._animationStage:play(duration, function(self, completed)
         self._doing_animation = false
-        self._animation_duration = 0
-        layer.AnimationStage(stage_name).DisableAllAnimations()
-        print("all animation has been disabled")
+        if not completed then return end
         if complete then complete(self) end
     end)
 end
@@ -186,9 +175,13 @@ function PushUIFrames.UIView:c_str(parent, ...)
     self._save_target_archor = "TOPLEFT"
     self._save_x = 0
     self._save_y = 0
+
+    self._animationStage = PushUIFrames.AnimationStage(self)
     self._doing_animation = false
-    self._animation_duration = 0
-    self._current_animation_stage = self.id.."_animationStage"
+
+    -- self._animation_duration = 0
+    -- self._current_animation_stage = self.id.."_animationStage"
+
     self._backgroundColor = PushUIColor.white
     self._borderWidth = 1
     self._borderColor = PushUIColor.white
