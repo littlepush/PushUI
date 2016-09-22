@@ -11,7 +11,7 @@ function PushUIAPI.__classCreate(cls_type, obj, ...)
         obj = PushUIAPI.__classCreate(cls_type.super, obj, ...)
     end
     if cls_type.c_str then
-        cls_type.c_str(obj)
+        cls_type.c_str(obj, ...)
     end
     return obj
 end

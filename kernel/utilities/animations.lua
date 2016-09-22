@@ -5,12 +5,24 @@ local
 
 PushUIFrames.AnimationStage = PushUIAPI.inhiert()
 function PushUIFrames.AnimationStage:c_str(view)
+    print("In animation initialize")
+
+    if not view then 
+        print("No view to create animation")
+    end
     if not view then return end
     local _layer = view.layer
+    if not _layer then
+        print("the view is not a uiview")
+    end
     if not view.layer then _layer = view end
     self._relativeObj = view
     self._relativelayer = _layer
     self._agroup = _layer:CreateAnimationGroup()
+
+    if not self._agroup then
+        print("failed to craete animation group")
+    end
 
     self._fade = nil
     self._scale = nil
@@ -73,7 +85,7 @@ function PushUIFrames.AnimationStage:__did_cancel()
 end
 
 function PushUIFrames.AnimationStage:play(duration, on_complete)
-    self:cancel()
+    self:stop()
 
     self._handle = on_complete
     self:__create_snapshot()
@@ -111,7 +123,9 @@ end
 function PushUIFrames.AnimationStage:set_scale(h, v, origin, x, y)
     local _hrate = h or 1
     local _vrate = v or 1
-    local _, _, _origin, _x, _y = self._relativelayer:GetPoint()
+    local _origin = "CENTER"
+    local _x = 0
+    local _y = 0
     if nil ~= origin then _origin = origin end
     if nil ~= x then _x = x end
     if nil ~= y then _y = y end
@@ -119,6 +133,8 @@ function PushUIFrames.AnimationStage:set_scale(h, v, origin, x, y)
         self._scale = self._agroup:CreateAnimation("Scale")
         self._scale:SetSmoothing("IN_OUT")
     end
+    print("h/v: ".._hrate.."/".._vrate)
+    print("o, x, y: ".._origin..", ".._x..", ".._y)
     self._scale:SetToScale(_hrate, _vrate)
     self._scale:SetOrigin(_origin, _x, _y)
 end
