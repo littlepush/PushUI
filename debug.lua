@@ -16,20 +16,7 @@ local function _debug_initFunction()
     _testView:set_borderColor(PushUIColor.blue)
     _testView:set_position()
 
-    if _testView.delay then
-        print("support delay function")
-    end
-
-    _testView:delay(2, function(self)
-        self:animation_with_duration(3, function(self)
-            self:set_alpha(0)
-        end, function(self)
-            print("do another animation")
-            self:animation_with_duration(3, function(self)
-                self:set_alpha(1)
-            end)
-        end)
-    end)
+    _testView:enable_drag(true)
 
     local _label = PushUIFrames.UILabel()
     print(_label.id)
@@ -39,12 +26,7 @@ local function _debug_initFunction()
     _label:set_align("CENTER")
     _label:set_size(200, 0)
     _label:set_text("This is a label")
-    _label:delay(2, function(self)
-        self:set_text("this is a label with delay 5 seconds")
-        self:animation_with_duration(3, function(self)
-            self:set_scale(0.3)
-        end)
-    end)
+    _label:enable_drag(true)
 end
 
 PushUIAPI.EventCenter:RegisterEvent(PushUIAPI.PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD, "debug_init", _debug_initFunction)

@@ -20,13 +20,10 @@ function PushUIFrames.AnimationStage:__create_snapshot()
 end
 
 function PushUIFrames.AnimationStage:__finialized()
-    print("In finialized")
     if self._fade then
         self._relativelayer:SetAlpha(self._fade:GetToAlpha())
     end
-    print(self._relativelayer:GetScale())
     if self._scale then
-        print(self._scale:GetToScale())
         self._relativelayer:SetScale(self._scale:GetToScale())
     end
     if self._rotation and self._relativelayer.GetRotation then
@@ -47,13 +44,11 @@ function PushUIFrames.AnimationStage:__finialized()
     self._rotation = nil
 end
 function PushUIFrames.AnimationStage.__did_finish(ag)
-    print("finished")
     ag.stage:__finialized()
     if ag.stage._handle then ag.stage._handle(ag.stage._relativeObj, true) end
 end
 
 function PushUIFrames.AnimationStage.__did_cancel(ag)
-    print("canceled")
     ag.stage:__finialized()
     if ag.stage._handle then ag.stage._handle(ag.stage._relativeObj, false) end
 end
@@ -70,8 +65,8 @@ function PushUIFrames.AnimationStage:play(duration, on_complete)
     if self._translation then self._translation:SetDuration(duration) end
 
     if self._fade or self._scale or self._rotation or self._translation then
-        self._agroup:SetScript("OnFinished", PushUIFrames.AnimationStage.__did_finish)
-        self._agroup:SetScript("OnStop", PushUIFrames.AnimationStage.__did_cancel)
+        self._agroup:SetScript("OnFinished", self.__did_finish)
+        self._agroup:SetScript("OnStop", self.__did_cancel)
         self._agroup:Play()
     end
 end
@@ -109,8 +104,6 @@ function PushUIFrames.AnimationStage:set_scale(h, v, origin, x, y)
         self._scale = self._agroup:CreateAnimation("Scale")
         self._scale:SetSmoothing("IN_OUT")
     end
-    print("h/v: ".._hrate.."/".._vrate)
-    print("o, x, y: ".._origin..", ".._x..", ".._y)
     self._scale:SetToScale(_hrate, _vrate)
     self._scale:SetOrigin(_origin, _x, _y)
 end
@@ -134,8 +127,6 @@ end
 
 
 function PushUIFrames.AnimationStage:c_str(view)
-    print("In animation initialize")
-
     if not view then 
         print("No view to create animation")
     end

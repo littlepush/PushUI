@@ -6,6 +6,7 @@ local
 PushUIFrames.UILabel = PushUIAPI.inhiert(PushUIFrames.UIView)
 
 function PushUIFrames.UILabel:_resize()
+    print("resized been called")
     local _w = self._bounds.w
     if _w > 0 then _w = _w - self._padding.l - self._padding.r end
     local _h = self._bounds.h
@@ -17,7 +18,6 @@ function PushUIFrames.UILabel:_resize()
 
     local _tw = self._textfs:GetWidth()
     local _th = self._textfs:GetHeight()
-    print("label w/h: ".._tw.."/".._th)
     self._textfs:SetWidth(_tw)
     self._textfs:SetHeight(_th)
     self.layer:SetWidth(_tw + self._padding.l + self._padding.r)

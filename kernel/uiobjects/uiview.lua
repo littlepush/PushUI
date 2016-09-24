@@ -3,8 +3,123 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-PushUIFrames.UIView = PushUIAPI.inhiert(PushUIFrames.UIObject)
+PushUIFrames._hiddenMainFrame = CreateFrame("Frame", "PushUIHiddenMainFrame")
+PushUIFrames._hiddenMainFrameHitmap = PushUIAPI.Map()
+PushUIFrames._hiddenMainFrame:SetScript("OnUpdate", function(...)
+    if PushUIFrames._hiddenMainFrameHitmap:size() == 0 then return end
 
+    PushUIFrames._hiddenMainFrameHitmap:for_each(function(_, view)
+        if view:is_hit() then
+            local x, y = GetCursorPosition(); 
+            view._event_dispatcher:fire_event("PushUIEventMouseMove", view, x, y)
+        end
+    end);
+end)
+
+
+PushUIFrames.UIView = PushUIAPI.inhiert()
+function PushUIFrames.UIView:destroy()
+    __destroyObjectOfType(self.type, self.layer)
+    self.type = nil
+    self.layer = nil
+    self.id = nil
+end
+function PushUIFrames.UIView:delay(sec, action)
+    if not action then return end
+    if sec <= 0 then action(self); return end
+    if not self._delay_timer then
+        self._delay_timer = PushUIAPI.Timer()
+    end
+    self._delay_timer:start(sec, function()
+        action(self)
+        self._delay_timer:stop()
+    end)
+end
+function PushUIFrames.UIView:is_hit()
+    if self._is_draging then return true end
+    return self.layer:IsMouseOver()
+end
+function PushUIFrames.UIView:enable_drag(enable)
+    self:set_user_interactive(enable)
+    if enable then
+        self:add_action_for_left_mouse_down("__puiViewMouseDown", function(event, self)
+            local x, y = GetCursorPosition()
+            self._is_draging = true
+            self._lastpos = {x, y}
+        end)
+        self:add_action_for_left_mouse_up("__puiViewMouseUp", function(event, self)
+            self._is_draging = false
+        end)
+        self:add_action_for_mouse_move("__puiViewMouseMove", function(event, self, x, y)
+            if self._is_draging == false then return end
+
+            local _dx = x - self._lastpos[1]
+            local _dy = y - self._lastpos[2]
+
+            local _x = self._save_x + _dx
+            local _y = self._save_y + _dy
+
+            self:set_position(_x, _y)
+            self._lastpos[1] = x
+            self._lastpos[2] = y
+        end)
+    else
+        self:del_action_for_left_mouse_down("__puiViewMouseDown")
+        self:del_action_for_left_mouse_up("__puiViewMouseUp")
+        self:del_action_for_mouse_move("__puiViewMouseMove")
+    end
+end
+function PushUIFrames.UIView:add_action_for_mouse_in(key, func)
+    self._event_dispatcher:add_action("PushUIEventMouseIn", key, func)
+end
+function PushUIFrames.UIView:del_action_for_mouse_in(key)
+    self._event_dispatcher:del_action("PushUIEventMouseIn", key)
+end
+function PushUIFrames.UIView:add_action_for_mouse_out(key, func)
+    self._event_dispatcher:add_action("PushUIEventMouseOut", key, func)
+end
+function PushUIFrames.UIView:del_action_for_mouse_out(key)
+    self._event_dispatcher:del_action("PushUIEventMouseOut", key)
+end
+function PushUIFrames.UIView:add_action_for_left_mouse_down(key, func)
+    self._event_dispatcher:add_action("PushUIEventLeftMouseDown", key, func)
+end
+function PushUIFrames.UIView:del_action_for_left_mouse_down(key)
+    self._event_dispatcher:del_action("PushUIEventLeftMouseDown", key)
+end
+function PushUIFrames.UIView:add_action_for_left_mouse_up(key, func)
+    self._event_dispatcher:add_action("PushUIEventLeftMouseUp", key, func)
+end
+function PushUIFrames.UIView:del_action_for_left_mouse_up(key)
+    self._event_dispatcher:del_action("PushUIEventLeftMouseUp", key)
+end
+function PushUIFrames.UIView:add_action_for_right_mouse_down(key, func)
+    self._event_dispatcher:add_action("PushUIEventRightMouseDown", key, func)
+end
+function PushUIFrames.UIView:del_action_for_right_mouse_down(key)
+    self._event_dispatcher:del_action("PushUIEventRightMouseDown", key)
+end
+function PushUIFrames.UIView:add_action_for_right_mouse_up(key, func)
+    self._event_dispatcher:add_action("PushUIEventRightMouseUp", key, func)
+end
+function PushUIFrames.UIView:del_action_for_right_mouse_up(key)
+    self._event_dispatcher:del_action("PushUIEventRightMouseUp", key)
+end
+function PushUIFrames.UIView:add_action_for_mouse_move(key, func)
+    self._event_dispatcher:add_action("PushUIEventMouseMove", key, func)
+end
+function PushUIFrames.UIView:del_action_for_mouse_move(key)
+    self._event_dispatcher:del_action("PushUIEventMouseMove", key)
+end
+function PushUIFrames.UIView:set_user_interactive(enable)
+    self.layer:EnableMouse(enable)
+    self._enable_drag = enable
+    if ( enable ) then
+        PushUIFrames._hiddenMainFrameHitmap:set(self.id, self)
+    else
+        PushUIFrames._hiddenMainFrameHitmap:unset(self.id, self)
+    end
+end
 function PushUIFrames.UIView:set_backgroundColor(color_pack)
     self.layer:SetBackdropColor(PushUIColor.unpackColor(color_pack))
     self._backgroundColor = color_pack
@@ -141,17 +256,13 @@ function PushUIFrames.UIView:animation_with_duration(duration, animation, comple
     if not animation then return end
     if nil == duration or duration <= 0 then return end
 
-    print("in animation with duration")
     if self._doing_animation then
-        print("will cancel last animation")
         self._animationStage:stop()
     end
 
     self._doing_animation = true
 
-    print("allow to do the animation")
     animation(self)
-    print("after set the animation")
 
     self._animationStage:play(duration, function(self, completed)
         self._doing_animation = false
@@ -161,6 +272,9 @@ function PushUIFrames.UIView:animation_with_duration(duration, animation, comple
 end
 
 function PushUIFrames.UIView:c_str(parent, ...)
+    self._event_dispatcher = PushUIAPI.Dispatcher()
+    self._is_draging = false
+
     local _frame = __generateNewObjectByType("Frame")
     self.layer = _frame
     self.id = _frame.uiname
