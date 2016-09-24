@@ -4,37 +4,6 @@ local
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
 PushUIFrames.AnimationStage = PushUIAPI.inhiert()
-function PushUIFrames.AnimationStage:c_str(view)
-    print("In animation initialize")
-
-    if not view then 
-        print("No view to create animation")
-    end
-    if not view then return end
-    local _layer = view.layer
-    if not _layer then
-        print("the view is not a uiview")
-    end
-    if not view.layer then _layer = view end
-    self._relativeObj = view
-    self._relativelayer = _layer
-    self._agroup = _layer:CreateAnimationGroup()
-
-    if not self._agroup then
-        print("failed to craete animation group")
-    end
-
-    self._fade = nil
-    self._scale = nil
-    self._translation = nil
-    self._rotation = nil
-
-    self._snapshot = {}
-
-    self._agroup:SetScript("OnFinished", PushUIFrames.AnimationStage.__did_finish)
-    self._agroup:SetScript("OnStop", PushUIFrames.AnimationStage.__did_cancel)
-end
-
 function PushUIFrames.AnimationStage:__create_snapshot()
     self._snapshot.alpha = self._relativelayer:GetAlpha()
     self._snapshot.scale_h, self._snapshot.scale_v = self._relativelayer:GetScale()
@@ -51,10 +20,13 @@ function PushUIFrames.AnimationStage:__create_snapshot()
 end
 
 function PushUIFrames.AnimationStage:__finialized()
+    print("In finialized")
     if self._fade then
         self._relativelayer:SetAlpha(self._fade:GetToAlpha())
     end
+    print(self._relativelayer:GetScale())
     if self._scale then
+        print(self._scale:GetToScale())
         self._relativelayer:SetScale(self._scale:GetToScale())
     end
     if self._rotation and self._relativelayer.GetRotation then
@@ -74,14 +46,16 @@ function PushUIFrames.AnimationStage:__finialized()
     self._translation = nil
     self._rotation = nil
 end
-function PushUIFrames.AnimationStage:__did_finish()
-    self:__finialized()
-    if self._handle then self._handle(self._relativeObj, true) end
+function PushUIFrames.AnimationStage.__did_finish(ag)
+    print("finished")
+    ag.stage:__finialized()
+    if ag.stage._handle then ag.stage._handle(ag.stage._relativeObj, true) end
 end
 
-function PushUIFrames.AnimationStage:__did_cancel()
-    self:__finialized()
-    if self._handle then self._handle(self._relativeObj, false) end
+function PushUIFrames.AnimationStage.__did_cancel(ag)
+    print("canceled")
+    ag.stage:__finialized()
+    if ag.stage._handle then ag.stage._handle(ag.stage._relativeObj, false) end
 end
 
 function PushUIFrames.AnimationStage:play(duration, on_complete)
@@ -96,6 +70,8 @@ function PushUIFrames.AnimationStage:play(duration, on_complete)
     if self._translation then self._translation:SetDuration(duration) end
 
     if self._fade or self._scale or self._rotation or self._translation then
+        self._agroup:SetScript("OnFinished", PushUIFrames.AnimationStage.__did_finish)
+        self._agroup:SetScript("OnStop", PushUIFrames.AnimationStage.__did_cancel)
         self._agroup:Play()
     end
 end
@@ -154,6 +130,36 @@ function PushUIFrames.AnimationStage:set_translation(to_x, to_y)
     end
     self._translation._toX = to_x
     self._translation._toY = to_y
+end
+
+
+function PushUIFrames.AnimationStage:c_str(view)
+    print("In animation initialize")
+
+    if not view then 
+        print("No view to create animation")
+    end
+    if not view then return end
+    local _layer = view.layer
+    if not _layer then
+        print("the view is not a uiview")
+    end
+    if not view.layer then _layer = view end
+    self._relativeObj = view
+    self._relativelayer = _layer
+    self._agroup = _layer:CreateAnimationGroup()
+    self._agroup.stage = self
+
+    if not self._agroup then
+        print("failed to craete animation group")
+    end
+
+    self._fade = nil
+    self._scale = nil
+    self._translation = nil
+    self._rotation = nil
+
+    self._snapshot = {}
 end
 
 -- by Push Chen
