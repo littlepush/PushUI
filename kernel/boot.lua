@@ -36,7 +36,7 @@ _eventDispatcher:SetScript("OnEvent", function(_, event, ...)
         else
             local _f, _o = unpack(_eventsMap[event][i])
             -- print("Dispatch Event: ".._o:GetName().."/"..event)
-            _f(event, ...)
+            _f(_o, event, ...)
         end
     end
 

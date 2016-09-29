@@ -31,18 +31,27 @@ function PushUIFrames.UIView:delay(sec, action)
         self._delay_timer = PushUIAPI.Timer()
     end
     self._delay_timer:start(sec, function()
-        action(self)
         self._delay_timer:stop()
+        action(self)
     end)
 end
 function PushUIFrames.UIView:is_hit()
     if self._is_draging then return true end
+    local cs = self._children:size()
+    local _childhit = false
+    for i = 1, cs do
+        local _cv = self._children:objectAtIndex(i)
+        if _cv:is_hit() then _childhit = true; break end
+    end
+    if _childhit then return true end
     return self.layer:IsMouseOver()
 end
+
 function PushUIFrames.UIView:enable_drag(enable)
     self:set_user_interactive(enable)
     if enable then
         self:add_action_for_left_mouse_down("__puiViewMouseDown", function(event, self)
+            print("get left mouse down")
             local x, y = GetCursorPosition()
             self._is_draging = true
             self._lastpos = {x, y}
@@ -120,15 +129,15 @@ function PushUIFrames.UIView:set_user_interactive(enable)
         PushUIFrames._hiddenMainFrameHitmap:unset(self.id, self)
     end
 end
-function PushUIFrames.UIView:set_backgroundColor(color_pack)
-    self.layer:SetBackdropColor(PushUIColor.unpackColor(color_pack))
+function PushUIFrames.UIView:set_backgroundColor(color_pack, alpha)
+    self.layer:SetBackdropColor(PushUIColor.unpackColor(color_pack, alpha))
     self._backgroundColor = color_pack
 end
 function PushUIFrames.UIView:backgroundColor()
     return self._backgroundColor
 end
-function PushUIFrames.UIView:set_borderColor(color_pack)
-    self.layer:SetBackdropBorderColor(PushUIColor.unpackColor(color_pack))
+function PushUIFrames.UIView:set_borderColor(color_pack, alpha)
+    self.layer:SetBackdropBorderColor(PushUIColor.unpackColor(color_pack, alpha))
     self._borderColor = color_pack
 end
 function PushUIFrames.UIView:borderColor()
@@ -170,20 +179,31 @@ function PushUIFrames.UIView:set_gradientColor(from_color, to_color, v_or_h)
         PushUIColor.unpackColor(from_color)
         )
 end
+
+function PushUIFrames.UIView:redraw()
+    -- Override to do something
+end
+
 function PushUIFrames.UIView:set_width(w)
     self.layer:SetWidth(w)
+    self:redraw()
 end
 function PushUIFrames.UIView:width()
     return self.layer:GetWidth()
 end
 function PushUIFrames.UIView:set_height(h)
     self.layer:SetHeight(h)
+    self:redraw()
 end
 function PushUIFrames.UIView:height()
     return self.layer:GetHeight()
 end
 function PushUIFrames.UIView:set_size(w, h)
     self.layer:SetSize(w, h)
+    self:redraw()
+end
+function PushUIFrames.UIView:size()
+    return self.layer:GetSize()
 end
 function PushUIFrames.UIView:set_archor_target(archor_obj, archor)
     if archor_obj then
@@ -280,6 +300,8 @@ function PushUIFrames.UIView:c_str(parent, ...)
     self.id = _frame.uiname
     self.type = type
     _frame.container = self
+
+    local _saved_parent = parent
     if parent == nil then parent = UIParent end
     if parent.layer then parent = parent.layer end
     _frame:SetParent(parent)
@@ -299,6 +321,13 @@ function PushUIFrames.UIView:c_str(parent, ...)
     self._backgroundColor = PushUIColor.white
     self._borderWidth = 1
     self._borderColor = PushUIColor.white
+
+    self._children = PushUIAPI.Array()
+
+    if _saved_parent and _saved_parent._children then
+        print("i have a father")
+        _saved_parent._children:push_back(self)
+    end
 end
 
 -- by Push Chen

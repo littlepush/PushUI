@@ -24,6 +24,19 @@ function PushUIAPI.inhiert(super_class)
         local _obj = {}
         _obj = PushUIAPI.__classCreate(_inhiertCls, _obj, ...)
         setmetatable(_obj, { __index = PushUIAPI._all_vtbl[_inhiertCls]} )
+        if super_class then
+            _obj.super = { child = _obj }
+            setmetatable(_obj.super, {
+                __index = function(t, k)
+                    local _ret = PushUIAPI._all_vtbl[super_class][k]
+                    if not _ret then return _ret end
+                    local _f = function(t, ...)
+                        _ret(t.child, ...)
+                    end
+                    return _f
+                end
+                })
+        end
         return _obj
     end
 

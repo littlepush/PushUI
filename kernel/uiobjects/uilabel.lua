@@ -5,8 +5,7 @@ local
 
 PushUIFrames.UILabel = PushUIAPI.inhiert(PushUIFrames.UIView)
 
-function PushUIFrames.UILabel:_resize()
-    print("resized been called")
+function PushUIFrames.UILabel:redraw()
     local _w = self._bounds.w
     if _w > 0 then _w = _w - self._padding.l - self._padding.r end
     local _h = self._bounds.h
@@ -31,7 +30,7 @@ end
 -- Text
 function PushUIFrames.UILabel:set_text(text)
     self._textfs:SetText(text)
-    self:_resize()
+    self:redraw()
 end
 function PushUIFrames.UILabel:text()
     return self._textfs:GetText()
@@ -56,7 +55,7 @@ function PushUIFrames.UILabel:set_padding(...)
     self._padding.r = r
     self._padding.t = t
     self._padding.b = b
-    self:_resize()
+    self:redraw()
 end
 function PushUIFrames.UILabel:padding()
     return unpack(self._padding)
@@ -66,12 +65,12 @@ end
 function PushUIFrames.UILabel:set_bounds(w, h)
     self._bounds.w = w
     self._bounds.h = h
-    self:_resize()
+    self:redraw()
 end
 function PushUIFrames.UILabel:set_wbounds(w)
     if nil == w then w = 0 end
     self._bounds.w = w
-    self:_resize()
+    self:redraw()
 end
 function PushUIFrames.UILabel:set_width(w)
     self:set_wbounds(w)
@@ -79,7 +78,7 @@ end
 function PushUIFrames.UILabel:set_hbounds(h)
     if nil == h then h = 0 end
     self._bounds.h = h
-    self:_resize()
+    self:redraw()
 end
 function PushUIFrames.UILabel:set_height(h)
     self:set_hbounds(h)
@@ -96,7 +95,7 @@ function PushUIFrames.UILabel:set_fontname(fname)
     if not fname then return end
     self._fontName = fname
     self._textfs:SetFont(self._fontName, self._fontSize, self._fontFlags)
-    self:_resize()
+    self:redraw()
 end
 function PushUIFrames.UILabel:fontname()
     return self._fontName
@@ -107,7 +106,7 @@ function PushUIFrames.UILabel:set_fontsize(size)
     if size <= 0 then return end
     self._fontSize = size
     self._textfs:SetFont(self._fontName, self._fontSize, self._fontFlags)
-    self:_resize()
+    self:redraw()
 end
 function PushUIFrames.UILabel.fontsize()
     return self._fontSize
@@ -117,7 +116,7 @@ end
 function PushUIFrames.UILabel:set_fontflag(flags)
     self._fontFlags = flags
     self._textfs:SetFont(self._fontName, self._fontSize, self._fontFlags)
-    self:_resize()
+    self:redraw()
 end
 function PushUIFrames.UILabel:fontfags()
     return self._fontFlags
@@ -138,7 +137,7 @@ function PushUIFrames.UILabel:set_maxline(lines)
     if nil == lines or lines <= 0 then lines = 999 end
     self._maxLine = lines
     self._textfs:SetMaxLines(lines)
-    self:_resize()
+    self:redraw()
 end
 function PushUIFrames.UILabel:maxline()
     return self._maxLine

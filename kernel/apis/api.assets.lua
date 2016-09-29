@@ -41,7 +41,7 @@ function PushUIAPI.Assets:set_current_value(value)
     self:valueChanged()
 end
 function PushUIAPI.Assets:update_on_event(event, ...)
-    if (self[event]) then self[event](...) end
+    if (self[event]) then self[event](self, ...) end
 end
 function PushUIAPI.Assets.new(...)
     local _obj = setmetatable({
@@ -51,7 +51,7 @@ function PushUIAPI.Assets.new(...)
         }, PushUIAPI.Assets)
     local _event_count = select("#", ...)
     for i = 1, _event_count do
-        PushUIRegisterEvent(select(i, ...), PushUIAPI.Assets, _obj.update_on_event)
+        PushUIRegisterEvent(select(i, ...), _obj, function(obj, event, ...) obj:update_on_event(event, ...) end)
     end
     return _obj
 end

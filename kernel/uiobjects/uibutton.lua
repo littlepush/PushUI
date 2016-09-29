@@ -6,6 +6,7 @@ local
 PushUIFrames.UIButton = PushUIAPI.inhiert(PushUIFrames.UIView)
 
 function PushUIFrames.UIButton:c_str(parent)
-    self.titleLabel = PushUIFrames.UILabel(self)
-    -- self.icon = PushUIFrames.UIImage(self)
+    self.icon = PushUIFrames.UIImage(self)
 end
+
+-- Push Chen

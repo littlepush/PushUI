@@ -44,12 +44,13 @@ PushUISize.FormatWithPadding = function(count, size, padding, max)
 end
 
 -- Color --
-function PushUIColor.unpackColor(color_pack)
+function PushUIColor.unpackColor(color_pack, alpha)
     local _r, _g, _b, _a = unpack(color_pack)
     if nil == _r then _r = 0 end
     if nil == _g then _g = 0 end
     if nil == _b then _b = 0 end
     if nil == _a then _a = 1 end
+    if nil ~= alpha then _a = alpha end
     return _r, _g, _b, _a
 end
 
