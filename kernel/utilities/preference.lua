@@ -66,6 +66,12 @@ PushUIColor.darkgray = {0.2, 0.2, 0.2}
 PushUIColor.silver = {0.8, 0.8, 0.8}
 PushUIColor.cyan = {0.14, 0.16, 0.19}
 PushUIColor.purple = {0.82, 0.47, 0.69}
+PushUIColor.disablegray = {0.23046875, 0.23046875, 0.23046875, 0.25}
+PushUIColor.disableborder = {0.53515625, 0.53515625, 0.53515625, 0.95}
+PushUIColor.lightgray = {0.23046875, 0.23046875, 0.23046875, 0.45}
+PushUIColor.lightborder = {0.53515625, 0.53515625, 0.53515625, 0.15}
+PushUIColor.highlightgray = {0.23046875, 0.23046875, 0.23046875, 0.65}
+PushUIColor.highlightborder = {0.53515625, 0.53515625, 0.53515625, 0.75}
 
 -- Alpha for different statue
 PushUIColor.alphaAvailable = 0.9

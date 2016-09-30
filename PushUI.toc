@@ -17,6 +17,7 @@ kernel\utilities\preference.lua
 kernel\utilities\animations.lua
 
 kernel\frames.lua
+kernel\uiobjects\puilayer.lua
 kernel\uiobjects\uiview.lua
 kernel\uiobjects\uilabel.lua
 kernel\uiobjects\uiimage.lua

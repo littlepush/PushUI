@@ -23,27 +23,6 @@ function __generateNewObjectByType(type)
         local _objPool = PushUIAPI.Pool(function()
             local _objectName = __generateNewObjectNameByType(type)
             local _obj = CreateFrame(type, _objectName)
-            _obj:SetScript("OnEnter", function(self)
-                self.container._event_dispatcher:fire_event("PushUIEventMouseIn", self.container) 
-            end)
-            _obj:SetScript("OnLeave", function(self)
-                self.container._event_dispatcher:fire_event("PushUIEventMouseOut", self.container)
-            end)
-            _obj:SetScript("OnMouseDown", function(self, button, ...)
-                if button == "LeftButton" then
-                    self.container._event_dispatcher:fire_event("PushUIEventLeftMouseDown", self.container)
-                elseif button == "RightButton" then
-                    self.container._event_dispatcher:fire_event("PushUIEventRightMouseDown", self.container)
-                end
-            end)
-            _obj:SetScript("OnMouseUp", function(self, button, ...)
-                if button == "LeftButton" then
-                    self.container._event_dispatcher:fire_event("PushUIEventLeftMouseUp", self.container)
-                elseif button == "RightButton" then
-                    self.container._event_dispatcher:fire_event("PushUIEventRightMouseUp", self.container)
-                end
-            end)
-
             _obj.uiname = _objectName
 
             _obj:SetBackdrop({

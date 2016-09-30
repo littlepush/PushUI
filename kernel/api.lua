@@ -31,12 +31,13 @@ function PushUIAPI.inhiert(super_class)
                     local _ret = PushUIAPI._all_vtbl[super_class][k]
                     if not _ret then return _ret end
                     local _f = function(t, ...)
-                        _ret(t.child, ...)
+                        return _ret(t.child, ...)
                     end
                     return _f
                 end
                 })
         end
+        if _obj.initialize then _obj.initialize(_obj) end
         return _obj
     end
 
@@ -171,8 +172,7 @@ end
 setmetatable(PushUIAPI.Array, {__call = function(_, ...) return PushUIAPI.Array.new(...) end})
 
 -- Map
-PushUIAPI.Map = {}
-PushUIAPI.Map.__index = PushUIAPI.Map
+PushUIAPI.Map = PushUIAPI.inhiert()
 function PushUIAPI.Map:set(key, value)
     if self.__storage[key] == nil then
         self.__size = self.__size + 1
@@ -212,11 +212,10 @@ function PushUIAPI.Map:for_each(enumfunc, ...)
 		enumfunc(k, v, ...)
 	end
 end
-function PushUIAPI.Map.new(...)
-    local _initMap = ... or {}
-    return setmetatable({__storage = _initMap, __size = 0}, PushUIAPI.Map)
+function PushUIAPI.Map:c_str()
+    self.__storage = {}
+    self.__size = 0
 end
-setmetatable(PushUIAPI.Map, {__call = function(_, ...) return PushUIAPI.Map.new(...) end})
 
 -- Pool
 PushUIAPI.Pool = {}

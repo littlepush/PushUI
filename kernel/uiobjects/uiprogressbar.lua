@@ -13,21 +13,21 @@ PushUIFrames.UIProgressBar.StyleHRL = "h-r-l"
 function PushUIFrames.UIProgressBar:c_str(parent)
     self._pblayer = PushUIFrames.UIView(self)
     self._pblayer:set_borderColor(PushUIColor.black, 0)
-    self._pblabel = PushUIFrames.UILabel(self)
+    -- self._pblabel = PushUIFrames.UILabel(self)
 
     self._min = 0
     self._max = 100
     self._value = 50
     self._pblayer:set_position(0, 0)
-    self._pblabel:set_position(0, 0)
-    self._pblabel:set_align("CENTER")
+    -- self._pblabel:set_position(0, 0)
+    -- self._pblabel:set_align("CENTER")
 
     self._direction = "v-b-t"   -- v-t-b, h-l-r, h-r-l
 end
 
 function PushUIFrames.UIProgressBar:redraw()
     self._pblayer:set_size(self:size())
-    self._pblabel:set_size(self:size())
+    -- self._pblabel:set_size(self:size())
 
     local _rate = self._value / (self._max - self._min)
 
@@ -71,12 +71,12 @@ function PushUIFrames.UIProgressBar:set_style(style)
     self:redraw()
 end
 
-function PushUIFrames.UIProgressBar:label()
-    return self._pblabel
-end
+-- function PushUIFrames.UIProgressBar:label()
+--     return self._pblabel
+-- end
 
-function PushUIFrames.UIProgressBar:set_tiptext(text)
-    self._pblabel:set_text(text)
-end
+-- function PushUIFrames.UIProgressBar:set_tiptext(text)
+--     self._pblabel:set_text(text)
+-- end
 
 -- Push Chen

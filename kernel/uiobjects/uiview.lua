@@ -3,27 +3,118 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-PushUIFrames._hiddenMainFrame = CreateFrame("Frame", "PushUIHiddenMainFrame")
-PushUIFrames._hiddenMainFrameHitmap = PushUIAPI.Map()
-PushUIFrames._hiddenMainFrame:SetScript("OnUpdate", function(...)
-    if PushUIFrames._hiddenMainFrameHitmap:size() == 0 then return end
+-- Mouse Event
+PushUIFrames._uiMap = PushUIAPI.Map()
+PushUIFrames._uiEnteredMap = PushUIAPI.Map()
+PushUIFrames._uiDownMap = PushUIAPI.Map()
+PushUIFrames.__uiaDispatcher:add_action("PUIEventMouseMove", "_", function(e, ...)
+    if PushUIFrames._uiMap:size() == 0 then return end
 
-    PushUIFrames._hiddenMainFrameHitmap:for_each(function(_, view)
-        if view:is_hit() then
-            local x, y = GetCursorPosition(); 
-            view._event_dispatcher:fire_event("PushUIEventMouseMove", view, x, y)
+    -- Check if moved out
+    local _templist = PushUIAPI.Array()
+    PushUIFrames._uiEnteredMap:for_each(function(id, view, ...)
+        if view:is_hit() or PushUIFrames._uiDownMap:contains(id) then 
+            view:on_event("PUIEventMouseMove", ...)
+        else
+            _templist:push_back(id)
+            view:on_event("PUIEventMouseLeave")
         end
-    end);
+    end, ...)
+    _templist:for_each(function(_, id)
+        PushUIFrames._uiEnteredMap:unset(id)
+    end)
+
+    -- Check if has any new enter
+    PushUIFrames._uiMap:for_each(function(id, view)
+        if PushUIFrames._uiEnteredMap:contains(id) then return end
+        if not view:is_hit() then return end
+        -- Add to new entered
+        PushUIFrames._uiEnteredMap:set(id, view)
+        view:on_event("PUIEventMouseEnter")
+    end)
+end)
+PushUIFrames.__uiaDispatcher:add_action("PUIEventMouseDown", "_", function(e, btn)
+    PushUIFrames._uiEnteredMap:for_each(function(id, view, ...)
+        PushUIFrames._uiDownMap:set(id, view)
+        view:on_event("PUIEventMouseDown", ...)
+    end, btn)
+end)
+PushUIFrames.__uiaDispatcher:add_action("PUIEventMouseUp", "_", function(e, btn)
+    PushUIFrames._uiDownMap:for_each(function(id, view, ...)
+        view:on_event("PUIEventMouseUp", ...)
+    end, btn)
+    PushUIFrames._uiDownMap:clear()
+end)
+PushUIFrames.__uiaDispatcher:add_action("PUIEventMouseWheel", "_", function(e, zoom)
+    PushUIFrames._uiEnteredMap:for_each(function(id, view, ...)
+        view:on_event("PUIEventMouseWheel", ...)
+    end, zoom)
 end)
 
 
+-- UIView
 PushUIFrames.UIView = PushUIAPI.inhiert()
-function PushUIFrames.UIView:destroy()
-    __destroyObjectOfType(self.type, self.layer)
-    self.type = nil
-    self.layer = nil
-    self.id = nil
+
+function PushUIFrames.UIView:c_str(parent, ...)
+    self._dispatcher = PushUIAPI.Dispatcher()
+    self._isMouseDown = false
+
+    local _layerParent = UIParent
+    if parent then
+        if parent.layer then
+            _layerParent = parent.layer
+        else
+            _layerParent = parent
+        end
+    end
+
+    self._layerObject = PushUIFrames.PUILayer(_layerParent)
+    self.layer = self._layerObject:object()
+    self.id = self._layerObject.id
+    self.layer.view = self;
+
+    self._save_archor = "TOPLEFT"
+    self._save_target_archor_obj = _layerParent
+    self._save_target_archor = "TOPLEFT"
+    self._save_x = 0
+    self._save_y = 0
+
+    self._animationStage = PushUIFrames.AnimationStage(self)
+    self._doing_animation = false
+
+    -- self._animation_duration = 0
+    -- self._current_animation_stage = self.id.."_animationStage"
+
+    self._backgroundColor = PushUIColor.white
+    self._borderWidth = 1
+    self._borderColor = PushUIColor.white
+
+    self._children = PushUIAPI.Array()
+
+    if parent and parent._children then
+        parent._children:push_back(self)
+    end
 end
+
+function PushUIFrames.UIView:set_user_interactive(enable)
+    if ( enable ) then
+        PushUIFrames._uiMap:set(self.id, self)
+    else
+        PushUIFrames._uiMap:unset(self.id)
+    end
+end
+
+function PushUIFrames.UIView:is_hit()
+    local cs = self._children:size()
+    local _childhit = false
+    for i = 1, cs do
+        local _cv = self._children:objectAtIndex(i)
+        if _cv:is_hit() then _childhit = true; break end
+    end
+    if _childhit then return true end
+    return self.layer:IsMouseOver()
+end
+
 function PushUIFrames.UIView:delay(sec, action)
     if not action then return end
     if sec <= 0 then action(self); return end
@@ -35,98 +126,58 @@ function PushUIFrames.UIView:delay(sec, action)
         action(self)
     end)
 end
-function PushUIFrames.UIView:is_hit()
-    if self._is_draging then return true end
-    local cs = self._children:size()
-    local _childhit = false
-    for i = 1, cs do
-        local _cv = self._children:objectAtIndex(i)
-        if _cv:is_hit() then _childhit = true; break end
-    end
-    if _childhit then return true end
-    return self.layer:IsMouseOver()
+
+local function PushUIFrames_UIView_onMouseDown(self)
+    local x, y = GetCursorPosition()
+    self._is_draging = true
+    self._lastpos = {x, y}
+end
+
+local function PushUIFrames_UIView_onMouseUp(self)
+    self._is_draging = false
+end
+
+local function PushUIFrames_UIView_onMouseMove(self, x, y)
+    if not self._is_draging then return end
+    local _dx = x - self._lastpos[1]
+    local _dy = y - self._lastpos[2]
+
+    local _x = self._save_x + _dx
+    local _y = self._save_y + _dy
+
+    self:set_position(_x, _y)
+    self._lastpos[1] = x
+    self._lastpos[2] = y
+end
+
+function PushUIFrames.UIView:on_event(event, ...)
+    self._dispatcher:fire_event(event, ...)
+end
+
+function PushUIFrames.UIView:add_action(event, key, func)
+    self._dispatcher:add_action(event, key, func)
+end
+
+function PushUIFrames.UIView:del_action(event, key)
+    self._dispatcher:del_action(event, key)
 end
 
 function PushUIFrames.UIView:enable_drag(enable)
-    self:set_user_interactive(enable)
     if enable then
-        self:add_action_for_left_mouse_down("__puiViewMouseDown", function(event, self)
-            print("get left mouse down")
-            local x, y = GetCursorPosition()
-            self._is_draging = true
-            self._lastpos = {x, y}
-        end)
-        self:add_action_for_left_mouse_up("__puiViewMouseUp", function(event, self)
-            self._is_draging = false
-        end)
-        self:add_action_for_mouse_move("__puiViewMouseMove", function(event, self, x, y)
-            if self._is_draging == false then return end
-
-            local _dx = x - self._lastpos[1]
-            local _dy = y - self._lastpos[2]
-
-            local _x = self._save_x + _dx
-            local _y = self._save_y + _dy
-
-            self:set_position(_x, _y)
-            self._lastpos[1] = x
-            self._lastpos[2] = y
-        end)
+        self:add_action("PUIEventMouseDown", "_", function(_, ...) PushUIFrames_UIView_onMouseDown(self, ...) end)
+        self:add_action("PUIEventMouseUp", "_", function(_, ...) PushUIFrames_UIView_onMouseUp(self, ...) end)
+        self:add_action("PUIEventMouseMove", "_", function(_, ...) PushUIFrames_UIView_onMouseMove(self, ...) end)
     else
-        self:del_action_for_left_mouse_down("__puiViewMouseDown")
-        self:del_action_for_left_mouse_up("__puiViewMouseUp")
-        self:del_action_for_mouse_move("__puiViewMouseMove")
+        self:del_action("PUIEventMouseDown", "_")
+        self:del_action("PUIEventMouseUp", "_")
+        self:del_action("PUIEventMouseMove", "_")
     end
 end
-function PushUIFrames.UIView:add_action_for_mouse_in(key, func)
-    self._event_dispatcher:add_action("PushUIEventMouseIn", key, func)
-end
-function PushUIFrames.UIView:del_action_for_mouse_in(key)
-    self._event_dispatcher:del_action("PushUIEventMouseIn", key)
-end
-function PushUIFrames.UIView:add_action_for_mouse_out(key, func)
-    self._event_dispatcher:add_action("PushUIEventMouseOut", key, func)
-end
-function PushUIFrames.UIView:del_action_for_mouse_out(key)
-    self._event_dispatcher:del_action("PushUIEventMouseOut", key)
-end
-function PushUIFrames.UIView:add_action_for_left_mouse_down(key, func)
-    self._event_dispatcher:add_action("PushUIEventLeftMouseDown", key, func)
-end
-function PushUIFrames.UIView:del_action_for_left_mouse_down(key)
-    self._event_dispatcher:del_action("PushUIEventLeftMouseDown", key)
-end
-function PushUIFrames.UIView:add_action_for_left_mouse_up(key, func)
-    self._event_dispatcher:add_action("PushUIEventLeftMouseUp", key, func)
-end
-function PushUIFrames.UIView:del_action_for_left_mouse_up(key)
-    self._event_dispatcher:del_action("PushUIEventLeftMouseUp", key)
-end
-function PushUIFrames.UIView:add_action_for_right_mouse_down(key, func)
-    self._event_dispatcher:add_action("PushUIEventRightMouseDown", key, func)
-end
-function PushUIFrames.UIView:del_action_for_right_mouse_down(key)
-    self._event_dispatcher:del_action("PushUIEventRightMouseDown", key)
-end
-function PushUIFrames.UIView:add_action_for_right_mouse_up(key, func)
-    self._event_dispatcher:add_action("PushUIEventRightMouseUp", key, func)
-end
-function PushUIFrames.UIView:del_action_for_right_mouse_up(key)
-    self._event_dispatcher:del_action("PushUIEventRightMouseUp", key)
-end
-function PushUIFrames.UIView:add_action_for_mouse_move(key, func)
-    self._event_dispatcher:add_action("PushUIEventMouseMove", key, func)
-end
-function PushUIFrames.UIView:del_action_for_mouse_move(key)
-    self._event_dispatcher:del_action("PushUIEventMouseMove", key)
-end
 function PushUIFrames.UIView:set_user_interactive(enable)
-    self.layer:EnableMouse(enable)
-    self._enable_drag = enable
     if ( enable ) then
-        PushUIFrames._hiddenMainFrameHitmap:set(self.id, self)
+        PushUIFrames._uiMap:set(self.id, self)
     else
-        PushUIFrames._hiddenMainFrameHitmap:unset(self.id, self)
+        PushUIFrames._uiMap:unset(self.id, self)
     end
 end
 function PushUIFrames.UIView:set_backgroundColor(color_pack, alpha)
@@ -289,45 +340,6 @@ function PushUIFrames.UIView:animation_with_duration(duration, animation, comple
         if not completed then return end
         if complete then complete(self) end
     end)
-end
-
-function PushUIFrames.UIView:c_str(parent, ...)
-    self._event_dispatcher = PushUIAPI.Dispatcher()
-    self._is_draging = false
-
-    local _frame = __generateNewObjectByType("Frame")
-    self.layer = _frame
-    self.id = _frame.uiname
-    self.type = type
-    _frame.container = self
-
-    local _saved_parent = parent
-    if parent == nil then parent = UIParent end
-    if parent.layer then parent = parent.layer end
-    _frame:SetParent(parent)
-
-    self._save_archor = "TOPLEFT"
-    self._save_target_archor_obj = parent
-    self._save_target_archor = "TOPLEFT"
-    self._save_x = 0
-    self._save_y = 0
-
-    self._animationStage = PushUIFrames.AnimationStage(self)
-    self._doing_animation = false
-
-    -- self._animation_duration = 0
-    -- self._current_animation_stage = self.id.."_animationStage"
-
-    self._backgroundColor = PushUIColor.white
-    self._borderWidth = 1
-    self._borderColor = PushUIColor.white
-
-    self._children = PushUIAPI.Array()
-
-    if _saved_parent and _saved_parent._children then
-        print("i have a father")
-        _saved_parent._children:push_back(self)
-    end
 end
 
 -- by Push Chen
