@@ -39,6 +39,8 @@ PushUIFrameActionBarLayout.HideEverything = function()
     ArtifactWatchBar:SetScript("OnShow", ArtifactWatchBar.Hide)
     ArtifactWatchBar:Hide()
 
+    HonorWatchBar:SetScript("OnShow", HonorWatchBar.Hide)
+    HonorWatchBar:Hide()
     -- OverrideActionBar
     local textureList = {
         "_BG","EndCapL","EndCapR",
