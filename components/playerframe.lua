@@ -27,3 +27,9 @@ PushUIAPI.RegisterEvent(
 
 PlayerFrame:SetScript("OnEvent", nil)
 PlayerFrame:Hide()
+
+for i = 1, 4 do
+    local _pmf = _G["PartyMemberFrame"..i]
+    _pmf:SetScript("OnShow", _pmf.Hide)
+    _pmf:Hide()
+end
