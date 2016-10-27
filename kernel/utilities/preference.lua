@@ -24,7 +24,7 @@ PushUISize.actionButtonPerLine = 12
 PushUISize.actionButtonPadding = 2
 
 -- Bottom Padding
-PushUISize.screenBottomPadding = 25
+PushUISize.screenBottomPadding = 35
 
 -- Size Calculate
 PushUISize.FormatWithPadding = function(count, size, padding, max)
@@ -107,11 +107,11 @@ PushUIColor.getColorByClass = function(unit)
 end
 
 -- Life Color
-PushUIColor.lifeColorDynamic = function(v, max, min)
-    local _p = v / (max - min) * 100;
+PushUIColor.lifeColorDynamic = function(unit, v, max)
+    local _p = v / max * 100;
     local _r, _g, _b;
     if _p >= 70 then
-        _r, _g, _b = unpack(PushUIColor.green)
+        _r, _g, _b = PushUIColor.getColorByClass(unit)
     elseif _p >= 35 and _p < 70 then
         _r, _g, _b = unpack(PushUIColor.orange)
     else

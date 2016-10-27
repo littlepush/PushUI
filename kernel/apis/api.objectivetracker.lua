@@ -318,7 +318,7 @@ PushUIAPI.BonusQuest._gainQuest = function()
             if IsQuestBounty(_questID) then break end
             if not IsQuestTask(_questID) then break end
             -- This is a world quest in Legion
-            if QuestMapFrame_IsQuestWorldQuest(_questID) then break end
+            --if QuestMapFrame_IsQuestWorldQuest(_questID) then break end
 
             local _isInArea, _isOnMap, _numObjectives, _taskName, _displayAsObjective = GetTaskInfo(_questID)
             if not _isInArea then break end
@@ -418,7 +418,8 @@ PushUIAPI.WorldQuest._gainQuest = function()
     local _tasks = GetTasksTable()
     for i = 1, #_tasks do
         local _wquestId = _tasks[i]
-        if (not IsQuestBounty(_wquestId)) and (IsQuestTask(_wquestId)) and (QuestMapFrame_IsQuestWorldQuest(_wquestId)) then
+        --if (not IsQuestBounty(_wquestId)) and (IsQuestTask(_wquestId)) and (QuestMapFrame_IsQuestWorldQuest(_wquestId)) then
+        if (not IsQuestBounty(_wquestId)) and (IsQuestTask(_wquestId)) then
         -- if ( _wquestId ) and IsWorldQuestWatched(_wquestId) and (not _tempQuestMap.Contains(_wquestId)) then
             repeat
                 local _isInArea, _isOnMap, _numObjectives, _taskName, _displayAsObjective = GetTaskInfo(_wquestId)

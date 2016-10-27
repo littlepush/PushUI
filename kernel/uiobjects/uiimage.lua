@@ -8,9 +8,15 @@ PushUIFrames.UIImage = PushUIAPI.inhiert(PushUIFrames.UIView)
 function PushUIFrames.UIImage:c_str(parent)
     self.imageLayer = self.layer:CreateTexture()
     self.imageLayer:SetAllPoints(self.layer)
+    self.imageLayer:SetTexCoord(0.1,0.9,0.1,0.9)
 
     self.imageLayer:SetNonBlocking(true)
     self._hasImage = false;
+end
+
+function PushUIFrames.UIImage:initialize()
+    self:set_backgroundColor(PushUIColor.black, 0)
+    self:set_borderColor(PushUIColor.black, 0)
 end
 
 function PushUIFrames.UIImage:set_image(image_texture)

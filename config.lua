@@ -8,8 +8,10 @@ local
 PushUIConfig.skinType = function(frame)
     PushUIStyle.BackgroundSolidFormat(
         frame,
-        0.23046875, 0.23046875, 0.23046875, 0.45,
-        0.53515625, 0.53515625, 0.53515625, 0.15
+        0, 0, 0, 0.4,
+        -- 0.23046875, 0.23046875, 0.23046875, 0.45,
+        0, 0, 0, 1
+        -- 0.53515625, 0.53515625, 0.53515625, 0.15
         )
 end
 PushUIConfig.skinHighlightType = function(frame)
@@ -26,14 +28,14 @@ PushUIConfig.skinTooltipType = function(frame)
         0.53515625, 0.53515625, 0.53515625, 0.15
         )
 end
-PushUIConfig.actionButtonBorderColor = PushUIColor.gray
+PushUIConfig.actionButtonBorderColor = PushUIColor.black
 
 -- Auto Scale when UI Resolution Changed.
 PushUIConfig.uiScaleAuto = true
 
 -- Action Bar Layout
 PushUIConfig.ActionBarGrid = {12, 3}
-PushUIConfig.ActionBarGridScale = 0.95
+PushUIConfig.ActionBarGridScale = 0.9
 
 -- A = ActionButton
 -- MBL = MultiBarBottomLeftButton
@@ -52,67 +54,6 @@ PushUIConfig.ActionBarGridLayout = {
 PushUIConfig.ActionBarGridPlacedCood = {}
 
 PushUIConfig.ActionBarFontSize = 8
-
--- Left Dock Container
-PushUIConfig.LeftDockContainer = {
-    enable = true,
-    side = "RIGHT",
-    height = PushUISize.blockNormalHeight,
-    name = "PushUIFramesLeftDockContainer", 
-    tintContainer = {
-        side = "RIGHT",
-        height = PushUISize.screenBottomPadding,
-        name = "PushUIFrameLeftTintContainer"
-    }
-}
-PushUIConfig.RightDockContainer = {
-    enable = true,
-    side = "LEFT",
-    height = PushUISize.blockNormalHeight,
-    name = "PushUIFramesRightDockContainer",
-    tintContainer = {
-        side = "LEFT",
-        height = PushUISize.screenBottomPadding,
-        name = "PushUIFrameRightTintContainer"
-    }
-}
-PushUIConfig.ChatFrameDock = {
-    container = "PushUIFramesLeftDockContainer",
-    tint = "PushUIFrameLeftTintContainer",
-    color = PushUIColor.yellow,
-    displayOnLoad = true,
-    width = 350
-}
-PushUIConfig.SkadaFrameDock = {
-    container = "PushUIFramesRightDockContainer",
-    tint = "PushUIFrameRightTintContainer",
-    color = PushUIColor.red,
-    color2 = PushUIColor.green,
-    color3 = PushUIColor.blue,
-    displayOnLoad = true,
-    width = 180
-}
-PushUIConfig.MinimapFrameDock = {
-    container = "PushUIFramesRightDockContainer",
-    tint = "PushUIFrameRightTintContainer",
-    color = PushUIColor.gray,
-    displayOnLoad = true, 
-    width = 150
-}
-PushUIConfig.PlayerInfoFrameDock = {
-    container = "PushUIFramesLeftDockContainer",
-    tint = "PushUIFrameLeftTintContainer",
-    color = PushUIColor.orange,
-    displayOnLoad = false,
-    width = 150
-}
-PushUIConfig.PlayerAssetsFrameDock = {
-    container = "PushUIFramesLeftDockContainer",
-    tint = "PushUIFrameLeftTintContainer",
-    color = PushUIColor.purple,
-    displayOnLoad = false,
-    pushAvailable = false
-}
 
 -- UnitFrame Hook
 PushUIConfig.PlayerFrameHook = {

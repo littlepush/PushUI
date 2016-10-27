@@ -35,7 +35,15 @@ function PushUIFrames.PUILayer:c_str(parent, ...)
     self._sublayers = PushUIAPI.Array()
     self._parentLayer = parent
 
-    if parent then self._internalLayer:SetParent(parent._internalLayer) end
+    if parent then
+        if parent._internalLayer then
+            self._internalLayer:SetParent(parent._internalLayer) 
+        elseif parent.layer then
+            self._internalLayer:SetParent(parent.layer)
+        else
+            self._internalLayer:SetParent(parent)
+        end
+    end
 
     -- The layer does not support user interactive
     self._userInteractive = false;

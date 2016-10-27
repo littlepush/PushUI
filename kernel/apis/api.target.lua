@@ -23,7 +23,7 @@ end
 PushUIAPI.TargetTargetHP = PushUIAPI.Assets("UNIT_TARGET", "UNIT_HEALTH")
 -- Default no target, so no target target
 PushUIAPI.TargetTargetHP:set_candisplay(false)
-PushUIAPI.TargetHP:add_displayChanged("PUSHUIAPI_TARGETTARGET_HP", function(can)
+PushUIAPI.TargetHP:add_displayChanged("PUSHUIAPI_TARGETTARGET_HP", function(_, can)
     PushUIAPI.TargetTargetHP:on_targetDisplayChanged(can)
 end)
 function PushUIAPI.TargetTargetHP:on_targetDisplayChanged(can)

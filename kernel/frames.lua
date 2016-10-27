@@ -6,6 +6,8 @@ local
 PushUIFrames.__countByType = PushUIAPI.Map()
 PushUIFrames.__objectPoolByType = PushUIAPI.Map()
 
+PushUIFrames.MainFrame = CreateFrame("Frame", "PUIMainFrame", UIParent)
+
 function __generateNewObjectNameByType(type)
     if PushUIFrames.__countByType:contains(type) == false then
         PushUIFrames.__countByType:set(type, 0)

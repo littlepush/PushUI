@@ -3,7 +3,6 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-
 -- Class
 PushUIAPI._all_vtbl = {}
 function PushUIAPI.__classCreate(cls_type, obj, ...)
@@ -400,6 +399,19 @@ local function __firsttime_default_handler(...)
 end
 -- Default player entering world event 
 PushUIRegisterEvent("PLAYER_ENTERING_WORLD", "PushUIEventCenterDefaultFirstTime", __firsttime_default_handler)
+
+PushUIAPI.PUSHUIEVENT_PLAYER_BEGIN_COMBAT = "PUSHUIEVENT_PLAYER_BEGIN_COMBAT"
+PushUIAPI.PUSHUIEVENT_PLAYER_END_COMBAT = "PUSHUIEVENT_PLAYER_END_COMBAT"
+local function __quit_combat_handler(...)
+    print("end combat")
+    PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_PLAYER_END_COMBAT)
+end
+local function __in_combat_handler(...)
+    print("begin combat")
+    PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_PLAYER_BEGIN_COMBAT)
+end
+PushUIRegisterEvent("PLAYER_REGEN_ENABLED", "PushUIEventQuitCombat", __quit_combat_handler)
+PushUIRegisterEvent("PLAYER_REGEN_DISABLED", "PushUIEventInCombat", __in_combat_handler)
 
 -- by Push Chen
 -- twitter: @littlepush

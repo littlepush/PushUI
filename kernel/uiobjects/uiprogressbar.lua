@@ -31,7 +31,6 @@ function PushUIFrames.UIProgressBar:redraw()
 
     local _rate = self._value / (self._max - self._min)
 
-    print("Direction is: "..self._direction)
     if self._direction == "v-b-t" then
         self._pblayer:set_height(self:height() * _rate)
         self._pblayer:set_position(0, -self:height() * (1 - _rate))

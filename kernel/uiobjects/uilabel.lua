@@ -3,29 +3,9 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-PushUIFrames.PUILabelLayer = PushUIAPI.inhiert()
+PushUIFrames.UILabel = PushUIAPI.inhiert(PushUIFrames.UIView)
 
-function PushUIFrames.PUILabelLayer:c_str(parent)
-    if parent then
-        self._textfs = parent:object():CreateFontString()
-    else
-        print("Cannot create a label layer without basic layer")
-    end
-    self._padding = {l = 0, r = 0, t = 0, b = 0}
-    self._bounds = {w = 0, h = 0}
-    self._fontName = "Fonts\\ARIALN.TTF"
-    self._fontSize = 14
-    self._fontFlags = nil
-    self._fontColor = PushUIColor.white
-    self._maxLine = 1
-    self._align = "LEFT"
-
-    self._textfs:SetFont(self._fontName, self._fontSize, self._fontFlags)
-    self._textfs:SetJustifyH(self._align)
-    self._textfs:SetTextColor(PushUIColor.unpackColor(self._fontColor))
-end
-
-function PushUIFrames.PUILabelLayer:redraw()
+function PushUIFrames.UILabel:redraw()
     local _w = self._bounds.w
     if _w > 0 then _w = _w - self._padding.l - self._padding.r end
     local _h = self._bounds.h
@@ -48,16 +28,16 @@ function PushUIFrames.PUILabelLayer:redraw()
 end
 
 -- Text
-function PushUIFrames.PUILabelLayer:set_text(text)
+function PushUIFrames.UILabel:set_text(text)
     self._textfs:SetText(text)
     self:redraw()
 end
-function PushUIFrames.PUILabelLayer:text()
+function PushUIFrames.UILabel:text()
     return self._textfs:GetText()
 end
 
 -- Padding
-function PushUIFrames.PUILabelLayer:set_padding(...)
+function PushUIFrames.UILabel:set_padding(...)
     local l, r, t, b
     if select("#", ...) == 1 then
         -- Only one, set all to this
@@ -77,112 +57,121 @@ function PushUIFrames.PUILabelLayer:set_padding(...)
     self._padding.b = b
     self:redraw()
 end
-function PushUIFrames.PUILabelLayer:padding()
+function PushUIFrames.UILabel:padding()
     return unpack(self._padding)
 end
 
 -- Bounds
-function PushUIFrames.PUILabelLayer:set_bounds(w, h)
+function PushUIFrames.UILabel:set_bounds(w, h)
     self._bounds.w = w
     self._bounds.h = h
     self:redraw()
 end
-function PushUIFrames.PUILabelLayer:set_wbounds(w)
+function PushUIFrames.UILabel:set_wbounds(w)
     if nil == w then w = 0 end
     self._bounds.w = w
     self:redraw()
 end
-function PushUIFrames.PUILabelLayer:set_width(w)
+function PushUIFrames.UILabel:set_width(w)
     self:set_wbounds(w)
 end
-function PushUIFrames.PUILabelLayer:set_hbounds(h)
+function PushUIFrames.UILabel:set_hbounds(h)
     if nil == h then h = 0 end
     self._bounds.h = h
     self:redraw()
 end
-function PushUIFrames.PUILabelLayer:set_height(h)
+function PushUIFrames.UILabel:set_height(h)
     self:set_hbounds(h)
 end
-function PushUIFrames.PUILabelLayer:set_size(w, h)
+function PushUIFrames.UILabel:set_size(w, h)
     self:set_bounds(w, h)
 end
-function PushUIFrames.PUILabelLayer:bounds()
+function PushUIFrames.UILabel:bounds()
     return unpack(self._bounds)
 end
 
 -- Font Name
-function PushUIFrames.PUILabelLayer:set_fontname(fname)
+function PushUIFrames.UILabel:set_fontname(fname)
     if not fname then return end
     self._fontName = fname
     self._textfs:SetFont(self._fontName, self._fontSize, self._fontFlags)
     self:redraw()
 end
-function PushUIFrames.PUILabelLayer:fontname()
+function PushUIFrames.UILabel:fontname()
     return self._fontName
 end
 
 -- Font Size
-function PushUIFrames.PUILabelLayer:set_fontsize(size)
+function PushUIFrames.UILabel:set_fontsize(size)
     if size <= 0 then return end
     self._fontSize = size
     self._textfs:SetFont(self._fontName, self._fontSize, self._fontFlags)
     self:redraw()
 end
-function PushUIFrames.PUILabelLayer.fontsize()
+function PushUIFrames.UILabel.fontsize()
     return self._fontSize
 end
 
 -- Font Flags
-function PushUIFrames.PUILabelLayer:set_fontflag(flags)
+function PushUIFrames.UILabel:set_fontflag(flags)
     self._fontFlags = flags
     self._textfs:SetFont(self._fontName, self._fontSize, self._fontFlags)
     self:redraw()
 end
-function PushUIFrames.PUILabelLayer:fontfags()
+function PushUIFrames.UILabel:fontfags()
     return self._fontFlags
 end
 
 -- Font Color
-function PushUIFrames.PUILabelLayer:set_fontcolor(color)
+function PushUIFrames.UILabel:set_fontcolor(color)
     if not color then return color end
     self._fontColor = color
     self._textfs:SetTextColor(PushUIColor.unpackColor(color))
 end
-function PushUIFrames.PUILabelLayer.fontcolor()
+function PushUIFrames.UILabel.fontcolor()
     return self._fontColor
 end
 
 -- MaxLine
-function PushUIFrames.PUILabelLayer:set_maxline(lines)
+function PushUIFrames.UILabel:set_maxline(lines)
     if nil == lines or lines <= 0 then lines = 999 end
     self._maxLine = lines
     self._textfs:SetMaxLines(lines)
     self:redraw()
 end
-function PushUIFrames.PUILabelLayer:maxline()
+function PushUIFrames.UILabel:maxline()
     return self._maxLine
 end
 
 -- Align
-function PushUIFrames.PUILabelLayer:set_align(align)
+function PushUIFrames.UILabel:set_align(align)
     if align ~= "LEFT" and align ~= "CENTER" and align ~= "RIGHT" then return end
     self._align = align
     self._textfs:SetJustifyH(align)
 end
-function PushUIFrames.PUILabelLayer:align()
+function PushUIFrames.UILabel:align()
     return self._align
 end
 
--- UILabel
-PushUIFrames.UILabel = PushUIAPI.inhiert(PushUIFrames.UIView)
-
 function PushUIFrames.UILabel:c_str(parent)
-    self.labellayer = PushUIFrames.PUILabelLayer(parent.layer)
+    self._textfs = self.layer:CreateFontString()
+    self._padding = {l = 0, r = 0, t = 0, b = 0}
+    self._bounds = {w = 0, h = 0}
+    self._fontName = "Fonts\\ARIALN.TTF"
+    self._fontSize = 14
+    self._fontFlags = nil
+    self._fontColor = PushUIColor.white
+    self._maxLine = 1
+    self._align = "LEFT"
+
+    self._textfs:SetFont(self._fontName, self._fontSize, self._fontFlags)
+    self._textfs:SetJustifyH(self._align)
+    self._textfs:SetTextColor(PushUIColor.unpackColor(self._fontColor))
 end
 
-function PushUIFrames.UILabel:redraw()
-    self.super:redraw()
-    self.labellayer:redraw()
+function PushUIFrames.UILabel:initialize()
+    self:set_backgroundColor(PushUIColor.black, 0)
+    self:set_borderColor(PushUIColor.black, 0)
 end
 
 -- by Push Chen

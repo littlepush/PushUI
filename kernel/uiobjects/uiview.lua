@@ -105,13 +105,13 @@ function PushUIFrames.UIView:set_user_interactive(enable)
 end
 
 function PushUIFrames.UIView:is_hit()
-    local cs = self._children:size()
-    local _childhit = false
-    for i = 1, cs do
-        local _cv = self._children:objectAtIndex(i)
-        if _cv:is_hit() then _childhit = true; break end
-    end
-    if _childhit then return true end
+    -- local cs = self._children:size()
+    -- local _childhit = false
+    -- for i = 1, cs do
+    --     local _cv = self._children:objectAtIndex(i)
+    --     if _cv:is_hit() then _childhit = true; break end
+    -- end
+    -- if _childhit then return true end
     return self.layer:IsMouseOver()
 end
 
@@ -297,7 +297,7 @@ function PushUIFrames.UIView:set_alpha(alpha)
     if self._doing_animation then
         self._animationStage:set_fade(alpha)
     else
-        self.layer:SetAlhpa(alpha)
+        self.layer:SetAlpha(alpha)
     end
 end
 function PushUIFrames.UIView:alpha()

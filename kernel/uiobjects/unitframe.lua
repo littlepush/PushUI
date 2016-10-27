@@ -3,525 +3,334 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
+local _size = 24
+local AConfig = {
+    width = _size,
+    height = _size,
+    pbHeight = _size * 0.15,
+    countfs = _size * 0.5,
+    flag = "OUTLINE",
+    buffColor = PushUIColor.blue,
+    debuffColor = PushUIColor.red
+}
 
-PushUIFrames.UnitFrame = {}
+PushUIFrames.AuraButton = PushUIAPI.inhiert(PushUIFrames.UIView)
+function PushUIFrames.AuraButton:c_str(...)
+    self.icon = PushUIFrames.UIImage(self)
+    self.progress = PushUIFrames.UIProgressBar(self)
+    self.count = PushUIFrames.UILabel(self)
+    self.tip = PushUIFrames.UILabel(self)
 
--- A unit frame contains the following parts:
--- HookBar: The background empty hookbar to response for the mouse click
--- LifeBar: The life info status bar
--- Percentage: The percentage of the life, a text
--- Name: The name of the unit
--- HealthValue: The detail health value of the unit
--- Auras: Buff and Debuff of the unit
--- PowerBar: Unit's power info
--- Resource Item.
-
-PushUIFrames.UnitFrame.CreateHookBar = function(unithook, config)
-    local _c = config
-    local _hb = CreateFrame(
-        "Button", 
-        unithook.name.."HookBar",
-        UIParent,
-        "SecureUnitButtonTemplate"
-        )
-    unithook.HookBar = _hb;
-
-    PushUIStyle.BackgroundSolidFormat(_hb, 0, 0, 0, 0, 0, 0, 0, 0)    
-
-    local _a = _c.anchorPoint or "TOPLEFT"
-    local _hbside = _c.displaySide or "CENTER"
-    local _atar = _c.anchorTarget or UIParent
-    local _pos = _c.position or {x = -325, y = -95}
-    local _size = _c.size or {w = 200, h = 40}
-
-    _hb:SetWidth(_size.w)
-    _hb:SetHeight(_size.h)
-    _hb:SetPoint(_a, _atar, _hbside, _pos.x, _pos.y)
-
-    _hb.unit = unithook.object
-    _hb:SetAttribute("unit", _hb.unit)
-    _hb:SetAttribute("type", "target")
-
-    if unithook.object == "player" or unithook.object == "target" then
-        _hb:EnableMouse(true)
-        if unithook.object == "player" then
-            _hb:SetScript("OnMouseDown", function(self, button)
-                    if button == "RightButton" then
-                        ToggleDropDownMenu(1, nil, PlayerFrameDropDown, _hb, 0, 0)
-                    end
-                end
-            )
-        else
-            _hb:SetScript("OnMouseDown", function(self, button)
-                    if button == "RightButton" then
-                        ToggleDropDownMenu(1, nil, TargetFrameDropDown, _hb, 0, 0)
-                    end
-                end
-            )
-        end
-    end
-
-    -- Player's hookbar will always be displayed, otherwise, register for display status change
-    if unithook.object ~= "player" then
-        _hb._EventForDisplayStatus = function(status)
-            if status then _hb:Show() else _hb:Hide() end
-        end
-        unithook.apiObject.RegisterForDisplayStatus(_hb, _hb._EventForDisplayStatus)
-        _hb:Hide()
-    end
+    self.aura = nil
 end
+function PushUIFrames.AuraButton:initialize()
+    self:set_backgroundColor(PushUIColor.black, 0)
+    self:set_borderColor(PushUIColor.black, 0)
 
-PushUIFrames.UnitFrame.CreateLifeBar = function(unithook, config)
-    local _c = config
-    _c.targets = {
-        unithook.apiObject
-    }
-    local _orientation = _c.orientation or "HORIZONTAL"
-    local _lb = PushUIFrames.ProgressBar.Create(
-        unithook.name.."LifeBar", 
-        unithook.HookBar, 
-        _c, 
-        _orientation)
-    unithook.LifeBar = _lb
-    -- Set Background
-    if _c.background then
-        _c.background(_lb)
-    end
+    self.icon:set_size(AConfig.width, AConfig.height)
+    self.icon:set_position()
 
-    local _a = _c.anchorPoint or "TOPRIGHT"
-    local _pos = _c.position or {x = 0, y = -35}
-    local _size = _c.size or {w = 200, h = 5}
+    self.progress:set_size(AConfig.width, AConfig.pbHeight)
+    self.progress:set_style("h-l-r")
+    self.progress:set_position(0, -AConfig.height)
 
-    _lb:SetWidth(_size.w - 2)
-    _lb:SetHeight(_size.h - 2)
-    _lb:SetPoint(_a, unithook.HookBar, "TOPLEFT", _pos.x + 1, _pos.y - 1)
+    self.count:set_fontname("Interface\\AddOns\\PushUI\\meida\\fontn.ttf")
+    self.count:set_fontsize(AConfig.countfs)
+    self.count:set_fontflag(AConfig.flag)
+    self.count:set_archor("TOPRIGHT")
+    self.count:set_archor_target(self.layer, "TOPRIGHT")
+    self.count:set_position(-2, -2)
 
-    if _c.reverse then
-        _lb:SetReverseFill()
-    end
-    _lb._ForceUpdate = function()
-        _lb.OnDisplayStatusChanged(unithook.apiObject, unithook.apiObject.CanDisplay)
-    end
+    self:set_size(AConfig.width, AConfig.height + AConfig.pbHeight)
+    self:set_archor("TOPLEFT")
 
-    -- Player's hookbar will always be displayed, otherwise, register for display status change
-    if unithook.object ~= "player" then
-        _lb._EventForDisplayStatus = function(status)
-            if status then _lb:Show(); _lb._ForceUpdate() else _lb:Hide() end
+    -- Tip
+    self.tip:set_fontsize(14)
+    self.tip:set_archor("TOPLEFT")
+    self.tip:set_archor_target(self.layer, "BOTTOMLEFT")
+    self.tip:set_position(0, -2)
+    self.tip:set_padding(2)
+    self.tip:set_maxline(99)
+    self.tip:set_alpha(0)
+
+    self:add_action("PUIEventMouseEnter", "move_in", function()
+        self.tip:animation_with_duration(0.3, function(tip)
+            tip:set_alpha(1)
+        end)
+    end)
+    self:add_action("PUIEventMouseLeave", "move_out", function()
+        self.tip:animation_with_duration(0.3, function(tip)
+            tip:set_alpha(0)
+        end)
+    end)
+    self:add_action("PUIEventMouseUp", "up", function()
+        if not self.aura and self.aura.isbuff then
+            CancelUnitBuff("player", self.aura.name)
         end
-        unithook.apiObject.RegisterForDisplayStatus(_lb, _lb._EventForDisplayStatus)
-        _lb:Hide()
-    end
+    end)
+    self:set_user_interactive(true)
 end
+function PushUIFrames.AuraButton:set_aura(aura)
+    self.aura = aura;
+    self.icon:set_image(aura.icon)
 
-PushUIFrames.UnitFrame.CreatePercentage = function(unithook, config)
-    local _c = config
-    local _pf = CreateFrame(
-        "Frame", 
-        unithook.name.."Percentage", 
-        unithook.HookBar)
-    unithook.Percentage = _pf
-
-    local _fs = _pf:CreateFontString(_pf:GetName().."_Text")
-    _pf.text = _fs
-
-    local _fn = _c.fontName or "Interface\\AddOns\\PushUI\\media\\fontn.ttf"
-    local _fsize = _c.size or 14
-    local _foutline = _c.outline or "OUTLINE"
-
-    _fs:SetFont(_fn, _fsize, _foutline)
-
-    -- align
-    local _align = _c.align or "CENTER"
-    _fs:SetJustifyH(_align)
-
-    local _w = unithook.HookBar:GetWidth()
-    local _h = _fsize
-    _pf:SetWidth(_w)
-    _pf:SetHeight(_h)
-
-    local _a = _c.anchorPoint or "TOPRIGHT"
-    local _pos = _c.position or {x = PushUISize.padding, y = PushUISize.padding}
-    local _hbside = _c.displaySide or "TOPLEFT"
-    _pf:SetPoint(_a, unithook.HookBar, _hbside, _pos.x, _pos.y)
-    _fs:SetAllPoints(_pf)
-
-    _fs.OnValueChange = function()
-        local _afk = UnitIsAFK(unithook.object)    
-        local _pv = unithook.apiObject.Value() / unithook.apiObject.MaxValue() * 100
-        if _afk then
-            _fs:SetText("<AFK>"..("%.1f"):format(_pv).."%")
-        else
-            _fs:SetText(("%.1f"):format(_pv).."%")
-        end
-        _fs:SetTextColor(unpack(_c.color(
-                unithook.apiObject.Value(),
-                unithook.apiObject.MaxValue(),
-                unithook.apiObject.MinValue(),
-                UnitClass(unithook.object)
-            )))
-    end
-    unithook.apiObject.RegisterForValueChanged(_fs, _fs.OnValueChange)
-
-    -- Init the value
-    _pf._ForceUpdate = _fs.OnValueChange
-
-    -- Player's hookbar will always be displayed, otherwise, register for display status change
-    if unithook.object ~= "player" then
-        _pf._EventForDisplayStatus = function(status)
-            if status then _pf:Show(); _pf._ForceUpdate() else _pf:Hide() end
-        end
-        unithook.apiObject.RegisterForDisplayStatus(_pf, _pf._EventForDisplayStatus)
-        _pf:Hide()
-    end
-end
-
-PushUIFrames.UnitFrame.CreateName = function(unithook, config)
-    local _c = config
-    local _nf = CreateFrame(
-        "Frame", 
-        unithook.name.."Name", 
-        unithook.HookBar)
-    unithook.Name = _nf
-
-    local _fs = _nf:CreateFontString()
-
-    local _fn = _c.fontName or "Fonts\\FRIZQT__.TTF"
-    local _fsize = _c.size or 14
-    local _foutline = _c.outline or "OUTLINE"
-
-    _fs:SetFont(_fn, _fsize, _foutline)
-
-    -- align
-    local _align = _c.align or "CENTER"
-    _fs:SetJustifyH(_align)
-
-    local _w = unithook.HookBar:GetWidth()
-    local _h = _fsize
-    _nf:SetWidth(_w)
-    _nf:SetHeight(_h)
-
-    local _a = _c.anchorPoint or "TOPRIGHT"
-    local _pos = _c.position or {x = PushUISize.padding, y = PushUISize.padding}
-    local _hbside = _c.displaySide or "TOPLEFT"
-    _nf:SetPoint(_a, unithook.HookBar, _hbside, _pos.x, _pos.y)
-    _fs:SetAllPoints(_nf)
-
-    _fs.OnValueChange = function()
-        _fs:SetText(UnitName(unithook.object))
-        _fs:SetTextColor(unpack(_c.color(
-                unithook.apiObject.Value(),
-                unithook.apiObject.MaxValue(),
-                unithook.apiObject.MinValue(),
-                UnitClass(unithook.object)
-            )))
-    end
-    unithook.apiObject.RegisterForValueChanged(_fs, _fs.OnValueChange)
-
-    -- Init the value
-    _nf._ForceUpdate = _fs.OnValueChange
-
-    -- Player's hookbar will always be displayed, otherwise, register for display status change
-    if unithook.object ~= "player" then
-        _nf._EventForDisplayStatus = function(status)
-            if status then _nf:Show(); _nf._ForceUpdate() else _nf:Hide() end
-        end
-        unithook.apiObject.RegisterForDisplayStatus(_nf, _nf._EventForDisplayStatus)
-        _nf:Hide()
-    end
-end
-
-PushUIFrames.UnitFrame.CreateHealthValue = function(unithook, config)
-    local _c = config
-    local _hf = CreateFrame(
-        "Frame",
-        unithook.name.."HealthValue",
-        unithook.HookBar
-        )
-    unithook.HealthValue = _hf
-
-    local _fs = _hf:CreateFontString()
-
-    local _fn = _c.fontName or "Interface\\AddOns\\PushUI\\media\\fontn.ttf"
-    local _fsize = _c.size or 14
-    local _foutline = _c.outline or "OUTLINE"
-
-    _fs:SetFont(_fn, _fsize, _foutline)
-
-    -- align
-    local _align = _c.align or "CENTER"
-    _fs:SetJustifyH(_align)
-
-    _hf:SetWidth(_hf:GetParent():GetWidth())
-    _hf:SetHeight(_fsize)
-
-    local _a = _c.anchorPoint or "TOPRIGHT"
-    local _pos = _c.position or {x = PushUISize.padding, y = PushUISize.padding}
-    local _hbside = _c.displaySide or "TOPLEFT"
-    _hf:SetPoint(_a, unithook.HookBar, _hbside, _pos.x, _pos.y)
-    _fs:ClearAllPoints()
-    _fs:SetAllPoints(_hf)
-
-    _fs.OnValueChange = function()
-        local _hv = UnitHealth(unithook.object)
-        if _hv > 1000000 then
-            _hv = ("%.2f"):format(_hv / 1000000).."m"
-        elseif _hv > 1000 then
-            _hv = ("%.2f"):format(_hv / 1000).."k"
-        end
-        _fs:SetText(_hv)
-        _fs:SetTextColor(unpack(_c.color(
-                unithook.apiObject.Value(),
-                unithook.apiObject.MaxValue(),
-                unithook.apiObject.MinValue(),
-                UnitClass(unithook.object)
-            )))
-    end
-    -- Init the value
-    _hf._ForceUpdate = _fs.OnValueChange
-
-    -- Player's hookbar will always be displayed, otherwise, register for display status change
-    if unithook.object ~= "player" then
-        _hf._EventForDisplayStatus = function(status)
-            if status then _hf:Show(); _hf._ForceUpdate() else _hf:Hide() end
-        end
-        unithook.apiObject.RegisterForDisplayStatus(_hf, _hf._EventForDisplayStatus)
-        _hf:Hide()
-    end
-end
-
-PushUIFrames.UnitFrame.__onAuraClick = function(btn)
-    local _aura = btn._auraInfo
-    if not _aura.isbuff then return end
-    CancelUnitBuff("player", _aura.name)
-end
-
-PushUIFrames.UnitFrame.__onAuraUpdate = function(btn, time)
-    if not btn:IsShown() then return end
-
-    local _aura = btn._auraInfo
-    if _aura == nil then return end
-
-    local _pb = btn._pb
-
-    if _aura.expirationTime ~= 0 then
-        _pb:SetMinMaxValues(0, _aura.duration)
-        _pb:SetValue(_aura.expirationTime - GetTime())
+    if aura.isbuff then
+        self.progress:set_barColor(AConfig.buffColor)
     else
-        _pb:SetMinMaxValues(0, 1)
-        _pb:SetValue(1)
+        self.progress:set_barColor(AConfig.debuffColor)
+    end
+    if aura.expirationTime ~= 0 then
+        self.progress:set_max(aura.duration)
+        self.progress:set_value(aura.expirationTime - GetTime())
+    else
+        self.progress:set_max(1)
+        self.progress:set_value(1)
+    end
+
+    if aura.count ~= 0 then
+        self.count:set_text(aura.count)
+    else 
+        self.count:set_text("")
+    end
+
+    self.tip:set_text(aura.name)
+end
+function PushUIFrames.AuraButton:refresh_progress()
+    if aura.expirationTime ~= 0 then
+        self.progress:set_value(aura.expirationTime - GetTime())
     end
 end
+local _auraButtonPool = PushUIAPI.Pool(function() return PushUIFrames.AuraButton(); end)
 
-PushUIFrames.UnitFrame.__onUpdateAuraList = function(btnTable, unithook, config)
-    local _auraCount = unithook.auraApiObject.Count()
-    local _btnCount = #btnTable
+PushUIFrames.UnitFrame = PushUIAPI.inhiert()
+function PushUIFrames.UnitFrame:c_str( assets, obj_id, auras_assets )
+    self.apiAssets = assets
+    self.objectID = obj_id
+    self.aurasAssets = auras_assets
 
-    local _btnWidth = 20
-    local _btnHeight = 20
-    if config.size then _btnWidth = config.size.w; _btnHeight = config.size.h end
+    self.hookbar = PushUIFrames.UIView()
+    self.name = PushUIFrames.UILabel(self.hookbar)
+    self.healthBar = PushUIFrames.UIProgressBar(self.hookbar)
+    self.healthMaxValue = PushUIFrames.UILabel(self.hookbar)
+    self.healthPercentage = PushUIFrames.UILabel(self.hookbar)
+    self.auraPanel = PushUIFrames.UIView(self.hookbar)
+    self.buffGroup = PushUIAPI.Array()
+    self.debuffGroup = PushUIAPI.Array()
+end
 
-    for i = 1, _auraCount do
-        local _btn = nil
-        if i <= _btnCount then
-            _btn = btnTable[i]
+function PushUIFrames.UnitFrame:reset_auras()
+    self.buffGroup:for_each(function(_, auraBtn)
+        auraBtn:set_hidden(true)
+        _auraButtonPool:release(auraBtn)
+    end)
+    self.buffGroup:clear()
+    self.debuffGroup:for_each(function(_, auraBtn)
+        auraBtn:set_hidden(true)
+        _auraButtonPool:release(auraBtn)
+    end)
+    self.debuffGroup:clear()
+end
+
+function PushUIFrames.UnitFrame:initialize()
+    self.apiAssets:add_displayChanged("display_status", function(_, can)
+        if not can then 
+            self.hookbar:set_hidden(true) 
         else
-            -- Create new button
-            _btn = PushUIFrames.Button.Create(unithook.name.."AurasButton"..i, unithook.Auras)
-            btnTable[_btnCount + 1] = _btn
-            _btnCount = _btnCount + 1
-            _btn:SetWidth(_btnWidth)
-            _btn:SetHeight(_btnHeight)
-            PushUIConfig.skinType(_btn)
-            _btn:SetScript("OnClick", PushUIFrames.UnitFrame.__onAuraClick)
+            self.hookbar:set_hidden(false)
+        end
+    end)
+    self.apiAssets:add_valueChanged("value_changed", function(_, hpValue)
+        --hp/max_hp
+        self.name:set_text(UnitName(self.objectID))
+        self.healthBar:set_max(hpValue.max_hp)
+        self.healthBar:set_value(hpValue.hp)
+        self.healthMaxValue:set_text(hpValue.max_hp)
+        self.healthPercentage:set_text(("%.1f"):format(hpValue.hp / hpValue.max_hp * 100).."%")
+    end)
+    if self.aurasAssets ~= nil then
+        self.aurasAssets:add_displayChanged("display_status", function(_, can)
+            if not can then
+                -- hide 
+                self.auraPanel:set_hidden(true)
+            else
+                self.auraPanel:set_hidden(false)
+            end
+        end)
+        self.aurasAssets:add_valueChanged("value_changed", function(_, auraList)
+            self:reset_auras()
+            local _x = 0; local _y = 0
+            local _maxWidth = self.hookbar:width()
+            local _maxInLine = 1
+            repeat
+                _maxInLine = _maxInLine + 1
+            until (_maxInLine + 1) * AConfig.width > _maxWidth
+            local _padding = (_maxWidth - (_maxInLine * AConfig.width)) / (_maxInLine - 1)
+            local _lineCount = 0
 
-            -- Create aura count font string
-            local _countfs = _btn:CreateFontString(_btn:GetName().."Count")
-            _countfs:SetFont("Interface\\AddOns\\PushUI\\media\\fontn.ttf", _btnWidth * 0.5, "OUTLINE")
-            _countfs:SetJustifyH("RIGHT")
-            _countfs:SetHeight(_btnWidth * 0.5)
-            _countfs:SetWidth(_btnWidth)
-            _countfs:SetPoint("TOPRIGHT", _btn, "TOPRIGHT", -2, -2)
-            _btn:SetFontString(_countfs)
-            _btn.fs = _countfs
+            auraList.buff:for_each(function(_, aura)
+                abtn = _auraButtonPool:get()
+                abtn:set_aura(aura)
+                self.buffGroup:push_back(abtn)
 
-            -- Create Progress bar
-            local _pb = PushUIFrames.ProgressBar.Create(_btn:GetName().."Porgress", _btn, nil, "HORIZONTAL")
-            _pb:SetWidth(_btnWidth - 2)
-            _pb:SetHeight(_btnHeight * 0.15)
-            _pb:SetPoint("TOPLEFT", _btn, "BOTTOMLEFT", 1, 0)
-            PushUIStyle.BackgroundFormatForProgressBar(_pb)
-            _btn:SetScript("OnUpdate", PushUIFrames.UnitFrame.__onAuraUpdate)
-            _btn._pb = _pb
+                abtn:set_hidden(false)
+                abtn.layer:SetParent(self.auraPanel.layer)
+                abtn:set_archor_target(self.auraPanel.layer, "TOPLEFT")
 
-            local _tipframe = CreateFrame("Frame", unithook.name.."AurasButtonTip"..i, _btn)
-            PushUIConfig.skinTooltipType(_tipframe)
-            _tipframe:SetPoint("TOPLEFT", _pb, "BOTTOMLEFT", 0, -PushUISize.padding)
-
-            local _tiplb = PushUIFrames.Label.Create(_tipframe:GetName().."Label", _tipframe, true)
-            _tiplb.SetFont(nil, 14)
-            _btn.tipFrame = _tipframe
-            _btn.tipLabel = _tiplb
-            --_tiplb:SetAllPoints(_tipframe)
-            _tiplb:SetPoint("TOPLEFT", _tipframe, "TOPLEFT")
-            _tipframe:Hide()
-
-            _btn:SetScript("OnEnter", function(self, ...)
-                self.tipLabel.SetTextString(self._auraInfo.name)
-                self.tipFrame:Show()
+                abtn:set_position(_x, _y)
+                _lineCount = _lineCount + 1
+                if _lineCount == _maxInLine then
+                    _lineCount = 0
+                    _x = 0; _y = _y + AConfig.height + AConfig.pbHeight + _padding
+                else
+                    _x = _x + AConfig.width + _padding
+                end
             end)
-            _btn:SetScript("OnLeave", function(self, ...)
-                self.tipFrame:Hide()
+            auraList.debuff:for_each(function(_, aura)
+                abtn = _auraButtonPool:get()
+                abtn:set_aura(aura)
+                self.debuffGroup:push_back(abtn)
+                
+                abtn:set_hidden(false)
+                abtn.layer:SetParent(self.auraPanel.layer)
+                abtn:set_archor_target(self.auraPanel.layer, "TOPLEFT")
+
+                abtn:set_position(_x, _y)
+                _lineCount = _lineCount + 1
+                if _lineCount == _maxInLine then
+                    _lineCount = 0
+                    _x = 0; _y = _y + AConfig.height + AConfig.pbHeight + _padding
+                else
+                    _x = _x + AConfig.width + _padding
+                end
             end)
-        end
-
-        -- Get Aura and set the button's display status
-        local _aura = unithook.auraApiObject.Value(i)
-        _btn._auraInfo = _aura
-        if _aura.isbuff then
-            _btn._pb:SetStatusBarColor(unpack(PushUIColor.green))
-        else
-            _btn._pb:SetStatusBarColor(unpack(PushUIColor.red))
-        end
-
-        _btn:Show()
-        _btn:SetNormalTexture(_aura.icon)
-
-        -- Change normal texture position
-        local _nt = _btn:GetNormalTexture()
-        _nt:SetTexCoord(0.1,0.9,0.1,0.9)
-        _nt:SetPoint("TOPLEFT", _btn, "TOPLEFT", 2, -2)
-        _nt:SetPoint("BOTTOMRIGHT", _btn, "BOTTOMRIGHT", -2, 2)
-
-        if _aura.count ~= 0 then
-            _btn.fs:SetText(_aura.count)
-        else
-            _btn.fs:SetText("")
-        end
+            self.auraPanel:set_height(_y + AConfig.height + AConfig.pbHeight)
+        end)
     end
 
-    if _auraCount < _btnCount then
-        for i = _auraCount + 1, _btnCount do
-            btnTable[i]:Hide()
-        end
+    -- Position
+    self.healthBar:set_archor("TOPLEFT")
+    self.healthBar:set_archor_target(self.hookbar.layer, "TOPLEFT")
+
+    self.name:set_archor("TOPLEFT")
+    self.name:set_archor_target(self.hookbar.layer, "TOPLEFT")
+
+    self.healthMaxValue:set_archor("TOPLEFT")
+    self.healthMaxValue:set_archor_target(self.hookbar.layer, "TOPLEFT")
+
+    self.healthPercentage:set_archor("TOPLEFT")
+    self.healthPercentage:set_archor_target(self.hookbar.layer, "TOPLEFT")
+
+    -- Unchangable settings
+    self.healthBar:set_backgroundColor(PushUIColor.black, 0)
+    self.healthBar:set_borderColor(PushUIColor.black, 0)
+
+    self.healthBar.layer:SetFrameLevel(0)
+
+    self.auraPanel:set_archor("TOPLEFT")
+    self.auraPanel:set_archor_target(self.hookbar.layer, "BOTTOMLEFT")
+    self.auraPanel:set_position(0, -8)
+    self.auraPanel:set_backgroundColor(PushUIColor.black, 0)
+    self.auraPanel:set_borderColor(PushUIColor.black, 0)
+end
+
+function PushUIFrames.UnitFrame:layout(config)
+    config = config or {
+        width = 200, 
+        height = 40,
+        borderColor = PushUIColor.black,
+        borderAlpha = 1,
+        backgroundColor = PushUIColor.black,
+        backgroundAlpha = 0.7,
+
+        healthBarColor = PushUIColor.lifeColorDynamic,
+        healthBarHeight = 35,
+        healthBarXPosition = 0,
+        healthBarYPosition = -5,
+        healthBarStyle = "h-l-r",
+
+        nameSize = 24,
+        nameXPosition = 0,
+        nameYPosition = 10,
+        nameFlag = "OUTLINE",
+        nameAlign = "LEFT",
+        nameColor = function(...) return PushUIColor.white end,
+        nameMaxWidth = 120,
+
+        percentageSize = 24,
+        percentageXPosition = 0,
+        percentageYPosition = 10,
+        percentageFlag = "OUTLINE",
+        percentageAlign = "RIGHT",
+        percentageColor = function(...) return PushUIColor.white end,
+        percentageMaxWidth = 80,
+
+        maxHpSize = 12,
+        maxHpXPosition = 200,
+        maxHpYPosition = -28,
+        maxHpMaxWidth = 90,
+        maxHpFlag = "OUTLINE",
+        maxHpAlign = "LEFT",
+        maxHpColor = function(...) return PushUIColor.white end
+    }
+
+    -- hookbar
+    self.hookbar:set_backgroundColor(config.backgroundColor, config.backgroundAlpha)
+    self.hookbar:set_borderColor(config.borderColor, config.borderAlpha)
+    self.hookbar:set_size(config.width, config.height)
+    self.hookbar:set_position()
+
+    -- Aura size
+    self.auraPanel:set_width(config.width)
+
+    -- healthBar
+    self.healthBar:set_size(config.width, config.healthBarHeight)
+    self.healthBar:set_position(config.healthBarXPosition, config.healthBarYPosition)
+    self.healthBar:set_style(config.healthBarStyle)
+
+    -- name
+    self.name:set_fontsize(config.nameSize)
+    self.name:set_fontflag(config.nameFlag)
+    self.name:set_align(config.nameAlign)
+    self.name:set_wbounds(config.nameMaxWidth)
+    self.name:set_position(config.nameXPosition, config.nameYPosition)
+
+    -- percentage
+    self.healthPercentage:set_fontsize(config.percentageSize)
+    self.healthPercentage:set_fontflag(config.percentageFlag)
+    self.healthPercentage:set_align(config.percentageAlign)
+    self.healthPercentage:set_wbounds(config.percentageMaxWidth)
+    self.healthPercentage:set_position(config.percentageXPosition, config.percentageYPosition)
+
+    -- MaxHp
+    self.healthMaxValue:set_fontsize(config.maxHpSize)
+    self.healthMaxValue:set_fontflag(config.maxHpFlag)
+    self.healthMaxValue:set_align(config.maxHpAlign)
+    self.healthMaxValue:set_wbounds(config.maxHpMaxWidth)
+    self.healthMaxValue:set_position(config.maxHpXPosition, config.maxHpYPosition)
+
+    self.apiAssets:del_valueChanged("uf_valueChanged")
+    self.apiAssets:add_valueChanged("uf_valueChanged", function(_, hpValue)
+        self.healthBar:set_barColor(config.healthBarColor(self.objectID, hpValue.hp, hpValue.max_hp))
+        self.name:set_fontcolor(config.nameColor(self.objectID, hpValue.hp, hpValue.max_hp))
+        self.healthPercentage:set_fontcolor(config.percentageColor(self.objectID, hpValue.hp, hpValue.max_hp))
+        self.healthMaxValue:set_fontcolor(config.maxHpColor(self.objectID, hpValue.hp, hpValue.max_hp))
+    end)
+    if self.apiAssets:can_display() then
+        self.hookbar:set_hidden(false)
+        self.name:set_text(UnitName(self.objectID))
+        self.apiAssets:valueChanged()
+    else
+        self.hookbar:set_hidden(true)
     end
 end
 
-PushUIFrames.UnitFrame.__onOrderAuraList = function(btnTable, unithook, config)
-    local _c = config
-
-    local _ancpt = _c.anchorPoint or "TOPLEFT"
-    local _pos = _c.position or { x = 0, y = 10 }
-    local _hbside = _c.displaySide or "BOTTOMLEFT"
-    local _afw = _c.width or unithook.HookBar:GetWidth()
-
-    local _lineheight = 20 * 1.2
-    if _c.size then
-        _lineheight = _c.size.h * 1.2
-    end
-
-    local _allheight = 0
-    local _linewidth = 0
-    local _ypos = 0
-    local _btncount = #btnTable
-
-    local _btnAnchor = "TOPLEFT"
-    local _afAnchor = "TOPLEFT"
-    local _direction = 1
-    if unithook.object == "target" then
-        _btnAnchor = "TOPRIGHT"
-        _afAnchor = "TOPRIGHT"
-        _direction = -1
-    end
-
-    for i = 1, _btncount do
-        if not btnTable[i]:IsShown() then break end
-        local _b = btnTable[i]
-        if _linewidth + _b:GetWidth() + 2 > _afw then
-            _ypos = _ypos + _lineheight
-            _linewidth = 0
-        end
-        _b:SetPoint(_btnAnchor, unithook.Auras, _afAnchor, _linewidth * _direction, -_ypos)
-        _linewidth = _linewidth + _b:GetWidth() + 2
-    end
-
-    unithook.Auras:SetWidth(_afw)
-    unithook.Auras:SetHeight(_ypos + _lineheight)
-    unithook.Auras:SetPoint(_ancpt, unithook.HookBar, _hbside, _pos.x, _pos.y)
+function PushUIFrames.UnitFrame:set_archor(...)
+    self.hookbar:set_archor(...)
+end
+function PushUIFrames.UnitFrame:set_archor_target(...)
+    self.hookbar:set_archor_target(...)
+end
+function PushUIFrames.UnitFrame:set_position(...)
+    self.hookbar:set_position(...)
 end
 
-PushUIFrames.UnitFrame.CreateAuras = function(unithook, config)
-    -- Auras only available for player and current target
-    if unithook.object ~= "player" and unithook.object ~= "target" then return end
-
-    local _af = CreateFrame(
-        "Frame", 
-        unithook.name.."Auras",
-        unithook.HookBar
-        )
-    unithook.Auras = _af
-
-    -- Init the button cache
-    _af._auraButtons = {}
-
-    -- Hide global buff frame
-    if unithook.object == "player" then
-        BuffFrame:UnregisterEvent("UNIT_AURA")
-        BuffFrame:Hide()
-        TemporaryEnchantFrame:Hide()
-    end
-
-    _af._ShowAuraButtons = function()
-        PushUIFrames.UnitFrame.__onUpdateAuraList(_af._auraButtons, unithook, config)
-        PushUIFrames.UnitFrame.__onOrderAuraList(_af._auraButtons, unithook, config)
-    end
-    unithook.auraApiObject.RegisterForValueChanged(_af, _af._ShowAuraButtons)
-
-    _af._ForceUpdate = function()
-        unithook.auraApiObject.CanDisplay()
-        _af._ShowAuraButtons()
-    end
-
-    if unithook.object == "target" then
-        _af._EventForDisplayStatus = function(status)
-            if status then _af:Show(); _af._ForceUpdate() else _af:Hide() end
-        end
-        unithook.auraApiObject.RegisterForDisplayStatus(_af, _af._EventForDisplayStatus)
-        _af:Hide()
-    end
-end
-
-PushUIFrames.UnitFrame.Create = function(unithook, config)
-    if not config.enable then return end
-    if not config.hookbar then return end
-
-    PushUIFrames.UnitFrame.CreateHookBar(unithook, config.hookbar)
-    if config.lifebar then
-        PushUIFrames.UnitFrame.CreateLifeBar(unithook, config.lifebar)
-    end
-
-    if config.percentage then
-        PushUIFrames.UnitFrame.CreatePercentage(unithook, config.percentage)
-    end
-
-    if config.name then
-        PushUIFrames.UnitFrame.CreateName(unithook, config.name)
-    end
-
-    if config.healthvalue then
-        PushUIFrames.UnitFrame.CreateHealthValue(unithook, config.healthvalue)
-    end
-
-    if config.auras then
-        PushUIFrames.UnitFrame.CreateAuras(unithook, config.auras)
-    end
-end
-
-PushUIFrames.UnitFrame.ForceUpdate = function(unithook)
-    if not unithook.HookBar then return end
-
-    if unithook.LifeBar then unithook.LifeBar._ForceUpdate() end
-    if unithook.Percentage then unithook.Percentage._ForceUpdate() end
-    if unithook.Name then unithook.Name._ForceUpdate() end
-    if unithook.HealthValue then unithook.HealthValue._ForceUpdate() end
-    if unithook.Auras then unithook.Auras._ForceUpdate() end
-end
