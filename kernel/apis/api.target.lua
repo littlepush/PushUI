@@ -16,6 +16,10 @@ function PushUIAPI.TargetHP:PLAYER_TARGET_CHANGED()
 end
 function PushUIAPI.TargetHP:UNIT_HEALTH(unit_id)
     if not self:can_display() and unit_id ~= "target" then return end
+    if not UnitName("target") then
+        self:set_candisplay(false)
+        return
+    end
     self:set_current_value({hp = UnitHealth("target"), max_hp = UnitHealthMax("target")})
 end
 

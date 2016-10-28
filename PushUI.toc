@@ -37,5 +37,6 @@ components\playerframe.lua
 components\targetframe.lua
 components\targettargetframe.lua
 components\focusframe.lua
+components\petframe.lua
 
 debug.lua
