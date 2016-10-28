@@ -131,6 +131,9 @@ function PUIQuestDetailPanel:add_detail_progress(value, max)
     self._pobjs:push_back(_pb)
     self._objs:push_back(_pb)
 end
+function PUIQuestDetailPanel:add_detail_timer(now, duration)
+    --
+end
 function PUIQuestDetailPanel:recycle()
     self._dobjs:for_each(function(index, lb)
         lb:set_hidden(true)
@@ -294,6 +297,68 @@ local function LeftBlocksReDisplay()
         block:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 30, -_othook.__leftBlockAllHeight)
         __leftBlockAllHeight = __leftBlockAllHeight + block:GetHeight() + _config.padding
     end)
+end
+
+-- Special Block
+local PUISpecialBlock = PushUIAPI.inhiert(PushUIFrames.UIView)
+function PUISpecialBlock:c_str()
+    self.title = PushUIFrames.UILabel(self)
+    self.subtitle = PushUIFrames.UILabel(self)
+    self.description = PushUIFrames.UILabel(self)
+
+    self.detail = PUIQuestDetailPanel(self)
+    self._displayHeight = 0
+end
+
+function PUISpecialBlock:initialize()
+    self:set_width(_config.width)
+    self:set_archor("TOPLEFT")
+    self:set_archor_target(UIParent, "TOPLEFT")
+    PushUIConfig.skinType(self.layer)
+
+    local _textPadding = _config.padding
+    -- Title Style
+    self.title:set_maxline(1)
+    self.title:set_bounds(_config.width, _config.objectiveFontSize + 1 + 2 * _textPadding)
+    self.title:set_fontcolor(PushUIColor.orange)
+    self.title:set_fontsize(_config.objectiveFontSize + 1)
+    self.title:set_padding(_textPadding)
+    self.title:set_align("CENTER")
+    self.title:set_position()
+
+    -- Subtitle
+    self.subtitle:set_width(_config.width)
+    self.subtitle:set_maxline(99)
+    self.subtitle:set_wbounds(_config.width)
+    self.subtitle:set_fontcolor(PushUIColor.white)
+    self.subtitle:set_fontflag("OUTLINE")
+    self.subtitle:set_padding(_textPadding)
+    self.subtitle:set_archor_target(self.title.layer, "BOTTOMLEFT")
+    self.subtitle:set_position()
+
+    -- Description
+    self.description:set_width(_config.width)
+    self.description:set_maxline(99)
+    self.description:set_wbounds(_config.width)
+    self.description:set_fontcolor(PushUIColor.white)
+    self.description:set_archor_target(self.subtitle.layer, "BOTTOMLEFT")
+    self.description:set_position()
+
+    -- Detail Panel
+    self.detail:set_archor_target(self.layer, "BOTTOMLEFT")
+    self.detail:set_position(0, -_config.padding)
+end
+
+function PUISpecialBlock:set_infomation(title, subtitle, description)
+    self.title:set_text(title)
+    self.subtitle:set_text(subtitle)
+    self.description:set_text(description)
+
+    self._displayHeight = self.title:height() + self.subtitle:height() + self.description:height()
+end
+
+function PUISpecialBlock:add_detail_text(text, finished)
+    self.detail:add_detail_text(text, finished)
 end
 
 

@@ -206,7 +206,7 @@ function PushUIFrames.UnitFrame:initialize()
                 abtn.layer:SetParent(self.auraPanel.layer)
                 abtn:set_archor_target(self.auraPanel.layer, "TOPLEFT")
 
-                abtn:set_position(_x, _y)
+                abtn:set_position(_x, -_y)
                 _lineCount = _lineCount + 1
                 if _lineCount == _maxInLine then
                     _lineCount = 0
@@ -224,7 +224,7 @@ function PushUIFrames.UnitFrame:initialize()
                 abtn.layer:SetParent(self.auraPanel.layer)
                 abtn:set_archor_target(self.auraPanel.layer, "TOPLEFT")
 
-                abtn:set_position(_x, _y)
+                abtn:set_position(_x, -_y)
                 _lineCount = _lineCount + 1
                 if _lineCount == _maxInLine then
                     _lineCount = 0
