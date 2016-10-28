@@ -3,282 +3,416 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-local frame_metatable = {
-   __index = CreateFrame('Frame')
-}
-
-function frame_metatable.__index:tostring()
-   return tostring(self)
-end
- 
--- lib = setmetatable(lib, frame_metatable)
--- print(lib:tostring()) -- works
-
-PushUIAPI.getObjName = function(self)
-    if self.name then
-        return self.name
-    elseif self.GetName then
-        return self:GetName()
+-- Class
+PushUIAPI._all_vtbl = {}
+function PushUIAPI.__classCreate(cls_type, obj, ...)
+    if cls_type.super then
+        obj = PushUIAPI.__classCreate(cls_type.super, obj, ...)
     end
-
-    return '<unnamed>'
-end
-
-PushUIAPI.isTable = function(obj)
-    return type(obj) == 'table'
-end
-PushUIAPI.isUserdata = function(obj)
-    return type(obj) == 'userdata'
-end
-
-PushUIAPI.dumpLevel = function(lv)
-    local _ = ':'
-    for i=1,lv do
-        _ = _..'-'
+    if cls_type.c_str then
+        cls_type.c_str(obj, ...)
     end
-    return _
+    return obj
 end
 
-PushUIAPI.dumpObject = function(key, obj, lv)
-    if not key then
-        key = '<undefined>'
-    end
-    if nil == obj then
-        print(key.." is nil")
-        return
-    end
-    lv = lv or 1
-    local _slv = PushUIAPI.dumpLevel(lv)
-    if PushUIAPI.isTable(obj) then
-        --print(_slv..key..':'..PushUIAPI.getObjName(obj)..'(table)')
-        for k,v in pairs(obj) do
-            PushUIAPI.dumpObject(k, v, lv + 1)
+function PushUIAPI.inhiert(super_class)
+    local _inhiertCls = {}
+    _inhiertCls.c_str = false
+    _inhiertCls.super = super_class
+    _inhiertCls.new = function(...)
+        local _obj = {}
+        _obj = PushUIAPI.__classCreate(_inhiertCls, _obj, ...)
+        setmetatable(_obj, { __index = PushUIAPI._all_vtbl[_inhiertCls]} )
+        if super_class then
+            _obj.super = { child = _obj }
+            setmetatable(_obj.super, {
+                __index = function(t, k)
+                    local _ret = PushUIAPI._all_vtbl[super_class][k]
+                    if not _ret then return _ret end
+                    local _f = function(t, ...)
+                        return _ret(t.child, ...)
+                    end
+                    return _f
+                end
+                })
         end
-    elseif PushUIAPI.isUserdata(obj) then
-        print(_slv..key..':'..tostring(obj)..'('..type(obj)..')')
-        print(getmetatable(obj))
-    else
-        print(_slv..key..':'..obj..'('..type(obj)..')')
+        if _obj.initialize then _obj.initialize(_obj) end
+        return _obj
     end
-end
 
--- Unit Events
-PushUIAPI._UnitEventList = {}
-PushUIAPI._UnitEventsMap = {}
-PushUIAPI._UnitFireEvent = function(e, ...)
-    local _EM = PushUIAPI._UnitEventsMap
-    for i = 1, #_EM[e] do
-        local _f = unpack(_EM[e][i])
-        _f(...)
+    local _vtbl = {}
+    PushUIAPI._all_vtbl[_inhiertCls] = _vtbl
+
+    setmetatable(_inhiertCls, {
+        __newindex = function(t, k, v) _vtbl[k] = v end,
+        __call = function(cls, ...) return cls.new(...) end
+        })
+    if super_class then
+        setmetatable(_vtbl, {
+            __index = function(t, k)
+                local _ret = PushUIAPI._all_vtbl[super_class][k]
+                _vtbl[k] = _ret
+                return _ret
+            end
+            })
     end
-end
-PushUIAPI._UnitRegisterEvent = function(e, obj, func)
-    local _EM = PushUIAPI._UnitEventsMap
-    if not _EM[e] then
-        _EM[e] = {}
-        for _, sys in pairs(PushUIAPI._UnitEventList[e]) do
-            PushUIAPI.RegisterEvent(
-                sys.sysevent,
-                sys.target,
-                sys.callback
-            )
-        end
-    end
-    _EM[e][#_EM[e] + 1] = {func, obj}
-end
-PushUIAPI._UnitUnRegisterEvent = function(e, obj)
-    local _EM = PushUIAPI._UnitEventsMap
-    if not _EM[e] then return end
-    for i = 1, #_EM[e] do
-        local _f, _o = unpack(_EM[e][i])
-        if _o == obj then
-            table.remove(_EM[e], i)
-            break
-        end
-    end
+
+    return _inhiertCls
 end
 
 -- Structures and Events
 
 -- Stack
 PushUIAPI.Stack = {}
-PushUIAPI.Stack._push = function(stack, obj)
-    if stack._storage == nil then return end
+PushUIAPI.Stack.__index = PushUIAPI.Stack
+function PushUIAPI.Stack:push(obj)
     if obj == nil then return end
-    stack._storage[#stack._storage + 1] = obj
+    self.__storage[#self.__storage + 1] = obj
 end
-PushUIAPI.Stack._pop = function(stack)
-    if stack._storage == nil then return end
-    if #stack._storage == 0 then return end
-    stack._storage[#stack._storage] = nil
+function PushUIAPI.Stack:pop()
+    if #self.__storage == 0 then return end
+    table.remove(self.__storage)
 end
-PushUIAPI.Stack._top = function(stack)
-    if stack._storage == nil then return nil end
-    if #stack._storage == 0 then return nil end
-    return stack._storage[#stack._storage]
+function PushUIAPI.Stack:top()
+    if #self.__storage == 0 then return nil end
+    return self.__storage[#self.__storage]
 end
-PushUIAPI.Stack._size = function(stack)
-    if stack._storage == nil then return 0 end
-    return #stack._storage
+function PushUIAPI.Stack:size()
+    return #self.__storage
 end
-PushUIAPI.Stack._clear = function(stack)
-    if stack._storage == nil then return end
-    local _s = #stack._storage
-    for i = 1, _s do stack._storage[i] = nil end
-end
-PushUIAPI.Stack.New = function()
-    local _stack = {}
-    _stack._storage = {}
-    _stack.Push = function(obj) PushUIAPI.Stack._push(_stack, obj) end
-    _stack.Pop = function() PushUIAPI.Stack._pop(_stack) end
-    _stack.Top = function() return PushUIAPI.Stack._top(_stack) end
-    _stack.Size = function() return PushUIAPI.Stack._size(_stack) end
-    _stack.Clear = function() PushUIAPI.Stack._clear(_stack) end
-    return _stack
-end
-PushUIAPI.Stack.Delete = function(stack) _stack.Clear() end
+function PushUIAPI.Stack:clear()
+    local _s = #self.__storage
+    for i = 1, _s do self.__storage[i] = nil end
 
--- Vector
-PushUIAPI.Vector = {}
-PushUIAPI.Vector._pushFront = function(vector, obj)
-    if vector._storage == nil or obj == nil then return end
-    table.insert(vector._storage, 1, obj)
+    -- Create a new storge is more easy
+    self.__storage = {}
 end
-PushUIAPI.Vector._pushBack = function(vector, obj)
-    if vector._storage == nil or obj == nil then return end
-    table.insert(vector._storage, obj)
+function PushUIAPI.Stack.new()
+    return setmetatable({__storage = {}}, PushUIAPI.Stack)
 end
-PushUIAPI.Vector._popFront = function(vector)
-    if vector._storage == nil or #vector._storage == 0 then return end
-    table.remove(vector._storage, 1)
+setmetatable(PushUIAPI.Stack, {__call = function(_, ...) return PushUIAPI.Stack.new(...) end})
+
+-- Array
+PushUIAPI.Array = {}
+PushUIAPI.Array.__index = PushUIAPI.Array
+function PushUIAPI.Array:push_front(obj)
+    if obj == nil then return end
+    table.insert(self.__storage, 1, obj)
 end
-PushUIAPI.Vector._popBack = function(vector)
-    if vector._storage == nil or #vector._storage == 0 then return end
-    table.remove(vector._storage)
+function PushUIAPI.Array:push_back(obj)
+    if obj == nil then return end
+    table.insert(self.__storage, obj)
 end
-PushUIAPI.Vector._front = function(vector)
-    if vector._storage == nil or #vector._storage == 0 then return nil end
-    return vector._storage[1]
+function PushUIAPI.Array:pop_front()
+    if #self.__storage == 0 then return nil end
+    local _obj = self.__storage[1]
+    table.remove(self.__storage, 1)
+    return _obj
 end
-PushUIAPI.Vector._back = function(vector)
-    if vector._storage == nil or #vector._storage == 0 then return nil end
-    return vector._storage[#vector._storage]
+function PushUIAPI.Array:pop_back()
+    if #self.__storage == 0 then return nil end
+    local _obj = self.__storage[#self.__storage]
+    table.remove(self.__storage)
+    return _obj
 end
-PushUIAPI.Vector._erase = function(vector, index)
-    if vector._storage == nil or #vector._storage < index then return end
-    if index <= 0 then return end
-    table.remove(vector._storage, index)
+function PushUIAPI.Array:erase(index)
+    if #self.__storage < index then return end
+    table.remove(self.__storage, index)
 end
-PushUIAPI.Vector._insert = function(vector, index, obj)
-    if vector._storage == nil or #vector._storage < (index + 1) then return end
-    if index <= 0 or obj == nil then return end
-    table.insert(vector._storage, index, obj)
+function PushUIAPI.Array:insert(index, obj)
+    if obj == nil then return end
+    if #self.__storage < index then index = #self.__storage + 1 end
+    if index <= 0 then index = 1 end
+    table.insert(self.__storage, index, obj)
 end
-PushUIAPI.Vector._size = function(vector)
-    if vector._storage == nil then return 0 end
-    return #vector._storage
+function PushUIAPI.Array:size()
+    return #self.__storage
 end
-PushUIAPI.Vector._clear = function(vector)
-    if vector._storage == nil then return end
+function PushUIAPI.Array:clear()
     repeat
-        table.remove(vector._storage)
-    until #vector._storage == 0
+        table.remove(self.__storage)
+    until #self.__storage == 0
 end
-PushUIAPI.Vector._index = function(vector, index)
-    if vector._storage == nil then return nil end
-    if index > #vector._storage then return nil end
+function PushUIAPI.Array:objectAtIndex(index)
+    if index > #self.__storage then return nil end
     if index <= 0 then return nil end
-    return vector._storage[index]
+    return self.__storage[index]
 end
-PushUIAPI.Vector._contains = function(vector, obj)
-    if vector._storage == nil then return false end
-    for i = 1, #vector._storage do
-        if vector._storage[i] == obj then return true end
-    end
-    return false
-end
-PushUIAPI.Vector._search = function(vector, obj, comp)
-    if vector._storage == nil then return 0 end
-    for i = 1, #vector._storage do
-        if comp(vector._storage[i], obj) then return i end
+function PushUIAPI.Array:find(obj)
+    local _s = #self.__storage
+    for i = 1, _s do
+        if self.__storage[i] == obj then return i end
     end
     return 0
 end
-PushUIAPI.Vector.New = function()
-    local _vector = {}
-    _vector._storage = {}
-    _vector.PushFront = function(obj) PushUIAPI.Vector._pushFront(_vector, obj) end
-    _vector.PushBack = function(obj) PushUIAPI.Vector._pushBack(_vector, obj) end
-    _vector.PopFront = function() PushUIAPI.Vector._popFront(_vector) end
-    _vector.PopBack = function() PushUIAPI.Vector._popBack(_vector) end
-    _vector.Front = function() return PushUIAPI.Vector._front(_vector) end
-    _vector.Back = function() return PushUIAPI.Vector._back(_vector) end
-    _vector.Erase = function(index) PushUIAPI.Vector._erase(_vector, index) end
-    _vector.Insert = function(index, obj) PushUIAPI.Vector._insert(_vector, index, obj) end
-    _vector.Size = function() return PushUIAPI.Vector._size(_vector) end
-    _vector.Clear = function() PushUIAPI.Vector._clear(_vector) end
-    _vector.ObjectAtIndex = function(index) return PushUIAPI.Vector._index(_vector, index) end
-    _vector.Contains = function(obj) return PushUIAPI.Vector._contains(_vector, obj) end
-    _vector.Search = function(obj, comp) return PushUIAPI.Vector._search(_vector, obj, comp) end
-
-    return _vector
-end 
-PushUIAPI.Vector.Delete = function(vector) vector.Clear() end
-
-PushUIAPI.Map = {}
-function PushUIAPI.Map:_set(map, key, value)
-	if map._storage == nil then return end
-	if map._storage[key] == nil then
-		map._size = map._size + 1
-	end
-	map._storage[key] = value
+function PushUIAPI.Array:find_by(obj, cmpfunc)
+    if not cmpfunc then return self:find(obj) end
+    local _s = #self.__storage
+    for i = 1, _s do
+        if cmpfunc(self.__storage[i], obj) then return i end
+    end
+    return 0
 end
-function PushUIAPI.Map:_unset(map, key)
-	if map._storage == nil then return end
-	if not map._storage[key] then return end
+function PushUIAPI.Array:replace(index, obj)
+    if index > #self.__storage then return nil end
+    if index <= 0 then return nil end
+    self.__storage[index] = obj
+end
+function PushUIAPI.Array:for_each(enumfunc, ...)
+    if not enumfunc then return end
+    local _s = #self.__storage
+    for i = 1, _s do
+        enumfunc(i, self.__storage[i], ...)
+    end
+end
+function PushUIAPI.Array.new()
+    return setmetatable({__storage = {}}, PushUIAPI.Array)
+end
+setmetatable(PushUIAPI.Array, {__call = function(_, ...) return PushUIAPI.Array.new(...) end})
+
+-- Map
+PushUIAPI.Map = PushUIAPI.inhiert()
+function PushUIAPI.Map:set(key, value)
+    if self.__storage[key] == nil then
+        self.__size = self.__size + 1
+    end
+    self.__storage[key] = value
+end
+function PushUIAPI.Map:unset(key)
+	if not self.__storage[key] then return end
     local _newStorage = {}
-    for k, v in pairs(map._storage) do
+    for k, v in pairs(self.__storage) do
         if k ~= key then
             _newStorage[k] = v
         end
     end
-    map._storage = _newStorage
-    map._size = map._size - 1
+    self.__storage = _newStorage
+    self.__size = self.__size - 1
 end
-function PushUIAPI.Map:_contains(map, key)
-	if map._storage == nil then return false end
-	return map._storage[key] ~= nil
+function PushUIAPI.Map:contains(key)
+    return self.__storage[key] ~= nil
 end
-function PushUIAPI.Map:_object(map, key)
-	if map._storage == nil then return nil end
-	return map._storage[key]
+function PushUIAPI.Map:object(key)
+	return self.__storage[key]
 end
-function PushUIAPI.Map:_clear(map)
-	if map._storage == nil then return nil end
+function PushUIAPI.Map:size()
+    return self.__size
+end
+function PushUIAPI.Map:clear()
 	repeat
-		table.remove(map._storage)
-	until #map._storage == 0
-	map._size = 0
+		table.remove(self.__storage)
+	until #self.__storage == 0
+    self.__storage = {}
+    self.__size = 0
 end
-function PushUIAPI.Map:_foreach(map, f)
-	if map._storage == nil then return end
-	if f == nil then return end
-	for k, v in pairs(map._storage) do
-		f(k, v)
+function PushUIAPI.Map:for_each(enumfunc, ...)
+    if not enumfunc then return end
+	for k, v in pairs(self.__storage) do
+		enumfunc(k, v, ...)
 	end
 end
-PushUIAPI.Map.New = function()
-	local _map = {}
-	_map._storage = {}
-	_map._size = 0
-	_map.Set = function(key, value) PushUIAPI.Map:_set(_map, key, value) end
-	_map.UnSet = function(key) PushUIAPI.Map:_unset(_map, key) end
-	_map.Contains = function(key) return PushUIAPI.Map:_contains(_map, key) end
-	_map.Object = function(key) return PushUIAPI.Map:_object(_map, key) end
-	_map.Clear = function() PushUIAPI.Map:_clear(_map) end
-	_map.Size = function() return _map._size end
-	_map.ForEach = function(f) PushUIAPI.Map:_foreach(_map, f) end
-
-	return _map
+function PushUIAPI.Map:c_str()
+    self.__storage = {}
+    self.__size = 0
 end
+
+-- Pool
+PushUIAPI.Pool = {}
+PushUIAPI.Pool.__index = PushUIAPI.Pool
+function PushUIAPI.Pool:release(obj)
+    self.__stack:push(obj)
+end
+function PushUIAPI.Pool:create()
+    if self.__on_new == nil then return nil end
+    return self.__on_new()
+end
+function PushUIAPI.Pool:get(...)
+    if self.__stack:size() > 0 then
+        local _obj = self.__stack:top()
+        self.__stack:pop()
+        return _obj
+    end
+    local _onNew = ...
+    if _onNew then return _onNew() end
+    return self:create()
+end
+function PushUIAPI.Pool:set_new_object(newfunc)
+    self.__on_new = newfunc
+end
+function PushUIAPI.Pool:size()
+    if pool.__stack == nil then return 0 end
+    return pool.__stack:size()
+end
+function PushUIAPI.Pool.new()
+    return setmetatable({__stack = PushUIAPI.Stack(), __on_new = nil}, PushUIAPI.Pool)
+end
+setmetatable(PushUIAPI.Pool, {
+    __call = function(_, ...)
+        local _obj = PushUIAPI.Pool.new()
+        local _on_new = ...
+        _obj:set_new_object(_on_new)
+        return _obj
+    end
+})
+
+-- Dispatcher
+PushUIAPI.Dispatcher = {}
+PushUIAPI.Dispatcher.__index = PushUIAPI.Dispatcher
+function PushUIAPI.Dispatcher:add_action(event, key, action)
+    if not event or not key or not action then return end
+    if not self.__events:contains(event) then
+        self.__events:set(event, PushUIAPI.Map())
+    end
+    self.__events:object(event):set(key, action)
+end
+function PushUIAPI.Dispatcher:del_action(event, key)
+    if not event or not key then return end
+    if not self.__events:contains(event) then return end
+    self.__events:object(event):unset(key)
+end
+function PushUIAPI.Dispatcher:fire_event(event, ...)
+    if not event then return end
+    if not self.__events:contains(event) then return end
+    self.__events:object(event):for_each(function(_, act, ...)
+        act(event, ...)
+    end, ...)
+end
+function PushUIAPI.Dispatcher.new()
+    return setmetatable({__events = PushUIAPI.Map()}, PushUIAPI.Dispatcher)
+end
+setmetatable(PushUIAPI.Dispatcher, {
+    __call = function(_, ...)
+        return PushUIAPI.Dispatcher.new(...)
+    end
+    })
+
+-- Timer
+PushUIAPI.Timer = {}
+PushUIAPI_Timer_FireFrame = CreateFrame("Frame", "PushUIAPI_Timer_FireFrame", UIParent)
+PushUIAPI_Timer_FireFrame.__timerMap = PushUIAPI.Map()
+PushUIAPI_Timer_FireFrame.__updateFunc = function(...)
+    local _nowtime = time()
+    PushUIAPI_Timer_FireFrame.__timerMap:for_each(function(_, timer)
+        if (_nowtime - timer:last_fire_time()) >= timer:interval() then
+            timer:fire()
+        end
+    end)
+end
+PushUIAPI_Timer_FireFrame.__timerCount = 0
+PushUIAPI_Timer_FireFrame.__timerNamePool = PushUIAPI.Pool(function()
+    PushUIAPI_Timer_FireFrame.__timerCount = PushUIAPI_Timer_FireFrame.__timerCount + 1
+    return "PushUIAPI_Timer_FireFrame_Timer"..PushUIAPI_Timer_FireFrame.__timerCount
+end)
+PushUIAPI_Timer_FireFrame.__registerTimer = function(name, timer)
+    PushUIAPI_Timer_FireFrame.__timerMap:set(name, timer)
+    -- For the first registered timer, start the update function
+    if PushUIAPI_Timer_FireFrame.__timerMap:size() == 1 then 
+        PushUIAPI_Timer_FireFrame:SetScript("OnUpdate", PushUIAPI_Timer_FireFrame.__updateFunc)
+    end
+end
+PushUIAPI_Timer_FireFrame.__unregisterTimer = function(name)
+    PushUIAPI_Timer_FireFrame.__timerMap:unset(name)
+
+    -- For the last removed timer, stop the update function
+    if PushUIAPI_Timer_FireFrame.__timerMap:size() == 0 then
+        PushUIAPI_Timer_FireFrame:SetScript("OnUpdate", nil)
+    end
+end
+PushUIAPI.Timer.__index = PushUIAPI.Timer
+function PushUIAPI.Timer:start(...)
+    local _interval, _handler = ...
+
+    -- Update interval
+    _interval = _interval or self.__savedinterval
+    if not _interval then return end
+    self.__savedinterval = _interval
+
+    -- Update handler
+    if _handler then self.__handler = _handler end
+    if not self.__handler then return end
+
+    self.__last_fire_time = time()
+
+    -- Get temp name
+    self.__tmp_name = PushUIAPI_Timer_FireFrame.__timerNamePool:get()
+    PushUIAPI_Timer_FireFrame.__registerTimer(self.__tmp_name, self)
+    self.__running = true
+end
+function PushUIAPI.Timer:stop()
+    if not self.__running then return end
+
+    PushUIAPI_Timer_FireFrame.__unregisterTimer(self.__tmp_name)
+    PushUIAPI_Timer_FireFrame.__timerNamePool:release(self.__tmp_name)
+    self.__tmp_name = ""
+    self.__running = false
+end
+function PushUIAPI.Timer:last_fire_time()
+    return self.__last_fire_time
+end
+function PushUIAPI.Timer:interval()
+    return self.__savedinterval
+end
+function PushUIAPI.Timer:fire()
+    if not self.__handler then return end
+    self.__handler()
+end
+function PushUIAPI.Timer:set_handler(handler)
+    self.__handler = handler
+    if not self.__handler then self:stop() end
+end
+function PushUIAPI.Timer:set_interval(interval)
+    self.__savedinterval = interval
+    if self.__savedinterval <= 0 then self:stop() end
+end
+function PushUIAPI.Timer.new(interval, handler)
+    return setmetatable({
+        __last_fire_time = 0,
+        __savedinterval = interval,
+        __handler = handler,
+        __running = false,
+        __tmp_name = ""
+        }, PushUIAPI.Timer)
+end
+setmetatable(PushUIAPI.Timer, {
+    __call = function(_, ...) return PushUIAPI.Timer.new(...) end
+    })
+
+-- Event Center
+PushUIAPI.EventCenter = {}
+PushUIAPI.EventCenter.__index = PushUIAPI.EventCenter
+PushUIAPI.EventCenter.__eventDispatcher = PushUIAPI.Dispatcher()
+function PushUIAPI.EventCenter:RegisterEvent(event, key, func)
+    self.__eventDispatcher:add_action(event, key, func)
+end
+function PushUIAPI.EventCenter:UnRegisterEvent(event, key)
+    self.__eventDispatcher:del_action(event, key)
+end
+function PushUIAPI.EventCenter:FireEvent(event, ...)
+    self.__eventDispatcher:fire_event(event, ...)
+end
+
+-- This event will be invoke only once when the player first time to enter the world.
+PushUIAPI.PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD = "PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD"
+local function __firsttime_default_handler(...)
+    PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD)
+    PushUIUnRegisterEvent("PLAYER_ENTERING_WORLD", "PushUIEventCenterDefaultFirstTime")
+end
+-- Default player entering world event 
+PushUIRegisterEvent("PLAYER_ENTERING_WORLD", "PushUIEventCenterDefaultFirstTime", __firsttime_default_handler)
+
+PushUIAPI.PUSHUIEVENT_PLAYER_BEGIN_COMBAT = "PUSHUIEVENT_PLAYER_BEGIN_COMBAT"
+PushUIAPI.PUSHUIEVENT_PLAYER_END_COMBAT = "PUSHUIEVENT_PLAYER_END_COMBAT"
+local function __quit_combat_handler(...)
+    print("end combat")
+    PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_PLAYER_END_COMBAT)
+end
+local function __in_combat_handler(...)
+    print("begin combat")
+    PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_PLAYER_BEGIN_COMBAT)
+end
+PushUIRegisterEvent("PLAYER_REGEN_ENABLED", "PushUIEventQuitCombat", __quit_combat_handler)
+PushUIRegisterEvent("PLAYER_REGEN_DISABLED", "PushUIEventInCombat", __in_combat_handler)
+
+-- by Push Chen
+-- twitter: @littlepush
 

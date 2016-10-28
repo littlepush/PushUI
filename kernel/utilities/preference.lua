@@ -24,7 +24,7 @@ PushUISize.actionButtonPerLine = 12
 PushUISize.actionButtonPadding = 2
 
 -- Bottom Padding
-PushUISize.screenBottomPadding = 25
+PushUISize.screenBottomPadding = 35
 
 -- Size Calculate
 PushUISize.FormatWithPadding = function(count, size, padding, max)
@@ -44,6 +44,16 @@ PushUISize.FormatWithPadding = function(count, size, padding, max)
 end
 
 -- Color --
+function PushUIColor.unpackColor(color_pack, alpha)
+    local _r, _g, _b, _a = unpack(color_pack)
+    if nil == _r then _r = 0 end
+    if nil == _g then _g = 0 end
+    if nil == _b then _b = 0 end
+    if nil == _a then _a = 1 end
+    if nil ~= alpha then _a = alpha end
+    return _r, _g, _b, _a
+end
+
 PushUIColor.black = {0, 0, 0}
 PushUIColor.white = {1, 1, 1}
 PushUIColor.red = {0.89, 0.25, 0.20}
@@ -56,6 +66,12 @@ PushUIColor.darkgray = {0.2, 0.2, 0.2}
 PushUIColor.silver = {0.8, 0.8, 0.8}
 PushUIColor.cyan = {0.14, 0.16, 0.19}
 PushUIColor.purple = {0.82, 0.47, 0.69}
+PushUIColor.disablegray = {0.23046875, 0.23046875, 0.23046875, 0.25}
+PushUIColor.disableborder = {0.53515625, 0.53515625, 0.53515625, 0.95}
+PushUIColor.lightgray = {0.23046875, 0.23046875, 0.23046875, 0.45}
+PushUIColor.lightborder = {0.53515625, 0.53515625, 0.53515625, 0.15}
+PushUIColor.highlightgray = {0.23046875, 0.23046875, 0.23046875, 0.65}
+PushUIColor.highlightborder = {0.53515625, 0.53515625, 0.53515625, 0.75}
 
 -- Alpha for different statue
 PushUIColor.alphaAvailable = 0.9
@@ -91,11 +107,11 @@ PushUIColor.getColorByClass = function(unit)
 end
 
 -- Life Color
-PushUIColor.lifeColorDynamic = function(v, max, min)
-    local _p = v / (max - min) * 100;
+PushUIColor.lifeColorDynamic = function(unit, v, max)
+    local _p = v / max * 100;
     local _r, _g, _b;
     if _p >= 70 then
-        _r, _g, _b = unpack(PushUIColor.green)
+        _r, _g, _b = PushUIColor.getColorByClass(unit)
     elseif _p >= 35 and _p < 70 then
         _r, _g, _b = unpack(PushUIColor.orange)
     else

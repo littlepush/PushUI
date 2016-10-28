@@ -189,6 +189,8 @@ PushUIFrameActionBarLayout.RestoreToDefault = function()
 end
 
 PushUIFrameActionBarLayout.ApplyFormat = function(btn)
+
+    if false then return end
     if not btn or (btn and btn.styled) then return end
 
     local _name = btn:GetName()

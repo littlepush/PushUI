@@ -1,0 +1,20 @@
+local 
+    PushUISize, PushUIColor, 
+    PushUIStyle, PushUIAPI, 
+    PushUIConfig, PushUIFrames = unpack(select(2, ...))
+
+local function _debug_initFunction()
+    SELECTED_CHAT_FRAME:AddMessage("This is a test string for PLAYER ENTERING WORLD")
+    --eventHandler_newWatchingQuest(nil, PushUIAPI.NormalQuests.questList)
+    PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_NEWWATCH, PushUIAPI.NormalQuests.questList)
+
+    GarrisonLandingPageMinimapButton:SetScript("OnShow", GarrisonLandingPageMinimapButton.Hide)
+    GarrisonLandingPageMinimapButton:Hide()
+
+    PushUIAPI.PlayerHP:valueChanged()
+    -- PushUIAPI.PlayerAuras:force_refresh()
+    PushUIAPI.PlayerAuras:valueChanged()
+end
+
+PushUIAPI.EventCenter:RegisterEvent(PushUIAPI.PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD, "debug_init", _debug_initFunction)
+
