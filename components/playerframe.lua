@@ -58,3 +58,9 @@ end)
 
 PlayerFrame:SetScript("OnEvent", nil)
 PlayerFrame:Hide()
+
+-- Hide buff frame
+BuffFrame:UnregisterEvent("UNIT_AURA")
+BuffFrame:Hide()
+TemporaryEnchantFrame:Hide()
+
