@@ -7,6 +7,16 @@ local PushUIFrameActionBarFrame = CreateFrame("Frame", "PushUIFrameActionBarFram
 PushUIFrames.AllFrames[#PushUIFrames.AllFrames + 1] = PushUIFrameActionBarFrame
 --table.insert(PushUIFrames.AllFrames, PushUIFrameActionBarFrame)
 
+-- Vehicle Event
+PushUIAPI.EventCenter:RegisterEvent(PushUIAPI.PUSHUIEVENT_PLAYER_ENTER_VECHILE, "ActionBarEvent", 
+    function(...)
+        PushUIFrameActionBarFrame:Hide()
+    end)
+PushUIAPI.EventCenter:RegisterEvent(PushUIAPI.PUSHUIEVENT_PLAYER_EXIT_VECHILE, "ActionBarEvent", 
+    function(...)
+        PushUIFrameActionBarFrame:Show()
+    end)
+
 PushUIFrameActionBarFrame.RestoreToDefault = function()
     local f = PushUIFrameActionBarFrame
     f:SetWidth(PushUISize.FormatWithPadding(

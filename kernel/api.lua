@@ -403,15 +403,25 @@ PushUIRegisterEvent("PLAYER_ENTERING_WORLD", "PushUIEventCenterDefaultFirstTime"
 PushUIAPI.PUSHUIEVENT_PLAYER_BEGIN_COMBAT = "PUSHUIEVENT_PLAYER_BEGIN_COMBAT"
 PushUIAPI.PUSHUIEVENT_PLAYER_END_COMBAT = "PUSHUIEVENT_PLAYER_END_COMBAT"
 local function __quit_combat_handler(...)
-    print("end combat")
     PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_PLAYER_END_COMBAT)
 end
 local function __in_combat_handler(...)
-    print("begin combat")
     PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_PLAYER_BEGIN_COMBAT)
 end
 PushUIRegisterEvent("PLAYER_REGEN_ENABLED", "PushUIEventQuitCombat", __quit_combat_handler)
 PushUIRegisterEvent("PLAYER_REGEN_DISABLED", "PushUIEventInCombat", __in_combat_handler)
+
+-- Vechicle Events
+PushUIAPI.PUSHUIEVENT_PLAYER_ENTER_VECHILE = "PUSHUIEVENT_PLAYER_ENTER_VECHILE"
+PushUIAPI.PUSHUIEVENT_PLAYER_EXIT_VECHILE = "PUSHUIEVENT_PLAYER_EXIT_VECHILE"
+local function __enter_vechile(...)
+    PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_PLAYER_ENTER_VECHILE)
+end
+local function __exit_vechile(...)
+    PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUSHUIEVENT_PLAYER_EXIT_VECHILE)
+end
+PushUIRegisterEvent("UNIT_ENTERED_VEHICLE", "PushUIEventVehicleEntered", __enter_vechile)
+PushUIRegisterEvent("UNIT_EXITED_VEHICLE", "PushUIEventVehicleExited", __exit_vechile)
 
 -- by Push Chen
 -- twitter: @littlepush

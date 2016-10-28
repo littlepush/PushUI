@@ -116,6 +116,13 @@ function PushUIFrames.UnitFrame:c_str( assets, obj_id, auras_assets )
     self.auraPanel = PushUIFrames.UIView(self.hookbar)
     self.buffGroup = PushUIAPI.Array()
     self.debuffGroup = PushUIAPI.Array()
+
+    -- Hook Bar
+    self._fakeUF = CreateFrame("Button", "PushUIFrames"..obj_id.."HookBar", UIParent, "SecureUnitButtonTemplate")
+    self._fakeUF.unit = obj_id
+    self._fakeUF:SetAttribute("unit", obj_id)
+    self._fakeUF:SetAttribute("type", "target")
+    self._rightClickAction = nil;
 end
 
 function PushUIFrames.UnitFrame:reset_auras()
@@ -231,6 +238,14 @@ function PushUIFrames.UnitFrame:initialize()
     self.auraPanel:set_position(0, -8)
     self.auraPanel:set_backgroundColor(PushUIColor.black, 0)
     self.auraPanel:set_borderColor(PushUIColor.black, 0)
+
+    -- Fake UF
+    self._fakeUF:EnableMouse(true)
+    self._fakeUF:SetScript("OnMouseDown", function(_, btn)
+        if btn == "RightButton" then
+            if self._rightClickAction then self._rightClickAction() end
+        end
+    end)
 end
 
 function PushUIFrames.UnitFrame:layout(config)
@@ -308,6 +323,11 @@ function PushUIFrames.UnitFrame:layout(config)
     self.healthMaxValue:set_wbounds(config.maxHpMaxWidth)
     self.healthMaxValue:set_position(config.maxHpXPosition, config.maxHpYPosition)
 
+    -- FakeUF
+    self._fakeUF:SetWidth(config.width)
+    self._fakeUF:SetHeight(config.height)
+    self._fakeUF:SetPoints("TOPLEFT", self.hookbar.layer, "TOPLEFT", 0, 0)
+
     self.apiAssets:del_valueChanged("uf_valueChanged")
     self.apiAssets:add_valueChanged("uf_valueChanged", function(_, hpValue)
         self.healthBar:set_barColor(config.healthBarColor(self.objectID, hpValue.hp, hpValue.max_hp))
@@ -322,6 +342,10 @@ function PushUIFrames.UnitFrame:layout(config)
     else
         self.hookbar:set_hidden(true)
     end
+end
+
+function PushUIFrames.UnitFrame:set_rightClickAction(func)
+    self._rightClickAction = func
 end
 
 function PushUIFrames.UnitFrame:set_archor(...)

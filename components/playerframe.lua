@@ -47,13 +47,8 @@ playerUnitFrame:layout({
 });
 playerUnitFrame.healthBar:set_alpha(0.7)
 
-playerUnitFrame.hookbar:set_user_interactive(true)
-playerUnitFrame.hookbar:add_action("PUIEventMouseUp", "click", function(_, btn)
-    if btn == "LeftButton" then
-        -- TargetUnit("player")
-    else
-        ToggleDropDownMenu(1, nil, PlayerFrameDropDown, playerUnitFrame.hookbar.layer, 0, 0)
-    end
+playerUnitFrame:set_rightClickAction(function()
+    ToggleDropDownMenu(1, nil, PlayerFrameDropDown, playerUnitFrame.hookbar.layer, 0, 0)
 end)
 
 PlayerFrame:SetScript("OnEvent", nil)
