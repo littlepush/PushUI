@@ -48,7 +48,7 @@ targetUnitFrame:layout({
 targetUnitFrame.healthBar:set_alpha(0.7)
 
 targetUnitFrame:set_rightClickAction(function()
-    ToggleDropDownMenu(1, nil, PlayerFrameDropDown, targetUnitFrame.hookbar.layer, 0, 0)
+    ToggleDropDownMenu(1, nil, TargetFrameDropDown, targetUnitFrame.hookbar.layer, 0, 0)
 end)
 
 TargetFrame:SetScript("OnEvent", nil)

@@ -21,7 +21,7 @@ function PushUIFrames.AuraButton:c_str(...)
     self.count = PushUIFrames.UILabel(self)
     self.tip = PushUIFrames.UILabel(self)
 
-    self.aura = nil
+    self._savedAura = nil
 end
 function PushUIFrames.AuraButton:initialize()
     self:set_backgroundColor(PushUIColor.black, 0)
@@ -33,6 +33,8 @@ function PushUIFrames.AuraButton:initialize()
     self.progress:set_size(AConfig.width, AConfig.pbHeight)
     self.progress:set_style("h-l-r")
     self.progress:set_position(0, -AConfig.height)
+    self.progress:set_backgroundColor(PushUIColor.black, 0.8)
+    self.progress:set_borderColor(PushUIColor.black, 0.8)
 
     self.count:set_fontname("Interface\\AddOns\\PushUI\\meida\\fontn.ttf")
     self.count:set_fontsize(AConfig.countfs)
@@ -64,14 +66,14 @@ function PushUIFrames.AuraButton:initialize()
         end)
     end)
     self:add_action("PUIEventMouseUp", "up", function()
-        if not self.aura and self.aura.isbuff then
+        if self.aura and self.aura.isbuff then
             CancelUnitBuff("player", self.aura.name)
         end
     end)
     self:set_user_interactive(true)
 end
 function PushUIFrames.AuraButton:set_aura(aura)
-    self.aura = aura;
+    self._savedAura = aura;
     self.icon:set_image(aura.icon)
 
     if aura.isbuff then
@@ -96,8 +98,8 @@ function PushUIFrames.AuraButton:set_aura(aura)
     self.tip:set_text(aura.name)
 end
 function PushUIFrames.AuraButton:refresh_progress()
-    if aura.expirationTime ~= 0 then
-        self.progress:set_value(aura.expirationTime - GetTime())
+    if self._savedAura.expirationTime ~= 0 then
+        self.progress:set_value(self._savedAura.expirationTime - GetTime())
     end
 end
 local _auraButtonPool = PushUIAPI.Pool(function() return PushUIFrames.AuraButton(); end)
@@ -117,12 +119,19 @@ function PushUIFrames.UnitFrame:c_str( assets, obj_id, auras_assets )
     self.buffGroup = PushUIAPI.Array()
     self.debuffGroup = PushUIAPI.Array()
 
+    self._nameSize = 0
+
     -- Hook Bar
     self._fakeUF = CreateFrame("Button", "PushUIFrames"..obj_id.."HookBar", UIParent, "SecureUnitButtonTemplate")
     self._fakeUF.unit = obj_id
     self._fakeUF:SetAttribute("unit", obj_id)
     self._fakeUF:SetAttribute("type", "target")
     self._rightClickAction = nil;
+    self._fakeUF:SetFrameLevel(self.healthBar.layer:GetFrameLevel() + 1)
+
+    if self.aurasAssets ~= nil then
+        self._auraTimer = PushUIAPI.Timer()
+    end
 end
 
 function PushUIFrames.UnitFrame:reset_auras()
@@ -141,14 +150,26 @@ end
 function PushUIFrames.UnitFrame:initialize()
     self.apiAssets:add_displayChanged("display_status", function(_, can)
         if not can then 
-            self.hookbar:set_hidden(true) 
+            self.hookbar:set_hidden(true)
+            self._fakeUF:Hide()
+            if self._auraTimer then self._auraTimer:stop() end
         else
             self.hookbar:set_hidden(false)
+            self._fakeUF:Show()
+            if self._auraTimer then self._auraTimer:start() end
         end
     end)
     self.apiAssets:add_valueChanged("value_changed", function(_, hpValue)
         --hp/max_hp
-        self.name:set_text(UnitName(self.objectID))
+        local _name = UnitName(self.objectID)
+        local _ns = self._nameSize
+        local _nl = _name:len() / 3 -- Unicode
+        if _nl > 6 then
+            _ns = _ns / (_nl / 6)
+        end
+        self.name:set_fontsize(_ns)
+        self.name:set_text(_name)
+
         self.healthBar:set_max(hpValue.max_hp)
         self.healthBar:set_value(hpValue.hp)
         self.healthMaxValue:set_text(hpValue.max_hp)
@@ -246,6 +267,20 @@ function PushUIFrames.UnitFrame:initialize()
             if self._rightClickAction then self._rightClickAction() end
         end
     end)
+
+    -- Timer
+    if self._auraTimer then
+        self._auraTimer:set_interval(1)
+        self._auraTimer:set_target(self)
+        self._auraTimer:set_handler(function(target)
+            target.buffGroup:for_each(function(_, abtn)
+                abtn:refresh_progress()
+            end)
+            target.debuffGroup:for_each(function(_, abtn)
+                abtn:refresh_progress()
+            end)
+        end)
+    end
 end
 
 function PushUIFrames.UnitFrame:layout(config)
@@ -304,6 +339,7 @@ function PushUIFrames.UnitFrame:layout(config)
 
     -- name
     self.name:set_fontsize(config.nameSize)
+    self._nameSize = config.nameSize
     self.name:set_fontflag(config.nameFlag)
     self.name:set_align(config.nameAlign)
     self.name:set_wbounds(config.nameMaxWidth)
@@ -326,7 +362,7 @@ function PushUIFrames.UnitFrame:layout(config)
     -- FakeUF
     self._fakeUF:SetWidth(config.width)
     self._fakeUF:SetHeight(config.height)
-    self._fakeUF:SetPoints("TOPLEFT", self.hookbar.layer, "TOPLEFT", 0, 0)
+    self._fakeUF:SetPoint("TOPLEFT", self.hookbar.layer, "TOPLEFT", 0, 0)
 
     self.apiAssets:del_valueChanged("uf_valueChanged")
     self.apiAssets:add_valueChanged("uf_valueChanged", function(_, hpValue)
@@ -339,6 +375,7 @@ function PushUIFrames.UnitFrame:layout(config)
         self.hookbar:set_hidden(false)
         self.name:set_text(UnitName(self.objectID))
         self.apiAssets:valueChanged()
+        if self._auraTimer then self._auraTimer:start() end
     else
         self.hookbar:set_hidden(true)
     end

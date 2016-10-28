@@ -295,6 +295,7 @@ PushUIAPI_Timer_FireFrame.__updateFunc = function(...)
     PushUIAPI_Timer_FireFrame.__timerMap:for_each(function(_, timer)
         if (_nowtime - timer:last_fire_time()) >= timer:interval() then
             timer:fire()
+            timer.__last_fire_time = _nowtime
         end
     end)
 end
@@ -354,7 +355,10 @@ function PushUIAPI.Timer:interval()
 end
 function PushUIAPI.Timer:fire()
     if not self.__handler then return end
-    self.__handler()
+    self.__handler(self.__target)
+end
+function PushUIAPI.Timer:set_target(target)
+    self.__target = target
 end
 function PushUIAPI.Timer:set_handler(handler)
     self.__handler = handler
@@ -364,10 +368,11 @@ function PushUIAPI.Timer:set_interval(interval)
     self.__savedinterval = interval
     if self.__savedinterval <= 0 then self:stop() end
 end
-function PushUIAPI.Timer.new(interval, handler)
+function PushUIAPI.Timer.new(interval, target, handler)
     return setmetatable({
         __last_fire_time = 0,
         __savedinterval = interval,
+        __target = target,
         __handler = handler,
         __running = false,
         __tmp_name = ""
