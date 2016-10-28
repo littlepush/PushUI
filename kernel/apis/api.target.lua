@@ -22,6 +22,13 @@ function PushUIAPI.TargetHP:UNIT_HEALTH(unit_id)
     end
     self:set_current_value({hp = UnitHealth("target"), max_hp = UnitHealthMax("target")})
 end
+-- PushUIAPI.TargetHP._refreshTimer = PushUIAPI.Timer(1, nil, function(...)
+--     if false == UnitExists("target") then
+--         PushUIAPI.TargetHP:set_candisplay(false)
+--         PushUIAPI.TargetHP:displayStatusChanged()
+--     end
+-- end)
+-- PushUIAPI.TargetHP._refreshTimer:start()
 
 -- Get TargetTarget Info
 PushUIAPI.TargetTargetHP = PushUIAPI.Assets("UNIT_TARGET", "UNIT_HEALTH")

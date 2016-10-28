@@ -4,7 +4,7 @@ local
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
 local function _debug_initFunction()
-    SELECTED_CHAT_FRAME:AddMessage("This is a test string for PLAYER ENTERING WORLD")
+    SELECTED_CHAT_FRAME:AddMessage("PushUI by Push @littlepush")
     --eventHandler_newWatchingQuest(nil, PushUIAPI.NormalQuests.questList)
     PushUIAPI.EventCenter:FireEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_NEWWATCH, PushUIAPI.NormalQuests.questList)
 

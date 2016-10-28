@@ -315,8 +315,13 @@ function PushUIFrames.UIView:scale()
 end
 
 function PushUIFrames.UIView:set_hidden(hidden)
-    if hidden then self.layer:Hide() 
-    else self.layer:Show() end
+    if hidden then 
+        self.layer:Hide() 
+        self.layer:SetAlpha(0)
+    else 
+        self.layer:SetAlpha(1)
+        self.layer:Show() 
+    end
 end
 
 function PushUIFrames.UIView:is_hidden()

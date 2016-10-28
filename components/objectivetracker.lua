@@ -280,24 +280,24 @@ PushUIAPI.EventCenter:RegisterEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_NEWWATCH, "n
 PushUIAPI.EventCenter:RegisterEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_UNWATCH, "nq_unwatch", eventHandler_unWatchingQuest)
 PushUIAPI.EventCenter:RegisterEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_UPDATE, "nq_update", eventHandler_updateQuest)
 
+-- Left Quest 
+local _leftDisplayingBlocks = PushUIAPI.Map()
+local _blockKey_Scenario = "a"
+local _blockKey_Challenge = "b"
+local _blockKey_Bonus = "c"
+local _blockKey_World = "d"
+local __leftBlockAllHeight = 0
+local function LeftBlocksReDisplay()
+    __leftBlockAllHeight = 30
+    _leftDisplayingBlocks:for_each(function(_, block)
+        block:ClearAllPoints()
+        block:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 30, -_othook.__leftBlockAllHeight)
+        __leftBlockAllHeight = __leftBlockAllHeight + block:GetHeight() + _config.padding
+    end)
+end
+
 
 -- -- Stages
--- local _leftDisplayingBlocks = PushUIAPI.Map()
--- _othook.leftDisplayingBlocks = _leftDisplayingBlocks
--- local _blockKey_Scenario = "a"
--- local _blockKey_Challenge = "b"
--- local _blockKey_Bonus = "c"
--- local _blockKey_World = "d"
-
--- _othook.__leftBlockAllHeight = 0
--- _othook.LeftBlocksReDisplay = function()
---     _othook.__leftBlockAllHeight = 30
---     _othook.leftDisplayingBlocks:for_each(function(_, block)
---         block:ClearAllPoints()
---         block:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 30, -_othook.__leftBlockAllHeight)
---         _othook.__leftBlockAllHeight = _othook.__leftBlockAllHeight + block:GetHeight() + _config.padding
---     end)
--- end
 
 -- _othook._worldBlockKeyAllCount = 0
 -- _othook._worldBlockKeyPool = PushUIAPI.Pool(function()

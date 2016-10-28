@@ -152,10 +152,12 @@ function PushUIFrames.UnitFrame:initialize()
         if not can then 
             self.hookbar:set_hidden(true)
             self._fakeUF:Hide()
+            self._fakeUF:EnableMouse(false)
             if self._auraTimer then self._auraTimer:stop() end
         else
             self.hookbar:set_hidden(false)
             self._fakeUF:Show()
+            self._fakeUF:EnableMouse(true)
             if self._auraTimer then self._auraTimer:start() end
         end
     end)
