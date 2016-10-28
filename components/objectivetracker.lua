@@ -14,10 +14,10 @@ ObjectiveTrackerFrame:Hide()
 local _config = PushUIConfig.ObjectiveTrackerHook
 if not _config then
     _config = {
-        width = 150,
+        width = 160,
         padding = 7,
         hideInCombat = true,
-        objectiveFontSize = 14,
+        objectiveFontSize = 12,
         outline = "",
         fontName = "Fonts\\ARIALN.TTF",
         autoResize = false
