@@ -352,7 +352,7 @@ function PushUIFrames.UnitFrame:layout(config)
     self.healthBar:set_size(config.width, config.healthBarHeight)
     self.healthBar:set_position(config.healthBarXPosition, config.healthBarYPosition)
     self.healthBar:set_style(config.healthBarStyle)
-    self.healthBar:set_alpha(0.45)
+    self.healthBar:set_alpha(0.75)
 
     -- name
     self.name:set_fontsize(config.nameSize)
