@@ -42,6 +42,9 @@ PushUIAPI.EventCenter:RegisterEvent(
             0.35, 
             function(ohv) 
                 ohv:set_alpha(0)
+            end, 
+            function(ohv)
+                ohv:set_hidden(true)
             end)
     end
     )
@@ -49,6 +52,7 @@ PushUIAPI.EventCenter:RegisterEvent(
     PushUIAPI.PUSHUIEVENT_PLAYER_END_COMBAT,
     "ObjectiveHookViewDisplayAnimation",
     function(...)
+        _objHookView:set_hidden(false)
         _objHookView:animation_with_duration(
             0.35,
             function(ohv)

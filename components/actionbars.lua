@@ -338,6 +338,13 @@ PushUIFrameActionBarLayout.ReSize = function()
 
     PushUIFrameActionBarLayout.ReSizePetButtons()
     PushUIFrameActionBarLayout.ReSizeVehicleButton()
+
+    local _w = PushUISize.actionButtonSize * PushUIConfig.ActionBarGridScale
+    for i = 1, 3 do
+        local _sbtn = _G["StanceButton"..i]
+        _sbtn:ClearAllPoints()
+        _sbtn:SetPoint("BOTTOMLEFT", PushUIFrameActionBarFrame, "TOPLEFT", (i - 1) * _w, _w)
+    end
 end
 
 PushUIFrameActionBarLayout.Init = function(...)

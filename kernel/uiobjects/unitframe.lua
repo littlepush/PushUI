@@ -3,12 +3,12 @@ local
     PushUIStyle, PushUIAPI, 
     PushUIConfig, PushUIFrames = unpack(select(2, ...))
 
-local _size = 24
+local _size = 25
 local AConfig = {
     width = _size,
     height = _size,
     pbHeight = _size * 0.15,
-    countfs = _size * 0.5,
+    countfs = _size * 0.75,
     flag = "OUTLINE",
     buffColor = PushUIColor.blue,
     debuffColor = PushUIColor.red
@@ -34,13 +34,14 @@ function PushUIFrames.AuraButton:initialize()
     self.progress:set_style("h-l-r")
     self.progress:set_position(0, -AConfig.height)
     self.progress:set_backgroundColor(PushUIColor.black, 0.8)
-    self.progress:set_borderColor(PushUIColor.black, 0.8)
+    self.progress:set_borderColor(PushUIColor.black, 0)
 
     self.count:set_fontname("Interface\\AddOns\\PushUI\\meida\\fontn.ttf")
     self.count:set_fontsize(AConfig.countfs)
     self.count:set_fontflag(AConfig.flag)
     self.count:set_archor("TOPRIGHT")
     self.count:set_archor_target(self.layer, "TOPRIGHT")
+    self.count:set_fontcolor(PushUIColor.orange)
     self.count:set_position(-2, -2)
 
     self:set_size(AConfig.width, AConfig.height + AConfig.pbHeight)
@@ -66,8 +67,8 @@ function PushUIFrames.AuraButton:initialize()
         end)
     end)
     self:add_action("PUIEventMouseUp", "up", function()
-        if self.aura and self.aura.isbuff then
-            CancelUnitBuff("player", self.aura.name)
+        if self._savedAura and self._savedAura.isbuff then
+            CancelUnitBuff("player", self._savedAura.name)
         end
     end)
     self:set_user_interactive(true)
@@ -132,6 +133,8 @@ function PushUIFrames.UnitFrame:c_str( assets, obj_id, auras_assets )
     if self.aurasAssets ~= nil then
         self._auraTimer = PushUIAPI.Timer()
     end
+
+    self._allowToDisplay = false
 end
 
 function PushUIFrames.UnitFrame:reset_auras()
@@ -149,15 +152,14 @@ end
 
 function PushUIFrames.UnitFrame:initialize()
     self.apiAssets:add_displayChanged("display_status", function(_, can)
+        self._allowToDisplay = can
         if not can then 
-            self.hookbar:set_hidden(true)
-            self._fakeUF:Hide()
-            self._fakeUF:EnableMouse(false)
+            self.hookbar:animation_with_duration(0.3, function(hb) hb:set_alpha(0) end)
+            -- self.hookbar:set_alpha(0)
             if self._auraTimer then self._auraTimer:stop() end
         else
-            self.hookbar:set_hidden(false)
-            self._fakeUF:Show()
-            self._fakeUF:EnableMouse(true)
+            self.hookbar:animation_with_duration(0.3, function(hb) hb:set_alpha(1) end)
+            -- self.hookbar:set_alpha(1)
             if self._auraTimer then self._auraTimer:start() end
         end
     end)
@@ -174,16 +176,27 @@ function PushUIFrames.UnitFrame:initialize()
 
         self.healthBar:set_max(hpValue.max_hp)
         self.healthBar:set_value(hpValue.hp)
-        self.healthMaxValue:set_text(hpValue.max_hp)
+
+        local _maxString = hpValue.max_hp
+        if hpValue.max_hp > 1000000000 then
+            _maxString = ("%.2f"):format(hpValue.max_hp / 1000000000).."B"
+        elseif hpValue.max_hp > 1000000 then
+            _maxString = ("%.2f"):format(hpValue.max_hp / 1000000).."M"
+        elseif hpValue.max_hp > 1000 then
+            _maxString = ("%.2f"):format(hpValue.max_hp / 1000).."K"
+        end
+        self.healthMaxValue:set_text(_maxString)
         self.healthPercentage:set_text(("%.1f"):format(hpValue.hp / hpValue.max_hp * 100).."%")
     end)
     if self.aurasAssets ~= nil then
         self.aurasAssets:add_displayChanged("display_status", function(_, can)
             if not can then
                 -- hide 
-                self.auraPanel:set_hidden(true)
+                self.auraPanel:set_alpha(0)
+                -- self.auraPanel:set_hidden(true)
             else
-                self.auraPanel:set_hidden(false)
+                self.auraPanel:set_alpha(1)
+                -- self.auraPanel:set_hidden(false)
             end
         end)
         self.aurasAssets:add_valueChanged("value_changed", function(_, auraList)
@@ -265,6 +278,7 @@ function PushUIFrames.UnitFrame:initialize()
     -- Fake UF
     self._fakeUF:EnableMouse(true)
     self._fakeUF:SetScript("OnMouseDown", function(_, btn)
+        if self._allowToDisplay == false then return end
         if btn == "RightButton" then
             if self._rightClickAction then self._rightClickAction() end
         end
@@ -338,6 +352,7 @@ function PushUIFrames.UnitFrame:layout(config)
     self.healthBar:set_size(config.width, config.healthBarHeight)
     self.healthBar:set_position(config.healthBarXPosition, config.healthBarYPosition)
     self.healthBar:set_style(config.healthBarStyle)
+    self.healthBar:set_alpha(0.45)
 
     -- name
     self.name:set_fontsize(config.nameSize)
@@ -373,13 +388,10 @@ function PushUIFrames.UnitFrame:layout(config)
         self.healthPercentage:set_fontcolor(config.percentageColor(self.objectID, hpValue.hp, hpValue.max_hp))
         self.healthMaxValue:set_fontcolor(config.maxHpColor(self.objectID, hpValue.hp, hpValue.max_hp))
     end)
+    self.apiAssets:displayStatusChanged()
     if self.apiAssets:can_display() then
-        self.hookbar:set_hidden(false)
         self.name:set_text(UnitName(self.objectID))
         self.apiAssets:valueChanged()
-        if self._auraTimer then self._auraTimer:start() end
-    else
-        self.hookbar:set_hidden(true)
     end
 end
 
