@@ -79,6 +79,8 @@ function PushUIFrames.UIView:c_str(parent, ...)
     self._save_x = 0
     self._save_y = 0
 
+    self._user_interactive = false
+
     self._animationStage = PushUIFrames.AnimationStage(self)
     self._doing_animation = false
 
@@ -97,6 +99,7 @@ function PushUIFrames.UIView:c_str(parent, ...)
 end
 
 function PushUIFrames.UIView:set_user_interactive(enable)
+    self._user_interactive = enable
     if ( enable ) then
         PushUIFrames._uiMap:set(self.id, self)
     else
@@ -171,13 +174,6 @@ function PushUIFrames.UIView:enable_drag(enable)
         self:del_action("PUIEventMouseDown", "_")
         self:del_action("PUIEventMouseUp", "_")
         self:del_action("PUIEventMouseMove", "_")
-    end
-end
-function PushUIFrames.UIView:set_user_interactive(enable)
-    if ( enable ) then
-        PushUIFrames._uiMap:set(self.id, self)
-    else
-        PushUIFrames._uiMap:unset(self.id, self)
     end
 end
 function PushUIFrames.UIView:set_backgroundColor(color_pack, alpha)
@@ -258,7 +254,11 @@ function PushUIFrames.UIView:size()
 end
 function PushUIFrames.UIView:set_archor_target(archor_obj, archor)
     if archor_obj then
-        self._save_target_archor_obj = archor_obj
+        if archor_obj.layer then
+            self._save_target_archor_obj = archor_obj.layer
+        else
+            self._save_target_archor_obj = archor_obj
+        end
     end
     if archor then
         self._save_target_archor = archor
@@ -318,9 +318,17 @@ function PushUIFrames.UIView:set_hidden(hidden)
     if hidden then 
         self.layer:Hide() 
         self.layer:SetAlpha(0)
+        -- self:set_alpha(0)
+        -- if self._user_interactive == true then
+        --     PushUIFrames._uiMap:unset(self.id)
+        -- end
     else 
         self.layer:SetAlpha(1)
         self.layer:Show() 
+        -- self:set_alpha(1)
+        -- if self._user_interactive == true then
+        --     PushUIFrames._uiMap:set(self.id, self)
+        -- end
     end
 end
 

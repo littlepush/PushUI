@@ -18,7 +18,7 @@ if not _config then
         padding = 7,
         hideInCombat = true,
         objectiveFontSize = 12,
-        outline = "",
+        outline = "OUTLINE",
         fontName = "Fonts\\ARIALN.TTF",
         autoResize = false
     }
@@ -84,6 +84,9 @@ end
 
 -- Progress Bar
 local PUIQuestProgressBar = PushUIAPI.inhiert(PushUIFrames.UIProgressBar)
+function PUIQuestProgressBar:c_str()
+    self.label = PushUIFrames.UILabel(self)
+end
 function PUIQuestProgressBar:initialize()
     self:set_width(_config.width - 2 * _config.padding)
     self:set_height(_lineHeight)
@@ -92,8 +95,61 @@ function PUIQuestProgressBar:initialize()
     self:set_archor("TOPLEFT")
     -- Default style
     self:set_style("h-l-r")
+
+    -- Label
+    self.label:set_fontcolor(PushUIColor.white)
+    self.label:set_fontflag(_config.outline)
+    self.label:set_fontsize(_config.objectiveFontSize)
+    self.label:set_align("CENTER")
+    self.label:set_width(self:width())
+    self.label:set_height(_lineHeight)
+    self.label:set_position()
+end
+function PUIQuestProgressBar:update_currentValue(value, max)
+    max = max or self.max()
+    self:set_max(max)
+    self:set_value(value)
+    self.label:set_text(("%.1f"):format((value / max) * 100).."%")
 end
 
+-- Timer
+local PUIQuestTimer = PushUIAPI.inhiert(PushUIFrames.UIProgressBar)
+function PUIQuestTimer:c_str()
+    self.label = PushUIFrames.UILabel(self)
+end
+function PUIQuestTimer:initialize()
+    self:set_width(_config.width - 2 * _config.padding)
+    self:set_height(_lineHeight)
+    self:set_backgroundColor(PushUIColor.black)
+    self:set_barColor(PushUIColor.blue)
+    self:set_archor("TOPLEFT")
+    -- Default style
+    self:set_style("h-l-r")
+
+    -- Label
+    self.label:set_fontcolor(PushUIColor.white)
+    self.label:set_fontflag(_config.outline)
+    self.label:set_fontsize(_config.objectiveFontSize)
+    self.label:set_align("CENTER")
+    self.label:set_width(self:width())
+    self.label:set_height(_lineHeight)
+    self.label:set_position()
+
+    -- Timer
+    self._countdownTimer = PushUIAPI.Timer(1, self, function(qt)
+        if qt:value() == 0 then return end
+        qt:reduce_value()
+        qt.label:set_text(PushUIAPI.DurationFormat(qt:value()))
+    end)
+end
+function PUIQuestTimer:begin_countdown(now, duration)
+    self:set_max(duration)
+    self:set_value(now)
+    self._countdownTimer:start()
+end
+function PUIQuestTimer:end_countdown()
+    self._countdownTimer:stop()
+end
 
 -- Objective Label Stack
 local _objPool = PushUIAPI.Pool(function()
@@ -102,6 +158,9 @@ end)
 local _pbPool = PushUIAPI.Pool(function()
     return PUIQuestProgressBar()
 end)
+local _qtPool = PushUIAPI.Pool(function()
+    return PUIQuestTimer()
+end)
 
 -- Detail Block
 local PUIQuestDetailPanel = PushUIAPI.inhiert(PushUIFrames.UIView)
@@ -109,6 +168,7 @@ function PUIQuestDetailPanel:initialize()
     self._objs = PushUIAPI.Array()
     self._dobjs = PushUIAPI.Array()
     self._pobjs = PushUIAPI.Array()
+    self._tobjs = PushUIAPI.Array()
 
     self:set_width(_config.width)
     PushUIConfig.skinType(self.layer)
@@ -128,15 +188,20 @@ end
 function PUIQuestDetailPanel:add_detail_progress(value, max)
     local _pb = _pbPool:get()
     _pb:set_hidden(false)
-    _pb:set_max(max)
-    _pb:set_value(value)
+    _pb:update_currentValue(value, max)
 
     _pb:set_archor_target(self, "TOPLEFT")
     self._pobjs:push_back(_pb)
     self._objs:push_back(_pb)
 end
 function PUIQuestDetailPanel:add_detail_timer(now, duration)
-    --
+    local _qt = _qtPool:get()
+    _qt:set_hidden(false)
+    _qt:set_archor_target(self, "TOPLEFT")
+    self._tobjs:push_back(_qt)
+    self._objs:push_back(_qt)
+
+    _qt:begin_countdown(now, duration)
 end
 function PUIQuestDetailPanel:recycle()
     self._dobjs:for_each(function(index, lb)
@@ -149,6 +214,12 @@ function PUIQuestDetailPanel:recycle()
         _pbPool:release(pb)
     end)
     self._pobjs:clear()
+    self._tobjs:for_each(function(index, qt)
+        qt:end_countdown()
+        qt:set_hidden(true)
+        _qtPool:release(qt)
+    end)
+    self._tobjs:clear()    
 
     self._objs:clear()
 end
@@ -226,9 +297,9 @@ function PUIQuestBlock:set_quest(quest)
     self._hasDetail = false
 
     -- Open auto complete quest
-    -- if quest.isAutoComplete then
-    --     QuestMapFrame_OpenToQuestDetails(quest.questID)
-    -- end
+    if quest.isComplete and quest.isAutoComplete then
+        QuestMapFrame_OpenToQuestDetails(quest.questID)
+    end
 
     if quest.numObjectives == 0 then return end
     self._hasDetail = true
@@ -288,12 +359,6 @@ PushUIAPI.EventCenter:RegisterEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_UNWATCH, "nq
 PushUIAPI.EventCenter:RegisterEvent(PushUIAPI.PUIEVENT_NORMAL_QUEST_UPDATE, "nq_update", eventHandler_updateQuest)
 
 -- Left Quest 
-local _leftDisplayingBlocks = PushUIAPI.Map()
-local _blockKey_Scenario = "a"
-local _blockKey_Challenge = "b"
-local _blockKey_Bonus = "c"
-local _blockKey_World = "d"
-local __leftBlockAllHeight = 0
 local function LeftBlocksReDisplay()
     __leftBlockAllHeight = 30
     _leftDisplayingBlocks:for_each(function(_, block)
@@ -346,6 +411,7 @@ function PUISpecialBlock:initialize()
     self.description:set_wbounds(_config.width)
     self.description:set_fontcolor(PushUIColor.white)
     self.description:set_archor_target(self.subtitle.layer, "BOTTOMLEFT")
+    self.description:set_padding(_textPadding)
     self.description:set_position()
 
     -- Detail Panel
@@ -353,592 +419,275 @@ function PUISpecialBlock:initialize()
     self.detail:set_position(0, -_config.padding)
 end
 
+function PUISpecialBlock:displayHeight() return self._displayHeight end
+
 function PUISpecialBlock:set_infomation(title, subtitle, description)
     self.title:set_text(title)
     self.subtitle:set_text(subtitle)
     self.description:set_text(description)
 
-    self._displayHeight = self.title:height() + self.subtitle:height() + self.description:height()
 end
 
 function PUISpecialBlock:add_detail_text(text, finished)
     self.detail:add_detail_text(text, finished)
 end
 
-
--- -- Stages
-
--- _othook._worldBlockKeyAllCount = 0
--- _othook._worldBlockKeyPool = PushUIAPI.Pool(function()
---     _othook._worldBlockKeyAllCount = _othook._worldBlockKeyAllCount + 1
---     return _blockKey_World.._othook._worldBlockKeyAllCount
--- end)
-
--- _othook._worldBlockKeyFree = function(key)
---     _othook._worldBlockKeyPool:release(key)
--- end
--- _othook._worldBlockKeyGet = function()
---     return _othook._worldBlockKeyPool:get()
--- end
--- _othook._worldQuestBlockKeyMap = PushUIAPI.Map()
-
--- _othook._specialBlock = {}
-
--- _othook._setSpecialBlock = function(key, block)
---     _othook._specialBlock[key] = block
--- end
-
--- _othook._getSpecialBlock = function(key)
---     return _othook._specialBlock[key]
--- end
-
--- _othook._clearSpecialBlock = function(key)
---     local _block = _othook._getSpecialBlock(key)
---     if _block == nil then return end
-
---     _block:Hide()
---     _block.ClearAllDetailBlock()
-
---     _leftDisplayingBlocks:unset(key)
--- end
-
--- _othook._initializeSpecialBlock = function(key)
---     local _block = _othook._getSpecialBlock(key)
---     if _block ~= nil then 
---         _block:Show()
---         if _leftDisplayingBlocks:contains(key) == false then
---             _leftDisplayingBlocks:set(key, _block)
---         end
---         return 
---     end
-
---     _block = CreateFrame("Frame", _othook.name..key, UIParent)
---     _block:SetWidth(_config.width)
---     PushUIConfig.skinType(_block)
-
---     -- Quest Title: Quest Name
---     local _titlelb = PushUIFrames.Label.Create(_othook.name..key.."_Title", _block)
---     _titlelb.SetFont(_config.fontName, _config.titleFontSize, _config.outline)
---     _titlelb.SetJustifyH("CENTER")
---     _titlelb.SetPadding(_config.padding)
---     _titlelb.SetForceWidth(_config.width)
---     _titlelb.SetTextColor(unpack(PushUIColor.orange))
---     _block.titleLabel = _titlelb
-
---     -- Subtitle: set to empty to hide the label
---     local _subtitlelb = PushUIFrames.Label.Create(_othook.name..key.."_SubTitle", _block)
---     _subtitlelb.SetFont(_config.fontName, _config.objectiveFontSize, _config.outline)
---     _subtitlelb.SetJustifyH("LEFT")
---     _subtitlelb.SetPadding(_config.padding)
---     _subtitlelb.SetForceWidth(_config.width)
---     _block.subtitleLabel = _subtitlelb
-
---     -- Description Label
---     local _desplb = PushUIFrames.Label.Create(_othook.name..key.."_Description", _block)
---     _desplb.SetFont(_config.fontName, _config.objectiveFontSize, _config.outline)
---     _desplb.SetJustifyH("LEFT")
---     _desplb.SetPadding(_config.padding)
---     _desplb.SetForceWidth(_config.width)
---     _desplb.SetTextColor(unpack(PushUIColor.silver))
---     _block.descriptionLabel = _desplb
-
---     -- Detail Blocks
---     _block.detailBlocks = PushUIAPI.Array()
-
---     -- Detail Block Cache
---     _block.CreateDetailBlock = function()
---         local _detailBlock = CreateFrame("Frame", nil, _block)
---         _detailBlock:SetWidth(_config.width)
-
---         local _detailLabel = PushUIFrames.Label.Create(nil, _detailBlock)
---         _detailLabel.SetForceWidth(_config.width - 2 * _config.padding)
---         _detailLabel.SetFont(_config.fontName, _config.objectiveFontSize - 1, _config.outline)
---         _detailLabel.SetJustifyH("LEFT")
---         _detailLabel.SetPadding(_config.padding)
---         _detailBlock.textLabel = _detailLabel
---         _detailBlock.SetText = function(text) 
---             _detailBlock.textLabel.SetTextString(text)
---         end
-
---         local _detailPb = PushUIFrames.ProgressBar.Create(nil, _detailBlock, nil, "HORIZONTAL")
---         _detailPb:SetHeight(_config.objectiveFontSize - 1)
---         _detailPb:SetWidth(_config.width - 2 * _config.padding)
---         _detailPb:SetStatusBarColor(unpack(PushUIColor.green))
---         _detailBlock.progressBar = _detailPb
---         _detailBlock.SetProgressValue = function(v, min, max)
---             _detailPb:SetMinMaxValues(min, max)
---             _detailPb:SetValue(v)
---         end
-
---         local _pbLabel = PushUIFrames.Label.Create(nil, _detailPb)
---         _pbLabel.SetJustifyH("CENTER")
---         _pbLabel.SetFont(_config.fontName, _config.objectiveFontSize - 3, _config.outline)
---         _pbLabel.SetPadding(1)
---         _pbLabel.SetForceWidth(_config.width - 2 * _config.padding)
---         _pbLabel:SetPoint("TOPLEFT", _detailPb, "TOPLEFT", 0, -1)
---         _detailBlock.progressLabel = _pbLabel
---         _detailBlock.SetProgressText = function(text)
---             _detailBlock.progressLabel.SetTextString(text)
---         end
-
---         local _pbTimer = PushUIFrames.Timer.Create(1)
---         _pbTimer:SetHandler(function()
---             _detailPb:SetValue(_detailPb:GetValue() - 1)
---             _remineTime = _detailPb:GetValue()
---             local _timeString = ""
---             if _remineTime >= 3600 then
---                 local _hours = math.floor(_remineTime / 3600)
---                 _remineTime = _remineTime - (_hours * 3600)
---                 _timeString = _hours.."H "
---             end
---             if _remineTime > 60 then
---                 local _mins = math.floor(_remineTime / 60)
---                 _remineTime = _remineTime - (_mins * 60)
---                 _timeString = _timeString.._mins.."M "
---             end
---             _timeString = _timeString.._remineTime.."S"
---             _pbLabel.SetTextString(_timeString)
---         end)
---         _detailPb.timer = _pbTimer
-
---         _detailBlock.showDetail = true
---         _detailBlock.showProgress = false
-
---         _detailBlock.Resize = function()
---             local _ah = 0
---             if _detailBlock.showDetail then
---                 local _th = _detailBlock.textLabel:GetHeight()
---                 _detailBlock.textLabel:ClearAllPoints()
---                 _detailBlock.textLabel:SetPoint("TOPLEFT", _detailBlock, "TOPLEFT", _config.padding, -_ah)
---                 _ah = _ah + _th
---             else
---                 _detailBlock.textLabel:Hide()
---             end
-
---             if _detailBlock.showProgress then
---                 local _ph = _detailBlock.progressBar:GetHeight()
---                 _detailBlock.progressBar:ClearAllPoints()
---                 _detailBlock.progressBar:SetPoint("TOPLEFT", _detailBlock, "TOPLEFT", _config.padding, -_ah)
---                 _detailBlock.progressBar:Show()
---                 _ah = _ah + _ph + _config.padding
---             else
---                 _detailBlock.progressBar:Hide()
---             end
-
---             _detailBlock:SetHeight(_ah)
---             return _ah
---         end
-
---         return _detailBlock
---     end
-
---     _block._detailBlockPool = PushUIAPI.Pool(_block.CreateDetailBlock)
-
---     _block.FreeDetailBlock = function(detailBlock)
---         detailBlock:Hide()
---         detailBlock.progressBar.timer:StopTimer()
---         _block._detailBlockPool:release(detailBlock)
---    end
-
---     _block.GetDetailBlock = function()
---         return _block._detailBlockPool:get()
---     end
-
---     _block.ClearAllDetailBlock = function()
---         local _ds = _block.detailBlocks:size()
---         for i = 1, _ds do
---             _block.FreeDetailBlock(_block.detailBlocks:objectAtIndex(i))
---         end
---         _block.detailBlocks:clear()
---     end
-
---     _othook._setSpecialBlock(key, _block)
---     _leftDisplayingBlocks:set(key, _block)
--- end
-
--- -- Scenario
--- _othook._initializeScenarioBlock = function()
---     _othook._initializeSpecialBlock(_blockKey_Scenario)
--- end
-
--- _othook._formatScenarioBlock = function(scenarioQuest)
---     local _block = _othook._getSpecialBlock(_blockKey_Scenario)
-
---     -- Set Static Text Info
---     _block.titleLabel.SetTextString(scenarioQuest.scenarioName.." "..scenarioQuest.currentStage.."/"..scenarioQuest.numStages)
---     _block.subtitleLabel.SetTextString(scenarioQuest.stageInfo.name)
---     _block.descriptionLabel.SetTextString(scenarioQuest.stageInfo.description)
-
---     local _ah = 0
---     _block.titleLabel:ClearAllPoints()
---     _block.titleLabel:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
---     local _th = _block.titleLabel:GetHeight()
---     _ah = _ah + _th
---     _block.subtitleLabel:ClearAllPoints()
---     _block.subtitleLabel:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
---     local _sth = _block.subtitleLabel:GetHeight()
---     _ah = _ah + _sth
---     _block.descriptionLabel:ClearAllPoints()
---     _block.descriptionLabel:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
---     local _dsph = _block.descriptionLabel:GetHeight()
---     _ah = _ah + _dsph
-
---     -- Set Dynamic 
---     -- Remove all old detail block
---     _block.ClearAllDetailBlock()
-
---     local _ds = #scenarioQuest.criteriaList
---     for i = 1, _ds do
---         local _criteria = scenarioQuest.criteriaList[i]
---         local _detailBlock = _block.GetDetailBlock()    -- Get an empty detail block
---         -- Always show detail info
---         _detailBlock.showDetail = true
---         if _criteria.isWeightedProgress then
---             _detailBlock.showProgress = true
---             local _percentage = _criteria.quantity / _criteria.totalQuantity * 100
---             _detailBlock.SetProgressValue(_criteria.quantity, 0, _criteria.totalQuantity)
---             _detailBlock.SetProgressText(("%.2f"):format(_percentage))
---             _detailBlock.SetText("-- ".._criteria.criteriaString)
---         elseif _criteria.duration > 0 and _criteria.elapsed <= _criteria.duration then
---             _detailBlock.showProgress = true
---             _detailBlock.SetText("-- ".._criteria.criteriaString)
---             _detailBlock.SetProgressValue(GetTime() - _criteria.elapsed, 0, _criteria.duration)
---             _detailBlock.progressBar.timer:StartTimer()
---         else
---             _detailBlock.showProgress = false
---             _detailBlock.SetText("-- ".._criteria.criteriaString.." ".._criteria.quantity.."/".._criteria.totalQuantity)
---         end
---         local _dh = _detailBlock.Resize()
---         _block.detailBlocks:push_back(_detailBlock)
-
---         _detailBlock:ClearAllPoints()
---         _detailBlock:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
---         _ah = _ah + _dh
---     end
-
---     _block:SetHeight(_ah)
--- end
-
--- _othook._releaseScenarioBlock = function()
---     _othook._clearSpecialBlock(_blockKey_Scenario)
--- end
-
--- _othook.OnScenarioStart = function(event, scenarioQuest)
---     _othook._initializeScenarioBlock()
---     _othook._formatScenarioBlock(scenarioQuest)
-
---     -- Redisplay all left blocks
---     _othook.LeftBlocksReDisplay()
--- end
-
--- _othook.OnScenarioUpdate = function(event, scenarioQuest)
---     _othook._formatScenarioBlock(scenarioQuest)
-
---     -- Redisplay all left blocks
---     _othook.LeftBlocksReDisplay()
--- end
-
--- _othook.OnScenarioComplete = function(event, ...)
---     _othook._releaseScenarioBlock()
-
---     -- Redisplay all left blocks
---     _othook.LeftBlocksReDisplay()
--- end
-
--- if PushUIAPI.ScenarioQuest.quest ~= nil then
---     _othook.OnScenarioStart(nil, PushUIAPI.ScenarioQuest.quest)
--- end
-
--- -- register event
--- PushUIAPI:RegisterPUIEvent(
---     PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_START, 
---     "othook_scenario_quest_start",
---     _othook.OnScenarioStart)
--- PushUIAPI:RegisterPUIEvent(
---     PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_UPDATE, 
---     "othook_scenario_quest_update", 
---     _othook.OnScenarioUpdate)
--- PushUIAPI:RegisterPUIEvent(
---     PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_COMPLETE, 
---     "othook_scenario_quest_complete", 
---     _othook.OnScenarioComplete)
-
-
--- -- Challenge Mode
--- _othook._initializeChallengeBlock = function()
---     _othook._initializeSpecialBlock(_blockKey_Challenge)
--- end
-
--- _othook._formatChallengeBlock = function(modeInfo)
---     local _block = _othook._getSpecialBlock(_blockKey_Challenge)
-
---     -- Set Static Text Info
---     _block.titleLabel:Hide()
---     _block.subtitleLabel:Hide()
---     _block.descriptionLabel:Hide()
-
---     local _ah = 0
-
---     -- Set Dynamic 
---     -- Remove all old detail block
---     _block.ClearAllDetailBlock()
---     local _detailBlock = _block.GetDetailBlock()
---     _detailBlock.showDetail = true
---     if modeInfo.level ~= nil then
---         _detailBlock.SetText(modeInfo.level)
---     else
---         _detailBlock.SetText(modeInfo.currentWave.."/"..modeInfo.maxWave)
---     end
-
---     _detailBlock.showProgress = true
---     _detailBlock.SetProgressValue(GetTime() - modeInfo.elapsedTime, 0, modeInfo.timeLimit)
---     _detailBlock.progressBar.timer:StartTimer()
-
---     _block.detailBlocks:push_back(_detailBlock)
---     local _dh = _detailBlock.Resize()
---     _detailBlock:ClearAllPoints()
---     _detailBlock:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
---     _ah = _ah + _dh
-
---     _block:SetHeight(_ah)
--- end
-
--- _othook._releaseChallengeBlock = function()
---     _othook._clearSpecialBlock(_blockKey_Challenge)
--- end
-
--- _othook.OnChallengeStart = function(event, modeInfo)
---     _othook._initializeChallengeBlock()
---     _othook._formatChallengeBlock(modeInfo)
-
---     -- Redisplay all left blocks
---     _othook.LeftBlocksReDisplay()
--- end
-
--- _othook.OnChallengeComplete = function(event, ...)
---     _othook._releaseChallengeBlock()
-
---     -- Redisplay all left blocks
---     _othook.LeftBlocksReDisplay()
--- end
-
--- -- register event
--- PushUIAPI:RegisterPUIEvent(
---     PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_START, 
---     "othook_challenge_mode_start",
---     _othook.OnChallengeStart)
--- PushUIAPI:RegisterPUIEvent(
---     PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_STOP, 
---     "othook_challenge_mode_stop", 
---     _othook.OnChallengeComplete)
-
--- -- Bonus Quest
--- _othook._initializeBonusQuestBlock = function()
---     _othook._initializeSpecialBlock(_blockKey_Bonus)
--- end
-
--- _othook._formatBonusQuestBlock = function(bonusQuest)
---     local _block = _othook._getSpecialBlock(_blockKey_Bonus)
-
---     -- Set Static Text Info
---     _block.titleLabel.SetTextString(bonusQuest.taskName)
---     _block.subtitleLabel:Hide()
---     _block.descriptionLabel:Hide()
-
---     local _ah = 0
---     _block.titleLabel:ClearAllPoints()
---     _block.titleLabel:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
---     local _th = _block.titleLabel:GetHeight()
---     _ah = _ah + _th
-
---     -- Set Dynamic 
---     -- Remove all old detail block
---     _block.ClearAllDetailBlock()
-
---     local _ds = bonusQuest.numObjectives
---     for i = 1, _ds do
---         local _objective = bonusQuest.objectives[i]
---         local _detailBlock = _block.GetDetailBlock()    -- Get an empty detail block
---         -- Always show detail info
---         _detailBlock.showDetail = true
---         _detailBlock.SetText(_objective.title)
---         _detailBlock.showProgress = _objective.showProgressBar
---         if _objective.showProgressBar then
---             _detailBlock.SetProgressValue(_objective.percentage, 0, 100)
---             _detailBlock.SetProgressText(_objective.percentage.."%")
---         end
---         local _dh = _detailBlock.Resize()
---         _block.detailBlocks:push_back(_detailBlock)
-
---         _detailBlock:ClearAllPoints()
---         _detailBlock:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
---         _ah = _ah + _dh
---     end
-
---     _block:SetHeight(_ah)
--- end
-
--- _othook._releaseBonusQuestBlock = function()
---     _othook._clearSpecialBlock(_blockKey_Bonus)
--- end
-
--- _othook.OnBonusQuestStartWatching = function(event, bonusQuest)
---     _othook._initializeBonusQuestBlock()
---     _othook._formatBonusQuestBlock(bonusQuest)
-
---     -- Redisplay all left blocks
---     _othook.LeftBlocksReDisplay()
--- end
-
--- _othook.OnBonusQuestStopWatching = function(event, ...)
---     _othook._releaseBonusQuestBlock()
-
---     -- Redisplay all left blocks
---     _othook.LeftBlocksReDisplay()
--- end
-
--- _othook.OnBonusQuestUpdate = function(event, bonusQuest)
---     _othook._formatBonusQuestBlock(bonusQuest)
-
---     -- Redisplay all left blocks
---     _othook.LeftBlocksReDisplay()
--- end
-
--- -- register event
--- PushUIAPI:RegisterPUIEvent(
---     PushUIAPI.PUSHUIEVENT_BONUS_QUEST_STARTWATCHING, 
---     "othook_bonus_quest_start_watching",
---     _othook.OnBonusQuestStartWatching)
--- PushUIAPI:RegisterPUIEvent(
---     PushUIAPI.PUSHUIEVENT_BONUS_QUEST_UPDATE, 
---     "othook_bonus_quest_update", 
---     _othook.OnBonusQuestUpdate)
--- PushUIAPI:RegisterPUIEvent(
---     PushUIAPI.PUSHUIEVENT_BONUS_QUEST_STOPWATCHING,
---     "othook_bonus_quest_stop_watching",
---     _othook.OnBonusQuestStopWatching)
-
--- -- Bonus Quest
--- _othook._initializeWorldQuestBlock = function(blockKey)
---     _othook._initializeSpecialBlock(blockKey)
--- end
-
--- _othook._formatWorldQuestBlock = function(blockKey, worldQuest)
---     local _block = _othook._getSpecialBlock(blockKey)
-
---     -- Set Static Text Info
---     _block.titleLabel.SetTextString(worldQuest.taskName)
---     _block.subtitleLabel:Hide()
---     _block.descriptionLabel:Hide()
-
---     local _ah = 0
---     _block.titleLabel:ClearAllPoints()
---     _block.titleLabel:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
---     local _th = _block.titleLabel:GetHeight()
---     _ah = _ah + _th
-
---     -- Set Dynamic 
---     -- Remove all old detail block
---     _block.ClearAllDetailBlock()
-
---     local _ds = worldQuest.numObjectives
---     for i = 1, _ds do
---         local _objective = worldQuest.objectives[i]
---         local _detailBlock = _block.GetDetailBlock()    -- Get an empty detail block
---         -- Always show detail info
---         _detailBlock.showDetail = true
---         _detailBlock.SetText(_objective.title)
---         _detailBlock.showProgress = _objective.showProgressBar
---         if _objective.showProgressBar then
---             _detailBlock.SetProgressValue(_objective.percentage, 0, 100)
---             _detailBlock.SetProgressText(_objective.percentage.."%")
---         end
---         local _dh = _detailBlock.Resize()
---         _block.detailBlocks:push_back(_detailBlock)
-
---         _detailBlock:ClearAllPoints()
---         _detailBlock:SetPoint("TOPLEFT", _block, "TOPLEFT", 0, -_ah)
---         _ah = _ah + _dh
---     end
-
---     _block:SetHeight(_ah)
--- end
-
--- _othook._releaseWorldQuestBlock = function(blockKey)
---     _othook._clearSpecialBlock(blockKey)
--- end
-
--- _othook.OnWorldQuestStartWatching = function(event, newWorldQuestList)
---     local _qs = newWorldQuestList:size()
---     for i = 1, _qs do
---         local _blockKey = _othook._worldBlockKeyGet()
---         local _quest = newWorldQuestList:objectAtIndex(i)
---         _othook._worldQuestBlockKeyMap:set(_quest.questID, _blockKey)
---         _othook._initializeWorldQuestBlock(_blockKey)
---         _othook._formatWorldQuestBlock(_blockKey, _quest)
---     end
-
---     -- Redisplay all left blocks
---     _othook.LeftBlocksReDisplay()
--- end
-
--- _othook.OnWorldQuestStopWatching = function(event, stopWatchingQuestList)
-
---     local _qs = stopWatchingQuestList:size()
---     for i = 1, _qs do
---         local _quest = stopWatchingQuestList:objectAtIndex(i)
---         local _blockKey = _othook._worldQuestBlockKeyMap:object(_quest.questID)
---         if _blockKey ~= nil then
---             _othook._releaseWorldQuestBlock(_blockKey)
---             _othook._worldQuestBlockKeyMap:unset(_quest.questID)
---             _othook._worldBlockKeyFree(_blockKey)
---         end
---     end
-
---     -- Redisplay all left blocks
---     _othook.LeftBlocksReDisplay()
--- end
-
--- _othook.OnWorldQuestUpdate = function(event, updatingQuestList)
-    
---     local _qs = updatingQuestList:size()
---     for i = 1, _qs do
---         local _quest = updatingQuestList:objectAtIndex(i)
---         local _blockKey = _othook._worldQuestBlockKeyMap:object(_quest.questID)
---         if _blockKey ~= nil then 
---             _othook._formatWorldQuestBlock(_blockKey, _quest)
---         end
---     end
-
---     -- Redisplay all left blocks
---     _othook.LeftBlocksReDisplay()
--- end
-
--- -- register event
--- PushUIAPI:RegisterPUIEvent(
---     PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STARTWATCHING, 
---     "othook_world_quest_start_watching",
---     _othook.OnWorldQuestStartWatching)
--- PushUIAPI:RegisterPUIEvent(
---     PushUIAPI.PUSHUIEVENT_WORLD_QUEST_UPDATE, 
---     "othook_world_quest_update", 
---     _othook.OnWorldQuestUpdate)
--- PushUIAPI:RegisterPUIEvent(
---     PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING,
---     "othook_world_quest_stop_watching",
---     _othook.OnWorldQuestStopWatching)
-
--- _othook._onPlayerFirstTimeEnteringWorld = function()
---     if PushUIAPI.BonusQuest.quest ~= nil then
---         _othook.OnBonusQuestStartWatching(nil, PushUIAPI.BonusQuest.quest)
---     end
---     if PushUIAPI.WorldQuest.newWatchingList:size() > 0 then
---         _othook.OnWorldQuestStartWatching(nil, PushUIAPI.WorldQuest.newWatchingList)
---     end
--- end
--- PushUIAPI:RegisterPUIEvent(
---     PushUIAPI.PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD,
---     "othook_objective_tracker_first_entering_world",
---     _othook._onPlayerFirstTimeEnteringWorld
---     )
-
+function PUISpecialBlock:add_detail_progress(value, max)
+    self.detail:add_detail_progress(value, max)
+end
+
+function PUISpecialBlock:add_detail_timer(now, duration)
+    self.detail:add_detail_timer(now, duration)
+end
+
+function PUISpecialBlock:autoResize()
+    -- Redraw all parts
+    -- title
+    -- subtitle
+    self.subtitle:set_position()
+    -- description
+    self.description:set_position()
+
+    local _height = self.title:height() + self.subtitle:height() + self.description:height()
+    self:set_height(_height)
+
+    -- detail panel
+    self.detail:set_position()
+    self.detail:autoResize()
+
+    self._displayHeight = (_height + self.detail:height() + _config.padding)
+end
+
+function PUISpecialBlock:recycle()
+    self.detail:recycle()
+end
+
+-- Left Parts
+local _leftDisplayingBlocks = PushUIAPI.Map()
+local __leftBlockAllHeight = 0
+local function _redrawLeftBlockParts()
+    local _allHeight = 30
+    _leftDisplayingBlocks:for_each(function(k, block)
+        block:autoResize()
+        block:set_position(25, -_allHeight)
+        _allHeight = _allHeight + block:displayHeight() + _config.padding
+    end)
+end
+
+-- Special Block Pool
+local _sbPool = PushUIAPI.Pool(function() return PUISpecialBlock() end)
+
+-- Scenario Block
+local _scenarioBlock = _sbPool:get()
+_scenarioBlock:set_hidden(true)
+local function eventHandler_scenarioUpdate(_, squest)
+    _scenarioBlock:recycle()
+    local _title = squest.scenarioName
+    if squest.numStages ~= nil then
+        _title = _title..squest.currentStage.."/"..squest.numStages
+    end
+    _scenarioBlock:set_infomation(
+        _title,
+        squest.stageInfo.name, 
+        squest.stageInfo.description
+    )
+    local _dc = #squest.criteriaList
+    for i = 1, _dc do
+        local _criteria = squest.criteriaList[i]
+        if _criteria.isWeightedProgress then
+            _scenarioBlock:add_detail_progress(_criteria.quantity, _criteria.totalQuantity)
+        elseif _criteria.duration > 0 then
+            _scenarioBlock:add_detail_timer(_criteria.duration - _criteria.elapsed, _criteria.duration)
+        else
+            _scenarioBlock:add_detail_text("-- ".._criteria.quantity.."/".._criteria.totalQuantity.." ".._criteria.criteriaString)
+        end
+    end
+    _redrawLeftBlockParts()
+end
+local function eventHandler_scenarioStart(_, squest)
+    _scenarioBlock:set_hidden(false)
+    _leftDisplayingBlocks:set("SCENARIO_BLOCK", _scenarioBlock)
+    eventHandler_scenarioUpdate(nil, squest)
+end
+local function eventHandler_scenarioComplete(...)
+    _scenarioBlock:set_hidden(true)
+    _leftDisplayingBlocks:unset("SCENARIO_BLOCK")
+    _scenarioBlock:recycle()
+    _redrawLeftBlockParts()
+end
+if PushUIAPI.ScenarioQuest.quest then
+    eventHandler_scenarioStart(nil, PushUIAPI.ScenarioQuest.quest)
+end
+
+-- register event
+PushUIAPI.EventCenter:RegisterEvent(
+    PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_START, 
+    "sq_start",
+    eventHandler_scenarioStart)
+PushUIAPI.EventCenter:RegisterEvent(
+    PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_UPDATE, 
+    "sq_update", 
+    eventHandler_scenarioUpdate)
+PushUIAPI.EventCenter:RegisterEvent(
+    PushUIAPI.PUSHUIEVENT_SCENARIO_QUEST_COMPLETE, 
+    "sq_complete", 
+    eventHandler_scenarioComplete)
+
+-- Challenge Mode
+local _challengeBlock = _sbPool:get()
+_challengeBlock:set_hidden(true)
+local function eventHandler_challengeUpdate(_, cquest)
+    _challengeBlock:recycle()
+    _challengeBlock:set_infomation(
+        GetMapNameByID(GetCurrentMapAreaID()),
+        "Challenge Mode",
+        "Finish the challenge"
+        )
+
+    if cquest.level ~= nil then
+        _challengeBlock:add_detail_text("LV: "..cquest.level)
+    else
+        _challengeBlock:add_detail_text("Wave "..cquest.currentWave.." of total "..cquest.maxWave)
+    end
+
+    _challengeBlock:add_detail_timer(cquest.timeLimit - cquest.elapsedTime, cquest.timeLimit)
+    _redrawLeftBlockParts()
+end
+local function eventHandler_challengeStart(_, cquest)
+    _challengeBlock:set_hidden(false)
+    _leftDisplayingBlocks:set("CHALLENGE_BLOCK", _challengeBlock)
+    eventHandler_challengeUpdate(nil, cquest)
+end
+local function eventHandler_challengeComplete(...)
+    _challengeBlock:set_hidden(true)
+    _leftDisplayingBlocks:unset("CHALLENGE_BLOCK")
+    _challengeBlock:recycle()
+    _redrawLeftBlockParts()
+end
+
+if PushUIAPI.ChallengeMode.modeInfo then
+    eventHandler_challengeStart(nil, PushUIAPI.ChallengeMode.modeInfo)
+end
+
+-- register event
+PushUIAPI.EventCenter:RegisterEvent(
+    PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_START, 
+    "cq_start",
+    eventHandler_challengeStart)
+PushUIAPI.EventCenter:RegisterEvent(
+    PushUIAPI.PUSHUIEVENT_CHALLENGE_MODE_STOP, 
+    "cq_stop", 
+    eventHandler_challengeComplete)
+
+-- Bonus Quest
+local _bonusBlock = _sbPool:get()
+_bonusBlock:set_hidden(true)
+local function eventHanlder_bonusUpdate(_, bquest)
+    _bonusBlock:recycle()
+    _bonusBlock:set_infomation(
+        bquest.taskName,
+        GetMapNameByID(GetCurrentMapAreaID()),
+        "Bonus quest"
+        )
+
+    local _oc = bquest.numObjectives
+    for i = 1, _oc do
+        local _obj = bquest.objectives[i]
+        _bonusBlock:add_detail_text(_obj.title)
+        if _obj.showProgressBar then
+            _bonusBlock:add_detail_progress(_obj.percentage, 100)
+        end
+    end
+    _redrawLeftBlockParts()
+end
+local function eventHanlder_bonusStart(_, bquest)
+    _bonusBlock:set_hidden(false)
+    _leftDisplayingBlocks:set("BONUSE_BLOCK", _bonusBlock)
+    eventHanlder_bonusUpdate(nil, bquest)
+end
+local function eventHanlder_bonusEnd(_, bquest)
+    _bonusBlock:set_hidden(true)
+    _leftDisplayingBlocks:unset("BONUSE_BLOCK")
+    _bonusBlock:recycle()
+    _redrawLeftBlockParts()
+end
+
+if PushUIAPI.BonusQuest.quest then
+    eventHanlder_bonusStart(nil, PushUIAPI.BonusQuest.quest)
+end
+
+-- register event
+PushUIAPI.EventCenter:RegisterEvent(
+    PushUIAPI.PUSHUIEVENT_BONUS_QUEST_STARTWATCHING, 
+    "bq_start",
+    eventHanlder_bonusStart)
+PushUIAPI.EventCenter:RegisterEvent(
+    PushUIAPI.PUSHUIEVENT_BONUS_QUEST_UPDATE, 
+    "bq_update", 
+    eventHanlder_bonusUpdate)
+PushUIAPI.EventCenter:RegisterEvent(
+    PushUIAPI.PUSHUIEVENT_BONUS_QUEST_STOPWATCHING,
+    "bq_end",
+    eventHanlder_bonusEnd)
+
+-- World Quest
+local function eventHandler_worldquestUpdate(_, array)
+    array:for_each(function(_, wquest)
+        local _key = "WORLDQUEST_BLOCK_"..wquest.questID
+        local _wblock = _leftDisplayingBlocks:object(_key)
+        _wblock:recycle()
+        _wblock:set_infomation(
+            wquest.taskName,
+            GetMapNameByID(GetCurrentMapAreaID()),
+            "World Quest"
+        )
+        local _dc = wquest.numObjectives
+        for i = 1, _dc do
+            local _obj = wquest.objectives[i]
+            _wblock:add_detail_text(_obj.title)
+            if _wblock.showProgressBar then
+                _wblock:add_detail_progress(_obj.percentage, 100)
+            end
+        end
+    end)
+    _redrawLeftBlockParts()
+end
+
+local function eventHandler_worldquestStart(_, array)
+    array:for_each(function(_, wquest)
+        local _wblock = _sbPool:get()
+        _wblock:set_hidden(false)
+        _leftDisplayingBlocks:set("WORLDQUEST_BLOCK_"..wquest.questID, _wblock)
+    end)
+    eventHandler_worldquestUpdate(nil, array)
+end
+
+local function eventHandler_worldquestComplete(_, array)
+    array:for_each(function(_, wquest)
+        local _key = "WORLDQUEST_BLOCK_"..wquest.questID
+        local _wblock = _leftDisplayingBlocks:object(_key)
+        _wblock:recycle()
+        _leftDisplayingBlocks:unset(_key)
+        _wblock:set_hidden(true)
+        _sbPool:release(_wblock)
+    end)
+    _redrawLeftBlockParts()
+end
+
+if PushUIAPI.WorldQuest.newWatchingList:size() > 0 then
+    eventHandler_worldquestStart(nil, PushUIAPI.WorldQuest.newWatchingList)
+end
+
+-- register event
+PushUIAPI.EventCenter:RegisterEvent(
+    PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STARTWATCHING, 
+    "wq_start",
+    eventHandler_worldquestStart)
+PushUIAPI.EventCenter:RegisterEvent(
+    PushUIAPI.PUSHUIEVENT_WORLD_QUEST_UPDATE, 
+    "wq_update", 
+    eventHandler_worldquestUpdate)
+PushUIAPI.EventCenter:RegisterEvent(
+    PushUIAPI.PUSHUIEVENT_WORLD_QUEST_STOPWATCHING,
+    "wq_complete",
+    eventHandler_worldquestComplete)

@@ -30,6 +30,8 @@ function PushUIFrames.UIProgressBar:redraw()
     -- self._pblabel:set_size(self:size())
 
     local _rate = self._value / (self._max - self._min)
+    if _rate < 0 then _rate = 0 end
+    if _rate > 1 then _rate = 1 end
 
     if self._direction == "v-b-t" then
         self._pblayer:set_height(self:height() * _rate)
@@ -51,13 +53,32 @@ function PushUIFrames.UIProgressBar:set_max(max)
     self:redraw()
 end
 
+function PushUIFrames.UIProgressBar:max()
+    return self._max
+end
+
 function PushUIFrames.UIProgressBar:set_min(min)
     self._min = min 
     self:redraw()
 end
 
+function PushUIFrames.UIProgressBar:min()
+    return self._min
+end
+
 function PushUIFrames.UIProgressBar:set_value(value)
     self._value = value
+    self:redraw()
+end
+
+function PushUIFrames.UIProgressBar:value()
+    return self._value
+end
+
+function PushUIFrames.UIProgressBar:reduce_value(step)
+    if nil == step or step <= 0 then step = 1 end
+    if self._value - step < self._min then self._value = self._min 
+    else self._value = self._value - step end
     self:redraw()
 end
 

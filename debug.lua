@@ -14,6 +14,9 @@ local function _debug_initFunction()
     PushUIAPI.PlayerHP:valueChanged()
     -- PushUIAPI.PlayerAuras:force_refresh()
     PushUIAPI.PlayerAuras:valueChanged()
+
+    WorldMapFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 30, -30)
+    WorldMapFrame:SetScale(0.8)
 end
 
 PushUIAPI.EventCenter:RegisterEvent(PushUIAPI.PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD, "debug_init", _debug_initFunction)

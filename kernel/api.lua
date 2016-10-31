@@ -381,6 +381,46 @@ end
 setmetatable(PushUIAPI.Timer, {
     __call = function(_, ...) return PushUIAPI.Timer.new(...) end
     })
+function PushUIAPI.DurationFormat(duration)
+    local _fs = ""
+    if duration >= 86400 then
+        local _days = math.floor(duration / 86400)
+        duration = duration - (_days * 86400)
+        if _days == 1 then
+            _fs = _fs.._days.." Day "
+        else
+            _fs = _fs.._days.." Days "
+        end
+    end
+
+    if duration >= 3600 then
+        local _hours = math.floor(duration / 3600)
+        duration = duration - (_hours * 3600)
+        if _hours == 1 then
+            _fs = _fs.._hours.." Hour "
+        else
+            _fs = _fs.._hours.." Hours "
+        end
+    end
+
+    if duration >= 60 then
+        local _mins = math.floor(duration / 60)
+        duration = duration - (_mins * 60)
+        if _mins == 1 then
+            _fs = _fs.."01 Minute "
+        else
+            _fs = _fs..("%02d"):format(_mins).." Minutes "
+        end
+    end
+
+    if duration == 1 then
+        _fs = _fs.."01 Second"
+    else
+        _fs = _fs..("%02d"):format(duration).." Seconds"
+    end
+
+    return _fs
+end
 
 -- Event Center
 PushUIAPI.EventCenter = {}

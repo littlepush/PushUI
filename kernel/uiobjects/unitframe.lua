@@ -52,7 +52,7 @@ function PushUIFrames.AuraButton:initialize()
     self.tip:set_archor("TOPLEFT")
     self.tip:set_archor_target(self.layer, "BOTTOMLEFT")
     self.tip:set_position(0, -2)
-    self.tip:set_padding(2)
+    self.tip:set_padding(5)
     self.tip:set_maxline(99)
     self.tip:set_alpha(0)
 
@@ -97,6 +97,7 @@ function PushUIFrames.AuraButton:set_aura(aura)
     end
 
     self.tip:set_text(aura.name)
+    self.tip:set_alpha(0)
 end
 function PushUIFrames.AuraButton:refresh_progress()
     if self._savedAura.expirationTime ~= 0 then
