@@ -495,7 +495,11 @@ local function eventHandler_scenarioUpdate(_, squest)
     for i = 1, _dc do
         local _criteria = squest.criteriaList[i]
         if _criteria.isWeightedProgress then
-            _scenarioBlock:add_detail_progress(_criteria.quantity, _criteria.totalQuantity)
+            if _criteria.quantityString ~= nil and _criteria.quantityString ~= "" then
+                _scenarioBlock:add_detail_text("Progress: ".._criteria.quantityString)
+            else
+                _scenarioBlock:add_detail_progress(_criteria.quantity, _criteria.totalQuantity)
+            end
         elseif _criteria.duration > 0 then
             _scenarioBlock:add_detail_timer(_criteria.duration - _criteria.elapsed, _criteria.duration)
         else
