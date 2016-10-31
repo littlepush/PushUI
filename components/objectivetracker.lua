@@ -645,7 +645,7 @@ local function eventHandler_worldquestUpdate(_, array)
         for i = 1, _dc do
             local _obj = wquest.objectives[i]
             _wblock:add_detail_text(_obj.title)
-            if _wblock.showProgressBar then
+            if _obj.showProgressBar then
                 _wblock:add_detail_progress(_obj.percentage, 100)
             end
         end
