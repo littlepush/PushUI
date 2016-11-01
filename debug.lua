@@ -11,12 +11,16 @@ local function _debug_initFunction()
     GarrisonLandingPageMinimapButton:SetScript("OnShow", GarrisonLandingPageMinimapButton.Hide)
     GarrisonLandingPageMinimapButton:Hide()
 
-    PushUIAPI.PlayerHP:valueChanged()
+    -- Force to update the health value
+    PushUIAPI.PlayerHP:UNIT_HEALTH()
     -- PushUIAPI.PlayerAuras:force_refresh()
     PushUIAPI.PlayerAuras:valueChanged()
 
     WorldMapFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 30, -30)
     WorldMapFrame:SetScale(0.8)
+
+    PushUIFrames_FormatChat()
+    PushUIFrames_MoveActionBar()
 end
 
 PushUIAPI.EventCenter:RegisterEvent(PushUIAPI.PUSHUIEVENT_PLAYER_FIRST_ENTERING_WORLD, "debug_init", _debug_initFunction)

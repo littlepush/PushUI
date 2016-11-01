@@ -34,20 +34,16 @@ PushUIFrameActionBarFrame.RestoreToDefault = function()
 end
 
 PushUIFrameActionBarFrame.ReSize = function()
-    print("Resize for PushUIFrameActionBarFrame")
-
     local f = PushUIFrameActionBarFrame
 
     local col, row = unpack(PushUIConfig.ActionBarGrid)
     if not (row == #PushUIConfig.ActionBarGridLayout) then
-        print("the setting of the action bar grid is not validate, restore to default")
         return f.RestoreToDefault()
     end
 
     local calculated_actions = {}
     for _,layout in pairs(PushUIConfig.ActionBarGridLayout) do
         if not (#layout == col) then
-            print("the setting of the action bar grid is not valildate, restore to default")
             return f.RestoreToDefault()
         end    
 

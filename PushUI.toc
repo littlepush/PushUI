@@ -39,4 +39,9 @@ components\targettargetframe.lua
 components\focusframe.lua
 components\petframe.lua
 
+components\minimap.lua
+components\chatframe.lua
+components\skada.lua
+components\grid.lua
+
 debug.lua
