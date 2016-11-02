@@ -58,10 +58,16 @@ for i = 1, 5 do
     local _btf = _G["Boss"..i.."TargetFrame"]
     _btf:SetScript("OnShow", _btf.Hide)
     _btf:Hide()
+    _btf:HookScript("OnShow", function(self)
+        self:Hide()
+    end)
 end
 
 for i = 1, 4 do
     local _pmf = _G["PartyMemberFrame"..i]
     _pmf:SetScript("OnShow", _pmf.Hide)
     _pmf:Hide()
+    _pmf:HookScript("OnShow", function(self)
+        self:Hide()
+    end)
 end
